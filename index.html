@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>소방설비 자동산출</title>
+  <style>
+    body { font-family: "Malgun Gothic", sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; background: #f4f3f1; color: #1d1b1a; }
+    h1 { color: #c8102e; }
+    label { display: block; margin: 12px 0 4px; }
+    input { padding: 8px; font-size: 16px; width: 200px; }
+    button { margin-top: 16px; padding: 10px 20px; font-size: 16px; background: #c8102e; color: white; border: 0; border-radius: 6px; cursor: pointer; }
+    #answer { margin-top: 20px; padding: 16px; background: white; border-radius: 8px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <h1>소방설비 자동산출</h1>
+  <p>건물 정보를 넣고 계산하기를 누르세요.</p>
+
+  <label for="floors">지상 층수 (층)</label>
+  <input type="number" id="floors" value="5">
+
+  <label for="area">바닥면적 (㎡)</label>
+  <input type="number" id="area" value="600">
+
+  <br>
+  <button onclick="calc()">계산하기</button>
+
+  <div id="answer">결과가 여기에 나와요.</div>
+
+  <script>
+    function calc() {
+      const n = Number(document.getElementById("floors").value);
+      const a = Number(document.getElementById("area").value);
+      const A = a * n;
+      document.getElementById("answer").innerHTML =
+        "A = a × n<br>" +
+        "A : 연면적 (㎡)<br>" +
+        "a : 바닥면적 (㎡)<br>" +
+        "n : 지상 층수 (층)<br>" +
+        "<b>A = " + a + " × " + n + " = " + A + " ㎡</b>";
+    }
+  </script>
+</body>
+</html>
