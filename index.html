@@ -43,7 +43,8 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; }
+html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
 .wrap { max-width: 1280px; margin: 0 auto; padding: 28px 20px 64px; }
 
@@ -75,9 +76,11 @@ fieldset.sec { margin: 0; border: 1px solid var(--line); border-radius: 8px; bac
 fieldset.sec.off { background: transparent; padding-bottom: 6px; }
 fieldset.sec legend { padding: 0 6px; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center; }
 .sec-note { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
-.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .wide { grid-column: 1 / -1; }
-.fld { display: grid; gap: 4px; font-size: 13px; align-content: start; }
+.fld { display: grid; gap: 4px; font-size: 13px; align-content: start; min-width: 0; }
+select { max-width: 100%; text-overflow: ellipsis; }
+@media (max-width: 700px) { input[type=number], select { font-size: 16px; } }
 .fl { color: var(--muted); }
 .iw { display: flex; align-items: center; gap: 6px; }
 input[type=number], select {
@@ -155,6 +158,17 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
 .lg-head { width: 10px; height: 10px; border: 1.5px solid var(--ink); border-radius: 50%; }
 .lg-far { width: 11px; height: 11px; background: var(--accent); border-radius: 50%; }
 .lg-riser { width: 12px; height: 12px; background: var(--accent); border-radius: 50%; }
+.drawing .dike { fill: none; stroke: var(--ink); stroke-width: 2.5; }
+.drawing .tank { fill: var(--surface); stroke: var(--pipe-branch); stroke-width: 2; }
+.drawing .space { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-dasharray: 6 4; }
+.drawing .dimr { stroke: var(--accent); stroke-width: 1.3; }
+.drawing .wall { stroke: var(--ink); stroke-width: 7; }
+.drawing text.dt { fill: var(--accent); font-size: 11px; font-weight: 500; }
+.lg-dike { width: 18px; height: 12px; border: 2.5px solid var(--ink); }
+.lg-tank { width: 12px; height: 12px; border: 2px solid var(--pipe-branch); border-radius: 50%; }
+.lg-space { width: 18px; height: 0; border-top: 2px dashed var(--muted); }
+.lg-dim { width: 18px; height: 2px; background: var(--accent); }
+.lg-wall { width: 18px; height: 6px; background: var(--ink); }
 
 /* 기준값 표 탭 */
 .std { display: grid; gap: 18px; margin-top: 20px; }
@@ -177,7 +191,7 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
       <button type="button" role="tab" id="tab-std" aria-selected="false">기준값 표</button>
     </div>
   </header>
-  <p class="banner">v0.1 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
+  <p class="banner">v0.3 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
 
   <section id="view-calc">
     <nav class="targets" id="targets" aria-label="대상 선택"></nav>
@@ -199,11 +213,11 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
    ========================================================= */
 const STD = {
   pumpConst: 0.163,                                   // 수동력 P = 0.163 × Q(㎥/min) × H(m)
-  highRise: { f30: 2, f50: 3, heightM: 120 },         // 고층건축물 수원 배수
+  highRise: { f30: 2, f50: 3, heightM: 120 },         // 방수시간 배수: 29층 이하 20분, 30~49층(또는 120m 이상) 40분, 50층 이상 60분
   roofRatio: 1 / 3,                                   // 옥상수조 = 유효수량의 1/3
 
   indoor: {                                           // 옥내소화전
-    q: 130, vol: 2.6, nMax: 2, nMaxHigh: 5, h3: 17, R: 25,
+    q: 130, vol: 2.6, volWarehouse: 5.2, nMax: 2, nMaxHigh: 5, h3: 17, R: 25,
     pipe: { branch: 40, branchReel: 25, riser: 50, riserReel: 32, mainStandpipe: 100, outletStandpipe: 65 },
   },
   outdoor: { q: 350, vol: 7, nMax: 2, h3: 25, R: 40 }, // 옥외소화전
@@ -215,6 +229,12 @@ const STD = {
     crossMin: 40, drainMin: 50, maxSide: 8,
     // 폐쇄형 헤드: [담당 헤드 수 이하, 구경 mm]
     pipe: [[2, 25], [3, 32], [5, 40], [10, 50], [30, 65], [60, 80], [80, 90], [100, 100], [160, 125], [Infinity, 150]],
+    // 창고시설 라지드롭형: 헤드당 160 L/min, 20분 3.2㎥ / 랙식 60분 9.6㎥, 기준개수 30, 한쪽 가지배관 4개 이하
+    warehouse: { q: 160, vol: 3.2, volRack: 9.6, base: 30, maxSide: 4, rackStep: 3 },
+  },
+  simple: {                                           // 간이스프링클러: [동시 개방 헤드 수, 방수시간 분]
+    q: 50, h3: 10, R: 2.3,
+    cases: { normal: [2, 10], special: [5, 20] },
   },
 
   smoke: {                                            // 거실제연
@@ -235,10 +255,17 @@ const STD = {
       IV:      { lt21: [220, 4], f21to70: [120, 4], ge70: [100, 4] },
     },
   },
+  dike: { dia: 15, small: 1 / 3, big: 1 / 2 },        // 방유제~탱크 옆판: 지름 15m 미만 높이×1/3, 이상 높이×1/2
+  openSpace: {                                        // 보유공지: [지정수량 배수 이하, 너비 m]
+    tbl: [[500, 3], [1000, 5], [2000, 9], [3000, 12], [4000, 15]], min: 15, max: 30,
+  },
 
-  foamHead: {                                         // 포헤드 (주차장·차고·항공기 격납고)
-    rate: { protein: 6.5, synthetic: 8.0, afff: 3.7 }, time: 10,
-    perHead: 9, perHeadFW: 8, reelQ: 300, reelT: 20, reelMax: 5,
+  foam: {                                             // 포소화설비 (헤드식)
+    rate: { protein: 6.5, synthetic: 8.0, afff: 3.7 }, rateSpecial: 6.5, // 1㎡당 방사량 L/min·㎡
+    time: 10, zoneMax: 200,
+    perHead: 9, perHeadFW: 8, fwQ: 75,
+    caf: { perTank: 13.9, perSpecial: 9.3, density: { general: 1.63, special: 2.3 } },
+    sensorArea: 20, reelQ: 300, reelQsmall: 230, reelT: 20, reelMax: 5,
   },
 
   spray: {                                            // 물분무
@@ -261,18 +288,23 @@ const STD = {
       archive:   [2.0, '서고, 전자제품창고, 목재가공품창고, 박물관'],
       rubber:    [2.7, '고무류·면화류 창고, 모피창고, 석탄창고, 집진설비'],
     },
-    deepOpen: 10, bottle: 45,
+    deepOpen: 10,
+    bottleL: 68, fill: { high: [1.5, 1.9], low: [1.1, 1.4] },          // 저장용기 내용적 L, 충전비 범위
+    local: { surface: 13, X: 8, Y: 6, gap: 0.6, k: { high: 1.4, low: 1.1 } }, // 국소방출
   },
   halon: {                                            // 할론 1301
     kinds: { general: [0.32, 2.4, '차고·주차장·전기실·통신기기실·전산실 등'], cotton: [0.52, 3.9, '면화류·나무껍질·대팻밥 등'] },
-    bottle: 50,
+    fill: [0.9, 1.6],
   },
   clean: {                                            // 할로겐화합물 및 불활성기체: [K1, K2]
     halo:  { 'HFC-23': [0.3164, 0.0012], 'HFC-125': [0.1825, 0.0007], 'HFC-227ea': [0.1269, 0.0005], 'FK-5-1-12': [0.0664, 0.0002741], 'HCFC BLEND A': [0.2413, 0.00088] },
     inert: { 'IG-541': [0.65799, 0.00239], 'IG-100': [0.7997, 0.00293], 'IG-55': [0.6598, 0.00242], 'IG-01': [0.5685, 0.00208] },
     safety: { AC: 1.2, B: 1.3 }, baseTemp: 20,
+    ratio95: 0.95, timeHalo: 10, timeInert: { AC: 120, B: 60 },        // 최소설계농도 95% 방출 시간(초)
   },
   powder: { 1: [0.60, 4.5, 0.80], 2: [0.36, 2.7, 1.00], 3: [0.36, 2.7, 1.00], 4: [0.24, 1.8, 1.25] }, // [kg/㎥, 개구부 kg/㎡, 충전비 L/kg]
+  powderLocal: { 1: [8.8, 5.2, 3.9], 2: [5.2, 3.2, 2.4], 3: [5.2, 3.2, 2.4], 4: [3.6, 2.0, 1.5] },   // [평면 kg/㎡, X, Y]
+  powderLocalK: 1.1,
 
   cistern: {                                          // 소화수조·저수조
     bigArea: 15000, baseBig: 7500, baseNormal: 12500, unit: 20, deep: 4.5,
@@ -380,7 +412,7 @@ const USES = [
   ['neighborhood', '근린생활시설'], ['sales', '판매시설'], ['transport', '운수시설'],
   ['mixedSales', '복합건축물 (판매시설 포함)'], ['mixed', '복합건축물 (판매시설 없음)'],
   ['factorySpecial', '공장 (특수가연물 저장·취급)'], ['factory', '공장 (그 밖)'],
-  ['apt', '아파트 (공동주택)'], ['underground', '지하가·지하역사'], ['office', '업무시설'], ['etc', '그 밖의 소방대상물'],
+  ['apt', '아파트 (공동주택)'], ['underground', '지하가·지하역사'], ['office', '업무시설'], ['warehouse', '창고시설'], ['etc', '그 밖의 소방대상물'],
 ];
 const pumpFields = (p, d) => [
   { id: p + '_h1', label: '실양정 h₁', type: 'num', unit: 'm', def: d.h1 },
@@ -423,14 +455,18 @@ const TARGETS = [
         { id: 'out_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: false },
       ]},
       { title: '스프링클러', toggle: 'sp_use', fields: [
+        { id: 'sp_type', label: '종류', type: 'sel', wide: true, def: 'sp', opts: [['sp', '스프링클러설비'], ['simple', '간이스프링클러설비']] },
+        { id: 'sp_simpleCase', label: '수원 기준', type: 'sel', wide: true, def: 'normal', show: (v) => v.sp_type === 'simple', opts: () => [['normal', `일반: ${STD.simple.cases.normal[0]}개 × ${STD.simple.q} L/min × ${STD.simple.cases.normal[1]}분`], ['special', `근린생활시설·숙박시설·복합건축물: ${STD.simple.cases.special[0]}개 × ${STD.simple.q} L/min × ${STD.simple.cases.special[1]}분`]] },
+        { id: 'sp_rack', label: '랙식 창고 (창고시설 기준: 헤드당 160 L/min, 60분)', type: 'chk', def: false, show: (v) => v.sp_type !== 'simple' },
+        { id: 'sp_rackH', label: '랙 높이', type: 'num', unit: 'm', def: 6.5, wide: true, show: (v) => v.sp_type !== 'simple' && v.sp_rack },
         { id: 'sp_layout', label: '헤드 배치', type: 'sel', opts: [['square', '정방형'], ['rect', '장방형']], def: 'square' },
         { id: 'sp_a', label: '가로 방향 헤드 간격 a', type: 'num', unit: 'm', def: 3, show: (v) => v.sp_layout === 'rect', hint: '세로 간격은 대각선이 2R이 되도록 자동 계산돼요.' },
-        { id: 'sp_R', label: '수평거리 R', type: 'sel', wide: true, def: 'auto', opts: () => [
+        { id: 'sp_R', label: '수평거리 R', type: 'sel', wide: true, def: 'auto', show: (v) => v.sp_type !== 'simple', opts: () => [
           ['auto', '자동 (용도·내화구조로 판단)'],
           ['stage', `무대부·특수가연물 ${STD.sp.R.stage} m`], ['rack', `랙식 창고 ${STD.sp.R.rack} m`],
           ['apt', `아파트 세대 ${STD.sp.R.apt} m`], ['fireproof', `내화구조 ${STD.sp.R.fireproof} m`], ['normal', `내화구조 외 ${STD.sp.R.normal} m`],
         ]},
-        { id: 'sp_base', label: '기준개수 직접 지정', type: 'num', unit: '개', def: null, ph: '비우면 용도로 자동', wide: true },
+        { id: 'sp_base', label: '기준개수 직접 지정', type: 'num', unit: '개', def: null, ph: '비우면 용도로 자동', wide: true, show: (v) => v.sp_type !== 'simple' },
         ...pumpFields('sp', { h1: 25, h2: 10, h3: STD.sp.h3 }),
         { id: 'sp_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: true },
       ]},
@@ -450,11 +486,13 @@ const TARGETS = [
     ],
   },
   {
-    id: 'tank', name: '옥외탱크저장소', desc: '포소화설비 (고정포방출구, 보조포소화전)', calc: calcTank,
+    id: 'tank', name: '옥외탱크저장소', desc: '포소화설비, 방유제·보유공지 배치도', calc: calcTank,
     sections: [
-      { title: '탱크', fields: [
-        { id: 'D', label: '탱크 직경 D', type: 'num', unit: 'm', def: 30 },
-        { id: 'roof', label: '지붕 형태', type: 'sel', opts: [['fixed', '고정지붕 (콘루프)'], ['floating', '부상지붕 (플로팅루프)']], def: 'fixed' },
+      { title: '탱크 (1번)', fields: [
+        { id: 'D', label: '탱크 지름 D', type: 'num', unit: 'm', def: 30 },
+        { id: 'TH', label: '탱크 높이 H', type: 'num', unit: 'm', def: 15 },
+        { id: 'TX', label: '지정수량의 배수', type: 'num', unit: '배', def: 1500, wide: true },
+        { id: 'roof', label: '지붕 형태', type: 'sel', wide: true, opts: [['fixed', '고정지붕 (콘루프)'], ['floating', '부상지붕 (플로팅루프)']], def: 'fixed' },
         { id: 'seal', label: '측판~굽도리판 간격 w', type: 'num', unit: 'm', def: 0.6, show: (v) => v.roof === 'floating', wide: true },
       ]},
       { title: '고정포방출구', note: '방출률·포수용액량은 표에서 자동으로 들어가요. 직접 넣으면 그 값이 우선이에요.', fields: [
@@ -464,32 +502,40 @@ const TARGETS = [
         { id: 'rate', label: '방출률 직접 입력', type: 'num', unit: 'L/min·㎡', def: null, ph: '비우면 표 값' },
         { id: 'S', label: '포 약제 농도 S', type: 'sel', opts: [['3', '3%'], ['6', '6%']], def: '3' },
       ]},
-      { title: '보조포소화전과 송액관', note: '송액관은 내경 75mm 초과인 것만 보정량에 들어가요. 안 쓰는 줄은 비워두세요.', fields: [
-        { id: 'N', label: '보조포소화전 개수', type: 'num', unit: '개', def: 3, wide: true },
+      { title: '보조포소화전과 송액관', note: '쌍구형은 호스접속구가 2개라서 1개만 있어도 2개로 계산해요. 송액관은 내경 75mm 초과인 것만 보정량에 들어가요. 안 쓰는 줄은 비워두세요.', fields: [
+        { id: 'Nd', label: '쌍구형 보조포소화전', type: 'num', unit: '개', def: 1 },
+        { id: 'Ns', label: '단구형 보조포소화전', type: 'num', unit: '개', def: 1 },
         { id: 'd1', label: '송액관 ① 내경', type: 'num', unit: 'mm', def: 150 }, { id: 'l1', label: '송액관 ① 길이', type: 'num', unit: 'm', def: 100 },
         { id: 'd2', label: '송액관 ② 내경', type: 'num', unit: 'mm', def: 100 }, { id: 'l2', label: '송액관 ② 길이', type: 'num', unit: 'm', def: 50 },
         { id: 'd3', label: '송액관 ③ 내경', type: 'num', unit: 'mm', def: 65 }, { id: 'l3', label: '송액관 ③ 길이', type: 'num', unit: 'm', def: 30 },
       ]},
       { title: '펌프', fields: pumpFields('fp', { h1: 15, h2: 20, h3: STD.foamTank.h3, h3label: '방출구 설계압력 환산수두', h3hint: '기본값 35m는 보조포소화전 노즐선단 방사압력 0.35MPa 기준이에요. 고정포방출구 설계압력이 더 크면 그 값을 넣어 주세요.' }) },
+      { title: '배치도 (방유제·보유공지)', toggle: 'lay_use', note: '1번 탱크는 위에 넣은 지름·높이·배수를 써요.', fields: [
+        { id: 'two', label: '같은 방유제 안에 탱크 2개', type: 'chk', def: true },
+        { id: 'D2', label: '2번 탱크 지름', type: 'num', unit: 'm', def: 20, show: (v) => v.two },
+        { id: 'H2', label: '2번 탱크 높이', type: 'num', unit: 'm', def: 12, show: (v) => v.two },
+        { id: 'X2', label: '2번 탱크 지정수량의 배수', type: 'num', unit: '배', def: 800, wide: true, show: (v) => v.two },
+        { id: 'hiFlash', label: '인화점 200℃ 이상 위험물 (방유제 거리 기준 제외)', type: 'chk', def: false },
+      ]},
     ],
   },
   {
-    id: 'gas', name: '가스계 방호구역', desc: '이산화탄소, 할론, 할로겐화합물·불활성기체, 분말', calc: calcGas,
+    id: 'gas', name: '가스계 소화설비', desc: '이산화탄소, 할론, 할로겐화합물·불활성기체, 분말 (전역·국소)', calc: calcGas,
     sections: [
-      { title: '방호구역', fields: [
-        { id: 'L', label: '가로', type: 'num', unit: 'm', def: 12 },
-        { id: 'W', label: '세로', type: 'num', unit: 'm', def: 8 },
-        { id: 'H', label: '높이', type: 'num', unit: 'm', def: 4 },
-        { id: 'Ao', label: '자동폐쇄장치 없는 개구부', type: 'num', unit: '㎡', def: 1 },
-      ]},
       { title: '소화설비', fields: [
         { id: 'agent', label: '종류', type: 'sel', wide: true, def: 'co2', opts: [['co2', '이산화탄소'], ['halon', '할론 1301'], ['halo', '할로겐화합물'], ['inert', '불활성기체'], ['powder', '분말']] },
-        { id: 'co2fire', label: '화재 종류', type: 'sel', def: 'deep', wide: true, opts: [['surface', '표면화재'], ['deep', '심부화재']], show: (v) => v.agent === 'co2' },
-        { id: 'co2deep', label: '심부화재 대상', type: 'sel', wide: true, def: 'elec', show: (v) => v.agent === 'co2' && v.co2fire === 'deep', opts: () => Object.entries(STD.co2.deep).map(([k, [q, l]]) => [k, `${l} (${q} kg/㎥)`]) },
-        { id: 'corr', label: '설계농도 보정계수', type: 'num', def: 1, show: (v) => v.agent === 'co2' && v.co2fire === 'surface', hint: '설계농도 34% 초과일 때 표에서 찾아 넣어요.' },
-        { id: 'co2b', label: '저장용기 1병 충전량', type: 'num', unit: 'kg', def: STD.co2.bottle, show: (v) => v.agent === 'co2' },
+        { id: 'method', label: '방출방식', type: 'sel', wide: true, def: 'global', show: (v) => v.agent === 'co2' || v.agent === 'powder', opts: [['global', '전역방출방식'], ['local', '국소방출방식']] },
+        { id: 'co2Type', label: '저장방식', type: 'sel', wide: true, def: 'high', show: (v) => v.agent === 'co2', opts: [['high', '고압식'], ['low', '저압식']] },
+        { id: 'co2fire', label: '화재 종류', type: 'sel', def: 'deep', wide: true, opts: [['surface', '표면화재'], ['deep', '심부화재']], show: (v) => v.agent === 'co2' && !isLocal(v) },
+        { id: 'co2deep', label: '심부화재 대상', type: 'sel', wide: true, def: 'elec', show: (v) => v.agent === 'co2' && !isLocal(v) && v.co2fire === 'deep', opts: () => Object.entries(STD.co2.deep).map(([k, [q, l]]) => [k, `${l} (${q} kg/㎥)`]) },
+        { id: 'corr', label: '설계농도 보정계수', type: 'num', def: 1, wide: true, show: (v) => v.agent === 'co2' && !isLocal(v) && v.co2fire === 'surface', hint: '설계농도 34% 초과일 때 표에서 찾아 넣어요.' },
+        { id: 'localFire', label: '화재 형태', type: 'sel', wide: true, def: 'solid', show: (v) => isLocal(v), opts: [['plane', '평면화재 (윗면이 열린 용기, 연소면이 한정되고 비산 우려 없음)'], ['solid', '입면화재 (그 밖의 경우)']] },
+        { id: 'As', label: '방호대상물 표면적 (액표면적)', type: 'num', unit: '㎡', def: 4, wide: true, show: (v) => isLocal(v) && v.localFire === 'plane' },
+        { id: 'co2V', label: '저장용기 내용적', type: 'num', unit: 'L', def: STD.co2.bottleL, show: (v) => v.agent === 'co2' },
+        { id: 'co2F', label: '충전비', type: 'num', unit: 'L/kg', def: 1.5, show: (v) => v.agent === 'co2', hint: () => `고압식 ${STD.co2.fill.high.join('~')}, 저압식 ${STD.co2.fill.low.join('~')}` },
         { id: 'halonKind', label: '방호대상', type: 'sel', wide: true, def: 'general', show: (v) => v.agent === 'halon', opts: () => Object.entries(STD.halon.kinds).map(([k, [q, a, l]]) => [k, `${l} (${q} kg/㎥)`]) },
-        { id: 'halonB', label: '저장용기 1병 충전량', type: 'num', unit: 'kg', def: STD.halon.bottle, show: (v) => v.agent === 'halon' },
+        { id: 'halonKg', label: '저장용기 1병 충전량', type: 'num', unit: 'kg', def: 50, show: (v) => v.agent === 'halon' },
+        { id: 'halonF', label: '충전비', type: 'num', unit: 'L/kg', def: 1.4, show: (v) => v.agent === 'halon', min: () => STD.halon.fill[0], max: () => STD.halon.fill[1], step: 0.01, list: () => [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6], hint: () => `${STD.halon.fill[0]}~${STD.halon.fill[1]} 사이만 넣을 수 있어요.` },
         { id: 'haloAgent', label: '약제', type: 'sel', def: 'HFC-227ea', show: (v) => v.agent === 'halo', opts: () => Object.keys(STD.clean.halo).map((k) => [k, k]) },
         { id: 'inertAgent', label: '약제', type: 'sel', def: 'IG-541', show: (v) => v.agent === 'inert', opts: () => Object.keys(STD.clean.inert).map((k) => [k, k]) },
         { id: 'conc', label: '소화농도', type: 'num', unit: '%', def: 6.7, show: (v) => v.agent === 'halo' || v.agent === 'inert', hint: '약제 제조사 인증값을 넣어 주세요.' },
@@ -499,18 +545,47 @@ const TARGETS = [
         { id: 'inertB', label: '저장용기 1병 약제량', type: 'num', unit: '㎥', def: 15, show: (v) => v.agent === 'inert' },
         { id: 'powderType', label: '분말 종별', type: 'sel', def: '3', show: (v) => v.agent === 'powder', opts: [['1', '제1종'], ['2', '제2종'], ['3', '제3종'], ['4', '제4종']] },
       ]},
-      { title: '분사헤드 배치 (토너먼트)', fields: [
+      { title: '방호구역', show: (v) => !isLocal(v), fields: [
+        { id: 'L', label: '가로', type: 'num', unit: 'm', def: 12 },
+        { id: 'W', label: '세로', type: 'num', unit: 'm', def: 8 },
+        { id: 'H', label: '높이', type: 'num', unit: 'm', def: 4 },
+        { id: 'Ao', label: '자동폐쇄장치 없는 개구부', type: 'num', unit: '㎡', def: 1 },
+      ]},
+      { title: '방호대상물 (입면화재)', show: (v) => isLocal(v) && v.localFire === 'solid', note: '벽까지 거리는 방호대상물 옆면에서 벽까지예요. 벽이 없거나 0.6m보다 멀면 비워두세요.', fields: [
+        { id: 'oL', label: '가로', type: 'num', unit: 'm', def: 2 },
+        { id: 'oW', label: '세로', type: 'num', unit: 'm', def: 1 },
+        { id: 'oH', label: '높이', type: 'num', unit: 'm', def: 1.5 },
+        { id: 'wallH', label: '벽 높이', type: 'num', unit: 'm', def: null, ph: '비우면 방호공간 높이까지' },
+        { id: 'dl', label: '왼쪽 벽까지', type: 'num', unit: 'm', def: null, ph: '없음' },
+        { id: 'dr', label: '오른쪽 벽까지', type: 'num', unit: 'm', def: null, ph: '없음' },
+        { id: 'df', label: '앞쪽 벽까지', type: 'num', unit: 'm', def: null, ph: '없음' },
+        { id: 'db', label: '뒤쪽 벽까지', type: 'num', unit: 'm', def: 0, ph: '없음' },
+      ]},
+      { title: '분사헤드 배치 (토너먼트)', show: (v) => !isLocal(v), fields: [
         { id: 'layout', label: '헤드 수 (가로 × 세로)', type: 'sel', wide: true, def: '4x2', opts: [['2x1', '2개 (2 × 1)'], ['2x2', '4개 (2 × 2)'], ['4x2', '8개 (4 × 2)'], ['4x4', '16개 (4 × 4)'], ['8x4', '32개 (8 × 4)'], ['8x8', '64개 (8 × 8)']] },
       ]},
     ],
   },
   {
-    id: 'parking', name: '주차장·차고', desc: '포헤드, 포워터스프링클러, 호스릴포', calc: (v) => calcFoamHead(v, '주차장·차고'),
-    sections: foamHeadSections({ L: 30, W: 20 }),
-  },
-  {
-    id: 'hangar', name: '항공기 격납고', desc: '포헤드, 포워터스프링클러, 포소화전', calc: (v) => calcFoamHead(v, '항공기 격납고'),
-    sections: foamHeadSections({ L: 60, W: 40 }),
+    id: 'foam', name: '포소화설비', desc: '포헤드, 포워터스프링클러, 압축공기포, 호스릴포', calc: calcFoam,
+    sections: [
+      { title: '장소', fields: [
+        { id: 'place', label: '설치 장소', type: 'sel', wide: true, def: 'parking', opts: [['parking', '차고·주차장'], ['hangar', '항공기 격납고'], ['special', '특수가연물 저장·취급 공장·창고']] },
+        { id: 'L', label: '가로', type: 'num', unit: 'm', def: 30 },
+        { id: 'W', label: '세로', type: 'num', unit: 'm', def: 20 },
+      ]},
+      { title: '설비', fields: [
+        { id: 'sys', label: '종류', type: 'sel', wide: true, def: 'head', opts: [['head', '포헤드설비'], ['fw', '포워터스프링클러설비'], ['caf', '압축공기포소화설비']] },
+        { id: 'agentType', label: '포 약제', type: 'sel', wide: true, def: 'synthetic', show: (v) => v.sys === 'head' && v.place !== 'special', opts: () => [['protein', `단백포 ${STD.foam.rate.protein} L/min·㎡`], ['synthetic', `합성계면활성제포 ${STD.foam.rate.synthetic} L/min·㎡`], ['afff', `수성막포 ${STD.foam.rate.afff} L/min·㎡`]] },
+        { id: 'cafArea', label: '헤드 배치 기준', type: 'sel', wide: true, def: 'special', show: (v) => v.sys === 'caf', opts: () => [['tank', `유류탱크 주위: ${STD.foam.caf.perTank}㎡마다 1개`], ['special', `특수가연물 저장소: ${STD.foam.caf.perSpecial}㎡마다 1개`]] },
+        { id: 'cafDensity', label: '설계방출밀도', type: 'sel', wide: true, def: 'general', show: (v) => v.sys === 'caf', opts: () => [['general', `일반가연물·탄화수소류 ${STD.foam.caf.density.general} L/min·㎡`], ['special', `특수가연물·알코올류·케톤류 ${STD.foam.caf.density.special} L/min·㎡`]] },
+        { id: 'zone', label: '방호구역 면적', type: 'num', unit: '㎡', def: null, ph: '비우면 바닥면적 전체', wide: true, show: (v) => v.sys === 'caf' },
+        { id: 'S', label: '포 약제 농도 S', type: 'sel', opts: [['3', '3%'], ['6', '6%']], def: '3' },
+        { id: 'sensor', label: '자동기동용 감지 스프링클러헤드 사용', type: 'chk', def: false, show: (v) => v.sys !== 'caf' },
+        { id: 'reelN', label: '호스릴포·포소화전 방수구 수', type: 'num', unit: '개', def: 0, wide: true, show: (v) => v.place !== 'special', hint: '없으면 0' },
+      ]},
+      { title: '펌프', fields: pumpFields('fh', { h1: 10, h2: 10, h3: null, h3label: '방출구 설계압력 환산수두', h3ph: '헤드 사양값', h3hint: '헤드(또는 노즐) 설계압력을 수두로 바꿔서 넣어 주세요.' }) },
+    ],
   },
   {
     id: 'spray', name: '물분무', desc: '변압기, 케이블트레이, 주차장 등', calc: calcSpray,
@@ -561,23 +636,6 @@ const TARGETS = [
     ],
   },
 ];
-
-function foamHeadSections(d) {
-  return [
-    { title: '바닥', fields: [
-      { id: 'L', label: '가로', type: 'num', unit: 'm', def: d.L },
-      { id: 'W', label: '세로', type: 'num', unit: 'm', def: d.W },
-      { id: 'zone', label: '방사구역 면적', type: 'num', unit: '㎡', def: null, ph: '비우면 바닥면적 전체', wide: true },
-    ]},
-    { title: '포', fields: [
-      { id: 'headType', label: '헤드', type: 'sel', def: 'head', opts: [['head', '포헤드'], ['fw', '포워터스프링클러']] },
-      { id: 'agentType', label: '포 약제', type: 'sel', def: 'synthetic', opts: () => [['protein', `단백포 ${STD.foamHead.rate.protein}`], ['synthetic', `합성계면활성제포 ${STD.foamHead.rate.synthetic}`], ['afff', `수성막포 ${STD.foamHead.rate.afff}`]] },
-      { id: 'S', label: '포 약제 농도 S', type: 'sel', opts: [['3', '3%'], ['6', '6%']], def: '3' },
-      { id: 'reelN', label: '호스릴포·포소화전 개수', type: 'num', unit: '개', def: 0, hint: '없으면 0' },
-    ]},
-    { title: '펌프', fields: pumpFields('fh', { h1: 10, h2: 10, h3: null, h3label: '방출구 설계압력 환산수두', h3ph: '헤드 사양값', h3hint: '포헤드(또는 포워터스프링클러헤드) 설계압력을 수두로 바꿔서 넣어 주세요.' }) },
-  ];
-}
 
 /* =========================================================
    ④ 계산 — 건축물
@@ -667,8 +725,10 @@ function calcBuilding(v) {
       }
     }
     const nMax = isHigh ? c.nMaxHigh : c.nMax, N = Math.min(nFloor, nMax);
-    const per = c.vol * factor, minutes = 20 * factor;
+    const whIndoor = v.use === 'warehouse' || (v.sp_use && v.sp_rack && v.sp_type !== 'simple');
+    const per = Math.max(c.vol * factor, whIndoor ? c.volWarehouse : 0), minutes = per * 1000 / c.q;
     const Q = N * per, roof = rt.need ? Q * STD.roofRatio : 0, flow = N * c.q;
+    if (whIndoor) steps.push(step({ t: '창고시설 수원 기준', sub: `창고시설 옥내소화전은 1개당 ${c.volWarehouse} ㎥ (130 L/min × 40분)`, ans: `${fx(per)} ㎥` }));
     steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', `가장 많이 설치된 층의 개수 (최대 ${nMax}개)`], [fx(per), `1개당 수원: ${c.q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
     if (rt.need) steps.push(...roofSteps(Q, roof));
     steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${c.q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', '가장 많이 설치된 층의 개수 (개)'], [String(c.q), '1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${c.q}`, ans: `${fx(flow)} L/min` }));
@@ -721,8 +781,11 @@ function calcBuilding(v) {
   /* ── 스프링클러 ── */
   if (v.sp_use) {
     const c = STD.sp, steps = [];
+    const simple = v.sp_type === 'simple';
+    const rack = !simple && !!v.sp_rack;
+    const wh = !simple && (v.use === 'warehouse' || rack);
     const Rkey = v.sp_R === 'auto' ? (v.use === 'apt' ? 'apt' : v.fireproof ? 'fireproof' : 'normal') : v.sp_R;
-    const R = c.R[Rkey];
+    const R = simple ? STD.simple.R : c.R[Rkey];
     let Sx, Sy, spErr = '';
     if (v.sp_layout === 'rect') {
       Sx = v.sp_a;
@@ -741,30 +804,58 @@ function calcBuilding(v) {
       const nx = up(L / Sx), ny = up(W / Sy), perFloor = nx * ny, total = perFloor * floors;
       steps.push(step({ t: '층당 헤드 수', f: 'n = ⌈L ÷ S<sub>x</sub>⌉ × ⌈W ÷ S<sub>y</sub>⌉', sym: [['n', '층당 헤드 수 (개)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['S<sub>x</sub>', '가로 방향 간격 (m)'], ['S<sub>y</sub>', '세로 방향 간격 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(L)} ÷ ${fx(Sx)}⌉ × ⌈${fx(W)} ÷ ${fx(Sy)}⌉ = ${nx} × ${ny}`, ans: `${perFloor}개` }));
       steps.push(step({ t: '전체 헤드 수', f: 'n<sub>T</sub> = n × F', sym: [['n<sub>T</sub>', '전체 헤드 수 (개)'], ['n', '층당 헤드 수 (개)'], ['F', '지상 + 지하 층수 (층)']], sub: `n<sub>T</sub> = ${perFloor} × ${floors}`, ans: `${total}개`, note: '모든 층 평면이 같다고 보고 계산했어요.' }));
-      const bc = v.sp_base > 0 ? { n: v.sp_base, why: '직접 지정' } : spBase(v);
-      const N = Math.min(bc.n, perFloor);
-      steps.push(step({ t: '기준개수', sub: `${bc.why} → ${bc.n}개${perFloor < bc.n ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
-      const per = c.vol * factor, minutes = 20 * factor;
-      const Q = N * per, roof = rt.need ? Q * STD.roofRatio : 0, flow = N * c.q;
-      steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fx(per), `헤드 1개당 수원: ${c.q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
-      if (rt.need) steps.push(...roofSteps(Q, roof));
-      steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${c.q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', '기준개수 (개)'], [String(c.q), '헤드 1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${c.q}`, ans: `${fx(flow)} L/min` }));
+      let N, q, per, minutes, Q, roof, flow, title = '스프링클러', maxSide = c.maxSide;
+      const extraTiles = [], spNotes = [];
+      if (simple) {
+        const [nCase, mins] = STD.simple.cases[v.sp_simpleCase];
+        q = STD.simple.q;
+        N = Math.min(nCase, perFloor); minutes = mins; per = q * minutes / 1000;
+        Q = N * per; roof = 0; flow = N * q; title = '간이스프링클러';
+        steps.push(step({ t: '동시 개방 간이헤드 수', sub: `${v.sp_simpleCase === 'special' ? '근린생활시설·숙박시설·복합건축물' : '일반'} → ${nCase}개${perFloor < nCase ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
+        steps.push(step({ t: '수원', f: 'Q = N × q × T ÷ 1000', sym: [['Q', '수원 (㎥)'], ['N', '동시 개방 간이헤드 수 (개)'], ['q', '헤드 1개당 방수량 (L/min)'], ['T', '방수시간 (min)'], ['1000', 'L → ㎥ 환산']], sub: `Q = ${N} × ${q} × ${minutes} ÷ 1000`, ans: `${fx(Q)} ㎥` }));
+      } else if (wh) {
+        const w = c.warehouse;
+        q = w.q; minutes = rack ? 60 : 20; per = rack ? w.volRack : w.vol; maxSide = w.maxSide;
+        const base = v.sp_base > 0 ? v.sp_base : w.base;
+        N = Math.min(base, perFloor);
+        Q = N * per; roof = rt.need ? Q * STD.roofRatio : 0; flow = N * q;
+        title = rack ? '스프링클러 (랙식 창고)' : '스프링클러 (창고시설)';
+        steps.push(step({ t: '기준개수', sub: `창고시설 라지드롭형: 설치개수가 가장 많은 방호구역 (최대 ${base}개)${perFloor < base ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
+        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fx(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
+        if (rack) {
+          if (bad(v.sp_rackH)) spNotes.push('랙 높이를 넣으면 헤드 설치 단 수가 나와요.');
+          else {
+            const inRack = up(v.sp_rackH / w.rackStep), tiers = inRack + 1;
+            steps.push(step({ t: '헤드 설치 단 수', f: `n<sub>단</sub> = ⌈h ÷ ${w.rackStep}⌉ + 1`, sym: [['n<sub>단</sub>', '헤드 설치 단 수 (천장 포함)'], ['h', '랙 높이 (m)'], [String(w.rackStep), `랙 높이 ${w.rackStep}m 이하마다 설치`], ['1', '천장 1단'], ['⌈ ⌉', '올림']], sub: `n<sub>단</sub> = ⌈${fx(v.sp_rackH)} ÷ ${w.rackStep}⌉ + 1 = ${inRack} + 1`, ans: `${tiers}단` }));
+            extraTiles.push({ l: '헤드 설치 단 수', v: fx(tiers), u: '단' });
+          }
+        }
+      } else {
+        const bc = v.sp_base > 0 ? { n: v.sp_base, why: '직접 지정' } : spBase(v);
+        N = Math.min(bc.n, perFloor); q = c.q; minutes = 20 * factor; per = c.vol * factor;
+        Q = N * per; roof = rt.need ? Q * STD.roofRatio : 0; flow = N * q;
+        steps.push(step({ t: '기준개수', sub: `${bc.why} → ${bc.n}개${perFloor < bc.n ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
+        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fx(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
+      }
+      if (roof > 0) steps.push(...roofSteps(Q, roof));
+      steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', simple ? '동시 개방 헤드 수 (개)' : '기준개수 (개)'], [String(q), '헤드 1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${q}`, ans: `${fx(flow)} L/min` }));
       const p = pump('sp', v, flow);
       cards.push({
-        title: '스프링클러', badge: v.sp_share ? '겸용' : '단독',
+        title, badge: v.sp_share ? '겸용' : '단독',
         tiles: [
           { l: '수평거리 R', v: fx(R), u: 'm' },
           { l: '헤드 간격', v: v.sp_layout === 'rect' ? `${fx(Sx)} × ${fx(Sy)}` : fx(Sx), u: 'm' },
-          { l: '층당 헤드', v: fx(perFloor), u: '개' }, { l: '전체 헤드', v: fx(total), u: '개' },
-          { l: '기준개수', v: fx(N), u: '개' }, { l: '유효수량', v: fx(Q), u: '㎥' },
-          { l: '옥상수조', v: rt.need ? fx(roof) : '제외', u: rt.need ? '㎥' : '' }, { l: '수원 합계', v: fx(Q + roof), u: '㎥', tone: 'key' },
+          { l: '층당 헤드', v: fx(perFloor), u: '개' }, { l: '전체 헤드', v: fx(total), u: '개' }, ...extraTiles,
+          { l: simple ? '동시 개방 헤드' : '기준개수', v: fx(N), u: '개' }, { l: '방수시간', v: fx(minutes), u: '분' }, { l: '유효수량', v: fx(Q), u: '㎥' },
+          { l: '옥상수조', v: roof > 0 ? fx(roof) : (simple ? '해당 없음' : '제외'), u: roof > 0 ? '㎥' : '' }, { l: '수원 합계', v: fx(Q + roof), u: '㎥', tone: 'key' },
           ...pumpTiles(flow, p),
         ],
         warns: [p.warn].filter(Boolean),
+        notes: spNotes,
         steps: [...steps, ...p.steps],
       });
-      pool.push({ name: '스프링클러', share: v.sp_share, Q, roof, flow, H: p.H });
-      cards.push(spDrawingCard(L, W, nx, ny));
+      pool.push({ name: title, share: v.sp_share, Q, roof, flow, H: p.H });
+      cards.push(spDrawingCard(L, W, nx, ny, maxSide, simple ? '' : wh ? '창고시설 전용 구경표는 아직 반영하지 않아서 일반 스프링클러 표로 표시했어요.' : ''));
     }
   }
 
@@ -861,10 +952,11 @@ function spSvg(L, W, P) {
   return `<svg viewBox="0 0 ${VW.toFixed(0)} ${VH.toFixed(0)}" role="img" aria-label="스프링클러 배관 평면도">${o}</svg>`;
 }
 
-function spDrawingCard(L, W, nx, ny) {
+function spDrawingCard(L, W, nx, ny, maxSide = STD.sp.maxSide, extraNote = '') {
   const P = spPlan(L, W, nx, ny);
   const warns = [];
-  if (Math.max(P.nl, P.nr) > STD.sp.maxSide) warns.push(`한쪽 가지배관 헤드가 ${Math.max(P.nl, P.nr)}개로 ${STD.sp.maxSide}개를 넘어요. 교차배관을 더 두거나 구역을 나눠야 해요.`);
+  if (Math.max(P.nl, P.nr) > maxSide) warns.push(`한쪽 가지배관 헤드가 ${Math.max(P.nl, P.nr)}개로 ${maxSide}개를 넘어요. 교차배관을 더 두거나 구역을 나눠야 해요.`);
+  if (extraNote) warns.push(extraNote);
   if (P.nl !== P.nr) warns.push(`헤드 열이 홀수(${nx}열)라서 교차배관을 가운데에서 반 칸 옮겼어요. 왼쪽 ${P.nl}개, 오른쪽 ${P.nr}개예요.`);
   const crossRows = P.cross.map((c, j) => [j === 0 ? '수직주배관 → 1행' : `${j}행 → ${j + 1}행`, `${c.n}개`, `${c.d} mm`]);
   const brText = (arr, side) => arr.length ? `${side} (헤드 ${arr.length}개): ${arr.map((b) => `${b.n}개 → <b>${b.d}</b>`).join(' · ')}` : '';
@@ -914,133 +1006,333 @@ function smokeCard(v, floorA, diag) {
    ⑤ 계산 — 옥외탱크저장소 (포)
    ========================================================= */
 function calcTank(v) {
-  if (bad(v.D)) return { error: '탱크 직경에 0보다 큰 값을 넣어 주세요.' };
+  if (bad(v.D)) return { error: '탱크 지름에 0보다 큰 값을 넣어 주세요.' };
   const c = STD.foamTank, D = v.D, S = Number(v.S) / 100, steps = [];
   let A;
   if (v.roof === 'floating') {
-    if (bad(v.seal) || 2 * v.seal >= D) return { error: '측판~굽도리판 간격은 0보다 크고 직경의 절반보다 작아야 해요.' };
+    if (bad(v.seal) || 2 * v.seal >= D) return { error: '측판~굽도리판 간격은 0보다 크고 지름의 절반보다 작아야 해요.' };
     A = Math.PI / 4 * (D ** 2 - (D - 2 * v.seal) ** 2);
-    steps.push(step({ t: '포 방출 면적 (환상부분)', f: 'A = π/4 × (D² − (D − 2w)²)', sym: [['A', '환상부분 면적 (㎡)'], ['D', '탱크 직경 (m)'], ['w', '측판과 굽도리판 사이 간격 (m)']], sub: `A = π/4 × (${fx(D)}² − (${fx(D)} − 2 × ${fx(v.seal)})²)`, ans: `${fx(A)} ㎡` }));
+    steps.push(step({ t: '포 방출 면적 (환상부분)', f: 'A = π/4 × (D² − (D − 2w)²)', sym: [['A', '환상부분 면적 (㎡)'], ['D', '탱크 지름 (m)'], ['w', '측판과 굽도리판 사이 간격 (m)']], sub: `A = π/4 × (${fx(D)}² − (${fx(D)} − 2 × ${fx(v.seal)})²)`, ans: `${fx(A)} ㎡` }));
   } else {
     A = Math.PI / 4 * D ** 2;
-    steps.push(step({ t: '탱크 액표면적', f: 'A = π/4 × D²', sym: [['A', '액표면적 (㎡)'], ['D', '탱크 직경 (m)']], sub: `A = π/4 × ${fx(D)}²`, ans: `${fx(A)} ㎡` }));
+    steps.push(step({ t: '탱크 액표면적', f: 'A = π/4 × D²', sym: [['A', '액표면적 (㎡)'], ['D', '탱크 지름 (m)']], sub: `A = π/4 × ${fx(D)}²`, ans: `${fx(A)} ㎡` }));
   }
   const tbl = c.outlet[v.outlet][v.flash];
   const sol = v.sol > 0 ? v.sol : tbl[0], rate = v.rate > 0 ? v.rate : tbl[1], T = sol / rate;
   steps.push(step({ t: '방사시간', f: 'T = q ÷ Q', sym: [['T', '방사시간 (min)'], ['q', '단위면적당 포수용액량 (L/㎡)'], ['Q', '방출률 (L/min·㎡)']], sub: `T = ${fx(sol)} ÷ ${fx(rate)}`, ans: `${fx(T)} min` }));
   const Q1 = A * rate * T;
   steps.push(step({ t: '고정포방출구 포수용액량', f: 'Q₁ = A × Q × T', sym: [['Q₁', '고정포방출구 포수용액량 (L)'], ['A', '포 방출 면적 (㎡)'], ['Q', '방출률 (L/min·㎡)'], ['T', '방사시간 (min)']], sub: `Q₁ = ${fx(A)} × ${fx(rate)} × ${fx(T)}`, ans: `${fx(Q1)} L` }));
-  const N = Math.min(n0(v.N), c.hydrantMax), Q2 = N * c.hydrantQ * c.hydrantT;
-  steps.push(step({ t: '보조포소화전 포수용액량', f: `Q₂ = N × ${c.hydrantQ} × ${c.hydrantT}`, sym: [['Q₂', '보조포소화전 포수용액량 (L)'], ['N', `보조포소화전 개수 (최대 ${c.hydrantMax}개)`], [String(c.hydrantQ), '1개당 방사량 (L/min)'], [String(c.hydrantT), '방사시간 (min)']], sub: `Q₂ = ${N} × ${c.hydrantQ} × ${c.hydrantT}`, ans: `${fx(Q2)} L` }));
+  const nOut = 2 * n0(v.Nd) + n0(v.Ns), N = Math.min(nOut, c.hydrantMax), Q2 = N * c.hydrantQ * c.hydrantT;
+  steps.push(step({ t: '보조포소화전 호스접속구 수', f: 'n = 2 × N<sub>쌍</sub> + N<sub>단</sub>', sym: [['n', '호스접속구 수 (개)'], ['N<sub>쌍</sub>', '쌍구형 보조포소화전 개수 (1개에 접속구 2개)'], ['N<sub>단</sub>', '단구형 보조포소화전 개수']], sub: `n = 2 × ${fx(n0(v.Nd))} + ${fx(n0(v.Ns))}`, ans: `${nOut}개${nOut > c.hydrantMax ? ` → 최대 ${c.hydrantMax}개 적용` : ''}` }));
+  steps.push(step({ t: '보조포소화전 포수용액량', f: `Q₂ = N × ${c.hydrantQ} × ${c.hydrantT}`, sym: [['Q₂', '보조포소화전 포수용액량 (L)'], ['N', `호스접속구 수 (최대 ${c.hydrantMax}개)`], [String(c.hydrantQ), '접속구 1개당 방사량 (L/min)'], [String(c.hydrantT), '방사시간 (min)']], sub: `Q₂ = ${N} × ${c.hydrantQ} × ${c.hydrantT}`, ans: `${fx(Q2)} L` }));
   const segs = [[v.d1, v.l1], [v.d2, v.l2], [v.d3, v.l3]].filter(([d, l]) => d > 0 && l > 0);
   const used = segs.filter(([d]) => d > c.lineMin);
-  const parts = used.map(([d, l]) => Math.PI / 4 * (d / 1000) ** 2 * l * 1000);
-  const Q3 = parts.reduce((a, b) => a + b, 0);
+  const Q3 = used.reduce((a, [d, l]) => a + Math.PI / 4 * (d / 1000) ** 2 * l * 1000, 0);
   steps.push(step({ t: '송액관 보정량', f: 'Q₃ = Σ(π/4 × d² × ℓ × 1000)', sym: [['Q₃', '송액관을 채우는 포수용액량 (L)'], ['d', `송액관 내경 (m), ${c.lineMin}mm 초과만`], ['ℓ', '송액관 길이 (m)'], ['1000', '㎥ → L 환산']], sub: used.length ? `Q₃ = ${used.map(([d, l]) => `π/4 × ${fx(d / 1000, 3)}² × ${fx(l)} × 1000`).join(' + ')}` : `Q₃ = 0 (${c.lineMin}mm 초과 송액관 없음)`, ans: `${fx(Q3)} L` }));
   const tot = Q1 + Q2 + Q3, agent = tot * S, water = tot * (1 - S);
   steps.push(step({ t: '포수용액량 합계', f: 'Q<sub>T</sub> = Q₁ + Q₂ + Q₃', sym: [['Q<sub>T</sub>', '포수용액량 합계 (L)']], sub: `Q<sub>T</sub> = ${fx(Q1)} + ${fx(Q2)} + ${fx(Q3)}`, ans: `${fx(tot)} L` }));
   steps.push(step({ t: '포 약제량', f: 'W = Q<sub>T</sub> × S', sym: [['W', '포 약제 저장량 (L)'], ['Q<sub>T</sub>', '포수용액량 합계 (L)'], ['S', '포 약제 농도']], sub: `W = ${fx(tot)} × ${fx(S)}`, ans: `${fx(agent)} L` }));
-  steps.push(step({ t: '수원', f: 'Q<sub>w</sub> = Q<sub>T</sub> × (1 − S)', sym: [['Q<sub>w</sub>', '수원 (L)'], ['Q<sub>T</sub>', '포수용액량 합계 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${fx(tot)} × ${fx(1 - S)}`, ans: `${fx(water)} L (${fx(water / 1000)} ㎥)`, note: '초안: 포수용액에서 약제를 뺀 물의 양으로 봤어요.' }));
+  steps.push(step({ t: '물 (약제 제외)', f: 'Q<sub>w</sub> = Q<sub>T</sub> × (1 − S)', sym: [['Q<sub>w</sub>', '약제를 뺀 물의 양 (L)'], ['Q<sub>T</sub>', '포수용액량 합계 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${fx(tot)} × ${fx(1 - S)}`, ans: `${fx(water)} L` }));
   const flow = A * rate + N * c.hydrantQ;
-  steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = A × Q + N × ${c.hydrantQ}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['A', '포 방출 면적 (㎡)'], ['Q', '방출률 (L/min·㎡)'], ['N', '보조포소화전 개수 (개)']], sub: `Q<sub>p</sub> = ${fx(A)} × ${fx(rate)} + ${N} × ${c.hydrantQ}`, ans: `${fx(flow)} L/min` }));
+  steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = A × Q + N × ${c.hydrantQ}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['A', '포 방출 면적 (㎡)'], ['Q', '고정포방출구 방출률 (L/min·㎡)'], ['N', '보조포소화전 호스접속구 수 (개)'], [String(c.hydrantQ), '접속구 1개당 방사량 (L/min)']], sub: `Q<sub>p</sub> = ${fx(A)} × ${fx(rate)} + ${N} × ${c.hydrantQ}`, ans: `${fx(flow)} L/min` }));
   const p = pump('fp', v, flow, null, '방출구 설계압력 환산수두');
-  return { cards: [{
+  const cards = [{
     title: '옥외탱크저장소 포소화설비',
     tiles: [
-      { l: '포 방출 면적', v: fx(A), u: '㎡' }, { l: '방사시간', v: fx(T), u: 'min' },
-      { l: '포수용액량', v: fx(tot), u: 'L' }, { l: '포 약제량', v: fx(agent), u: 'L', tone: 'key' }, { l: '수원', v: fx(water / 1000), u: '㎥', tone: 'key' },
+      { l: '포 방출 면적', v: fx(A), u: '㎡' }, { l: '방사시간', v: fx(T), u: 'min' }, { l: '보조포 접속구', v: fx(N), u: '개' },
+      { l: '포수용액량', v: fx(tot / 1000), u: '㎥', tone: 'key' }, { l: '포 약제량', v: fx(agent), u: 'L', tone: 'key' }, { l: '물 (약제 제외)', v: fx(water / 1000), u: '㎥' },
       ...pumpTiles(flow, p),
     ],
-    warns: [p.warn, n0(v.N) > c.hydrantMax ? `보조포소화전은 최대 ${c.hydrantMax}개까지만 계산에 넣었어요.` : ''].filter(Boolean),
+    warns: [p.warn].filter(Boolean),
     notes: segs.length > used.length ? [`내경 ${c.lineMin}mm 이하 송액관 ${segs.length - used.length}개는 보정량에서 뺐어요.`] : [],
     steps: [...steps, ...p.steps],
-  }] };
+  }];
+  if (v.lay_use) cards.push(tankLayoutCard(v));
+  return { cards };
+}
+
+/* 보유공지 너비 */
+function openSpace(X, D, H) {
+  const o = STD.openSpace, row = o.tbl.find((r) => X <= r[0]);
+  if (row) {
+    const i = o.tbl.indexOf(row), lo = i === 0 ? null : o.tbl[i - 1][0];
+    return { w: row[1], why: `지정수량 ${fx(X)}배 → ${lo ? `${fx(lo)}배 초과 ` : ''}${fx(row[0])}배 이하` };
+  }
+  const w = Math.min(Math.max(Math.max(D, H), o.min), o.max);
+  return { w, why: `지정수량 ${fx(X)}배 → 4,000배 초과: 지름·높이 중 큰 값 (${o.min}m 이상 ${o.max}m 이하로)` };
+}
+
+/* 방유제·보유공지 배치도 */
+function tankLayoutCard(v) {
+  const c = STD.dike, steps = [], warns = [], title = '탱크 배치 (방유제·보유공지)';
+  const tanks = [{ no: 1, D: v.D, H: v.TH, X: v.TX }];
+  if (v.two) tanks.push({ no: 2, D: v.D2, H: v.H2, X: v.X2 });
+  for (const t of tanks) if (bad(t.D) || bad(t.H) || bad(t.X)) return { title, error: `${t.no}번 탱크의 지름·높이·지정수량 배수에 0보다 큰 값을 넣어 주세요.` };
+  tanks.forEach((t) => {
+    const small = t.D < c.dia;
+    t.dike = v.hiFlash ? 0 : t.H * (small ? c.small : c.big);
+    if (!v.hiFlash) steps.push(step({ t: `${t.no}번 탱크 ~ 방유제 거리`, f: small ? 'ℓ = H × 1/3' : 'ℓ = H × 1/2', sym: [['ℓ', '탱크 옆판에서 방유제까지 최소 거리 (m)'], ['H', '탱크 높이 (m)']], sub: `지름 ${fx(t.D)} m (${small ? `${c.dia}m 미만` : `${c.dia}m 이상`}) → ℓ = ${fx(t.H)} × ${small ? '1/3' : '1/2'}`, ans: `${fx(t.dike)} m` }));
+    const os = openSpace(t.X, t.D, t.H);
+    t.space = os.w;
+    steps.push(step({ t: `${t.no}번 탱크 보유공지`, sub: os.why, ans: `${fx(t.space)} m 이상` }));
+  });
+  let gap = 0;
+  if (tanks.length === 2) {
+    gap = Math.max(tanks[0].space, tanks[1].space);
+    steps.push(step({ t: '두 탱크 사이 거리', f: 'g = max(w₁, w₂)', sym: [['g', '두 탱크 옆판 사이 최소 거리 (m)'], ['w₁', '1번 탱크 보유공지 (m)'], ['w₂', '2번 탱크 보유공지 (m)']], sub: `g = max(${fx(tanks[0].space)}, ${fx(tanks[1].space)})`, ans: `${fx(gap)} m`, note: '탱크 사이 최소 거리는 보유공지로 봤어요.' }));
+  }
+  if (v.hiFlash) warns.push('인화점 200℃ 이상이라 방유제와 탱크 사이 거리 기준은 적용하지 않았어요.');
+
+  // 도면 좌표 (m): 방유제 왼쪽 아래가 (0, 0)
+  const t1 = tanks[0], t2 = tanks[1];
+  const Wd = t1.dike + t1.D + (t2 ? gap + t2.D + t2.dike : t1.dike);
+  const Hd = Math.max(t1.D + 2 * t1.dike, t2 ? t2.D + 2 * t2.dike : 0);
+  const cy = Hd / 2;
+  t1.cx = t1.dike + t1.D / 2;
+  if (t2) t2.cx = t1.dike + t1.D + gap + t2.D / 2;
+  let minX = 0, maxX = Wd, minY = 0, maxY = Hd;
+  tanks.forEach((t) => { const R = t.D / 2 + t.space; minX = Math.min(minX, t.cx - R); maxX = Math.max(maxX, t.cx + R); minY = Math.min(minY, cy - R); maxY = Math.max(maxY, cy + R); });
+  const s = Math.min(700 / (maxX - minX), 400 / (maxY - minY)), pad = 34;
+  const X = (x) => +(pad + (x - minX) * s).toFixed(1), Y = (y) => +(pad + (maxY - y) * s).toFixed(1);
+  const VW = (maxX - minX) * s + 2 * pad, VH = (maxY - minY) * s + 2 * pad;
+  let g = '';
+  tanks.forEach((t) => { g += `<circle class="space" cx="${X(t.cx)}" cy="${Y(cy)}" r="${((t.D / 2 + t.space) * s).toFixed(1)}"/>`; });
+  g += `<rect class="dike" x="${X(0)}" y="${Y(Hd)}" width="${(Wd * s).toFixed(1)}" height="${(Hd * s).toFixed(1)}"/>`;
+  tanks.forEach((t) => {
+    g += `<circle class="tank" cx="${X(t.cx)}" cy="${Y(cy)}" r="${(t.D / 2 * s).toFixed(1)}"/>`;
+    g += `<text class="lk" x="${X(t.cx)}" y="${Y(cy) - 4}" text-anchor="middle">${t.no}번 탱크</text><text x="${X(t.cx)}" y="${Y(cy) + 12}" text-anchor="middle">D ${fx(t.D)} · H ${fx(t.H)} m</text>`;
+  });
+  const dim = (x1, x2, y, label, up) => {
+    if (x2 - x1 <= 0) return '';
+    const yy = Y(y) + (up ? -10 : 10);
+    return `<line class="dimr" x1="${X(x1)}" y1="${yy}" x2="${X(x2)}" y2="${yy}"/><line class="dimr" x1="${X(x1)}" y1="${yy - 4}" x2="${X(x1)}" y2="${yy + 4}"/><line class="dimr" x1="${X(x2)}" y1="${yy - 4}" x2="${X(x2)}" y2="${yy + 4}"/><text class="dt" x="${((X(x1) + X(x2)) / 2).toFixed(1)}" y="${up ? yy - 5 : yy + 13}" text-anchor="middle">${label}</text>`;
+  };
+  g += dim(0, t1.dike, cy, `${fx(t1.dike)} m`, true);
+  if (t2) {
+    g += dim(t1.dike + t1.D, t1.dike + t1.D + gap, cy, `${fx(gap)} m`, true);
+    g += dim(t2.cx + t2.D / 2, Wd, cy, `${fx(t2.dike)} m`, true);
+  } else {
+    g += dim(t1.dike + t1.D, Wd, cy, `${fx(t1.dike)} m`, true);
+  }
+  // 1번 탱크 위쪽 방유제까지
+  const topGap = Hd - (cy + t1.D / 2);
+  if (topGap > 0) {
+    const xx = X(t1.cx);
+    g += `<line class="dimr" x1="${xx}" y1="${Y(Hd)}" x2="${xx}" y2="${Y(cy + t1.D / 2)}"/><text class="dt" x="${xx + 6}" y="${((Y(Hd) + Y(cy + t1.D / 2)) / 2 + 4).toFixed(1)}">${fx(topGap)} m</text>`;
+  }
+  g += `<text class="lk" x="${X(0) + 6}" y="${Y(Hd) + 16}">방유제 ${fx(Wd)} × ${fx(Hd)} m</text>`;
+  const svg = `<svg viewBox="0 0 ${VW.toFixed(0)} ${VH.toFixed(0)}" role="img" aria-label="옥외탱크 배치도">${g}</svg>`;
+  const tiles = [];
+  tanks.forEach((t) => { tiles.push({ l: `${t.no}번 ~ 방유제`, v: v.hiFlash ? '기준 없음' : fx(t.dike), u: v.hiFlash ? '' : 'm' }, { l: `${t.no}번 보유공지`, v: fx(t.space), u: 'm' }); });
+  if (t2) tiles.push({ l: '탱크 사이', v: fx(gap), u: 'm', tone: 'key' });
+  tiles.push({ l: '방유제 최소 크기', v: `${fx(Wd)} × ${fx(Hd)}`, u: 'm' });
+  return {
+    title, tiles, warns,
+    notes: ['탱크를 가로로 나란히 두고, 방유제는 기준 거리를 지키는 가장 작은 직사각형으로 그렸어요. 점선 원은 보유공지 범위예요.', '탱크 사이 최소 거리는 두 탱크 보유공지 중 큰 값이에요.'],
+    extraTop: `<div class="drawing">${svg}</div><div class="legend"><span><i class="lg-dike"></i>방유제</span><span><i class="lg-tank"></i>탱크</span><span><i class="lg-space"></i>보유공지</span><span><i class="lg-dim"></i>최소 거리</span></div>`,
+    steps,
+  };
 }
 
 /* =========================================================
    ⑥ 계산 — 가스계 (+ 토너먼트 배관도)
    ========================================================= */
+function isLocal(v) { return (v.agent === 'co2' || v.agent === 'powder') && v.method === 'local'; }
+
+/* 국소방출 입면화재: 방호공간 (방호대상물 각 부분에서 0.6m로 둘러싼 공간) */
+function localSpace(v) {
+  const g = STD.co2.local.gap;
+  if (bad(v.oL) || bad(v.oW) || bad(v.oH)) return { error: '방호대상물 가로·세로·높이에 0보다 큰 값을 넣어 주세요.' };
+  const sides = [['dl', '왼쪽'], ['dr', '오른쪽'], ['df', '앞쪽'], ['db', '뒤쪽']];
+  const e = {}, wall = {};
+  sides.forEach(([k]) => {
+    const d = v[k];
+    wall[k] = typeof d === 'number' && Number.isFinite(d) && d >= 0 && d <= g;
+    e[k] = wall[k] ? d : g;
+  });
+  const X = v.oL + e.dl + e.dr, Y = v.oW + e.df + e.db, Z = v.oH + g;
+  const V = X * Y * Z, A = 2 * (X + Y) * Z;
+  const wh = v.wallH > 0 ? Math.min(v.wallH, Z) : Z;
+  const face = { dl: Y, dr: Y, df: X, db: X };
+  const parts = sides.filter(([k]) => wall[k]).map(([k, nm]) => ({ nm, w: face[k] }));
+  const a = parts.reduce((s, p) => s + p.w * wh, 0);
+  const steps = [
+    step({ t: '방호공간 크기', f: 'X = L + e<sub>좌</sub> + e<sub>우</sub><br>Y = W + e<sub>앞</sub> + e<sub>뒤</sub><br>Z = H + 0.6', sym: [['X', '방호공간 가로 (m)'], ['Y', '방호공간 세로 (m)'], ['Z', '방호공간 높이 (m)'], ['L', '방호대상물 가로 (m)'], ['W', '방호대상물 세로 (m)'], ['H', '방호대상물 높이 (m)'], ['e', '면마다 더하는 거리: 벽이 없으면 0.6m, 0.6m 안에 벽이 있으면 벽까지 거리']], sub: `X = ${fx(v.oL)} + ${fx(e.dl)} + ${fx(e.dr)} = ${fx(X)} m<br>Y = ${fx(v.oW)} + ${fx(e.df)} + ${fx(e.db)} = ${fx(Y)} m<br>Z = ${fx(v.oH)} + 0.6 = ${fx(Z)} m` }),
+    step({ t: '방호공간 체적', f: 'V = X × Y × Z', sym: [['V', '방호공간 체적 (㎥)']], sub: `V = ${fx(X)} × ${fx(Y)} × ${fx(Z)}`, ans: `${fx(V)} ㎥` }),
+    step({ t: '방호공간 벽 면적 합계', f: 'A = 2 × (X + Y) × Z', sym: [['A', '방호공간 네 옆면 면적 합계 (㎡). 실제로 벽이 없는 면도 벽이 있다고 보고 계산']], sub: `A = 2 × (${fx(X)} + ${fx(Y)}) × ${fx(Z)}`, ans: `${fx(A)} ㎡` }),
+    step({ t: '실제 벽 면적 합계', f: 'a = Σ(벽 있는 면의 너비 × 벽 높이)', sym: [['a', '방호대상물에서 0.6m 안에 실제로 있는 벽 면적 합계 (㎡)']], sub: parts.length ? `a = ${parts.map((p) => `${fx(p.w)} × ${fx(wh)} (${p.nm})`).join(' + ')}` : 'a = 0 (0.6m 안에 벽 없음)', ans: `${fx(a)} ㎡` }),
+  ];
+  // 평면도
+  const s = Math.min(520 / X, 300 / Y), pad = 56;
+  const PX = (x) => +(pad + x * s).toFixed(1), PY = (y) => +(pad + (Y - y) * s).toFixed(1);
+  let o = `<rect class="space" x="${PX(0)}" y="${PY(Y)}" width="${(X * s).toFixed(1)}" height="${(Y * s).toFixed(1)}"/>`;
+  o += `<rect class="box" x="${PX(e.dl)}" y="${PY(e.df + v.oW)}" width="${(v.oL * s).toFixed(1)}" height="${(v.oW * s).toFixed(1)}"/>`;
+  o += `<text class="lk" x="${PX(e.dl + v.oL / 2)}" y="${PY(e.df + v.oW / 2) + 4}" text-anchor="middle">방호대상물 ${fx(v.oL)} × ${fx(v.oW)}</text>`;
+  if (wall.dl) o += `<line class="wall" x1="${PX(0)}" y1="${PY(0)}" x2="${PX(0)}" y2="${PY(Y)}"/>`;
+  if (wall.dr) o += `<line class="wall" x1="${PX(X)}" y1="${PY(0)}" x2="${PX(X)}" y2="${PY(Y)}"/>`;
+  if (wall.df) o += `<line class="wall" x1="${PX(0)}" y1="${PY(0)}" x2="${PX(X)}" y2="${PY(0)}"/>`;
+  if (wall.db) o += `<line class="wall" x1="${PX(0)}" y1="${PY(Y)}" x2="${PX(X)}" y2="${PY(Y)}"/>`;
+  const lbl = (x, y, d) => (d > 0 ? `<text class="dt" x="${x}" y="${y}" text-anchor="middle">${fx(d)}</text>` : '');
+  o += lbl(PX(e.dl / 2), PY(Y / 2) + 4, e.dl) + lbl(PX(X - e.dr / 2), PY(Y / 2) + 4, e.dr);
+  o += lbl(PX(X / 2), PY(e.df / 2) + 4, e.df) + lbl(PX(X / 2), PY(Y - e.db / 2) + 4, e.db);
+  o += `<text class="lk" x="${PX(X / 2)}" y="${PY(Y) - 22}" text-anchor="middle">뒤쪽</text><text class="lk" x="${PX(X / 2)}" y="${PY(0) + 34}" text-anchor="middle">앞쪽</text>`;
+  o += `<text class="lk" x="${PX(0) - 10}" y="${PY(Y / 2) + 4}" text-anchor="end">왼쪽</text><text class="lk" x="${PX(X) + 10}" y="${PY(Y / 2) + 4}">오른쪽</text>`;
+  o += `<text x="${PX(X / 2)}" y="${PY(Y) - 8}" text-anchor="middle">방호공간 ${fx(X)} × ${fx(Y)} m, 높이 ${fx(Z)} m</text>`;
+  const svg = `<svg viewBox="0 0 ${(X * s + 2 * pad).toFixed(0)} ${(Y * s + 2 * pad).toFixed(0)}" role="img" aria-label="국소방출 방호공간 평면도">${o}</svg>`;
+  const card = {
+    title: '방호공간 (위에서 본 평면)',
+    tiles: [{ l: '방호공간 체적 V', v: fx(V), u: '㎥' }, { l: '벽 면적 합계 A', v: fx(A), u: '㎡' }, { l: '실제 벽 면적 a', v: fx(a), u: '㎡' }, { l: 'a ÷ A', v: fx(a / A, 3) }],
+    notes: ['점선이 방호공간이고, 굵은 선이 실제 벽이에요. 숫자는 방호대상물에서 방호공간 경계(또는 벽)까지 거리(m)예요.'],
+    extraTop: `<div class="drawing">${svg}</div><div class="legend"><span><i class="lg-space"></i>방호공간 (0.6m)</span><span><i class="lg-wall"></i>실제 벽</span></div>`,
+  };
+  return { X, Y, Z, V, A, a, steps, card };
+}
+
 function calcGas(v) {
-  if (bad(v.L) || bad(v.W) || bad(v.H)) return { error: '방호구역 가로·세로·높이에 0보다 큰 값을 넣어 주세요.' };
-  const V = v.L * v.W * v.H, Ao = n0(v.Ao);
-  const steps = [step({ t: '방호구역 체적', f: 'V = L × W × H', sym: [['V', '방호구역 체적 (㎥)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['H', '높이 (m)']], sub: `V = ${fx(v.L)} × ${fx(v.W)} × ${fx(v.H)}`, ans: `${fx(V)} ㎥` })];
-  let Wt, unit = 'kg', bottles = null, name = '', bottleNote = '', extraTiles = [];
+  const local = isLocal(v), steps = [], warns = [], extraTiles = [];
   const err = (m) => ({ error: m });
+  let V = 0, Wt, unit = 'kg', bottles = null, bottleNote = '', name = '';
+  const Ao = n0(v.Ao);
+  if (!local) {
+    if (bad(v.L) || bad(v.W) || bad(v.H)) return err('방호구역 가로·세로·높이에 0보다 큰 값을 넣어 주세요.');
+    V = v.L * v.W * v.H;
+    steps.push(step({ t: '방호구역 체적', f: 'V = L × W × H', sym: [['V', '방호구역 체적 (㎥)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['H', '높이 (m)']], sub: `V = ${fx(v.L)} × ${fx(v.W)} × ${fx(v.H)}`, ans: `${fx(V)} ㎥` }));
+  }
+  let space = null;
+  if (local && v.localFire === 'solid') {
+    space = localSpace(v);
+    if (space.error) return err(space.error);
+    steps.push(...space.steps);
+  }
+  if (local && v.localFire === 'plane' && bad(v.As)) return err('방호대상물 표면적에 0보다 큰 값을 넣어 주세요.');
+
+  // 1병당 충전량 = 내용적 ÷ 충전비
+  const perBottle = (Vc, F, range, label) => {
+    if (bad(Vc) || bad(F)) return null;
+    const kg = Vc / F;
+    steps.push(step({ t: '1병당 충전량', f: 'w = V<sub>c</sub> ÷ C', sym: [['w', '1병당 약제량 (kg)'], ['V<sub>c</sub>', '저장용기 내용적 (L)'], ['C', '충전비 (L/kg)']], sub: `w = ${fx(Vc)} ÷ ${fx(F)}`, ans: `${fx(kg)} kg` }));
+    if (F < range[0] || F > range[1]) warns.push(`${label} 충전비는 ${range[0]} 이상 ${range[1]} 이하여야 해요. 지금 ${fx(F)}예요.`);
+    return kg;
+  };
+  const symOpen = [['A', '자동폐쇄장치 없는 개구부 면적 (㎡)'], ['K₂', '개구부 1㎡당 가산량 (kg/㎡)']];
 
   if (v.agent === 'co2') {
-    name = '이산화탄소';
-    if (v.co2fire === 'surface') {
+    const hi = v.co2Type !== 'low', typeName = hi ? '고압식' : '저압식';
+    name = `이산화탄소 (${typeName})`;
+    if (local) {
+      const lc = STD.co2.local, k = lc.k[hi ? 'high' : 'low'];
+      if (v.localFire === 'plane') {
+        Wt = v.As * lc.surface * k;
+        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${lc.surface} × k`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(lc.surface), '표면적 1㎡당 약제량 (kg/㎡)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${fx(v.As)} × ${lc.surface} × ${k}`, ans: `${fx(Wt)} kg` }));
+      } else {
+        const q = lc.X - lc.Y * space.a / space.A;
+        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${lc.X} − ${lc.Y} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${lc.X} − ${lc.Y} × ${fx(space.a)} ÷ ${fx(space.A)}`, ans: `${fx(q, 3)} kg/㎥` }));
+        Wt = space.V * q * k;
+        steps.push(step({ t: '약제량 (국소·입면화재)', f: 'W = V × Q × k', sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${fx(space.V)} × ${fx(q, 3)} × ${k}`, ans: `${fx(Wt)} kg` }));
+      }
+    } else if (v.co2fire === 'surface') {
       const [, k, min] = pickLT(STD.co2.surface, V);
       const base0 = V * k, base = Math.max(base0, min), corr = v.corr > 0 ? v.corr : 1;
       steps.push(step({ t: '기본 약제량 (표면화재)', f: 'W₀ = V × K₁', sym: [['W₀', '기본 약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)']], sub: `W₀ = ${fx(V)} × ${fx(k)} = ${fx(base0)}${base0 < min ? ` → 최저량 ${min} kg 적용` : ''}`, ans: `${fx(base)} kg`, note: `체적 구간에 따라 K₁ = ${k} kg/㎥, 최저량 ${min} kg` }));
       Wt = base * corr + Ao * STD.co2.surfaceOpen;
-      steps.push(step({ t: '약제량', f: 'W = W₀ × N + A × K₂', sym: [['W', '약제량 (kg)'], ['W₀', '기본 약제량 (kg)'], ['N', '설계농도 보정계수'], ['A', '자동폐쇄장치 없는 개구부 면적 (㎡)'], ['K₂', '개구부 1㎡당 가산량 (kg/㎡)']], sub: `W = ${fx(base)} × ${fx(corr)} + ${fx(Ao)} × ${STD.co2.surfaceOpen}`, ans: `${fx(Wt)} kg` }));
+      steps.push(step({ t: '약제량 (전역·표면화재)', f: 'W = W₀ × N + A × K₂', sym: [['W', '약제량 (kg)'], ['W₀', '기본 약제량 (kg)'], ['N', '설계농도 보정계수'], ...symOpen], sub: `W = ${fx(base)} × ${fx(corr)} + ${fx(Ao)} × ${STD.co2.surfaceOpen}`, ans: `${fx(Wt)} kg` }));
     } else {
       const [k, label] = STD.co2.deep[v.co2deep];
       Wt = V * k + Ao * STD.co2.deepOpen;
-      steps.push(step({ t: '약제량 (심부화재)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ['A', '자동폐쇄장치 없는 개구부 면적 (㎡)'], ['K₂', '개구부 1㎡당 가산량 (kg/㎡)']], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${STD.co2.deepOpen}`, ans: `${fx(Wt)} kg`, note: label }));
+      steps.push(step({ t: '약제량 (전역·심부화재)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${STD.co2.deepOpen}`, ans: `${fx(Wt)} kg`, note: label }));
     }
-    if (bad(v.co2b)) return err('저장용기 1병 충전량에 0보다 큰 값을 넣어 주세요.');
-    bottles = up(Wt / v.co2b); bottleNote = `${fx(Wt)} ÷ ${fx(v.co2b)}`;
+    const kg = perBottle(v.co2V, v.co2F, STD.co2.fill[hi ? 'high' : 'low'], typeName);
+    if (kg === null) return err('저장용기 내용적과 충전비에 0보다 큰 값을 넣어 주세요.');
+    bottles = up(Wt / kg); bottleNote = `${fx(Wt)} ÷ ${fx(kg)}`;
   } else if (v.agent === 'halon') {
     name = '할론 1301';
     const [k, kA, label] = STD.halon.kinds[v.halonKind];
     Wt = V * k + Ao * kA;
-    steps.push(step({ t: '약제량', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ['A', '자동폐쇄장치 없는 개구부 면적 (㎡)'], ['K₂', '개구부 1㎡당 가산량 (kg/㎡)']], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg`, note: label }));
-    if (bad(v.halonB)) return err('저장용기 1병 충전량에 0보다 큰 값을 넣어 주세요.');
-    bottles = up(Wt / v.halonB); bottleNote = `${fx(Wt)} ÷ ${fx(v.halonB)}`;
+    steps.push(step({ t: '약제량', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg`, note: label }));
+    const [fMin, fMax] = STD.halon.fill;
+    if (bad(v.halonKg)) return err('저장용기 1병 충전량(kg)에 0보다 큰 값을 넣어 주세요.');
+    if (!(v.halonF >= fMin && v.halonF <= fMax)) return err(`할론 1301 충전비는 ${fMin}~${fMax} 사이로 넣어 주세요.`);
+    const cvol = v.halonKg * v.halonF;
+    steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = w × C', sym: [['V<sub>c</sub>', '저장용기 1병 내용적 (L)'], ['w', '1병당 충전량 (kg)'], ['C', `충전비 (L/kg), ${fMin}~${fMax}`]], sub: `V<sub>c</sub> = ${fx(v.halonKg)} × ${fx(v.halonF)}`, ans: `${fx(cvol)} L` }));
+    extraTiles.push({ l: '용기 1병 내용적', v: fx(cvol), u: 'L' });
+    bottles = up(Wt / v.halonKg); bottleNote = `${fx(Wt)} ÷ ${fx(v.halonKg)}`;
   } else if (v.agent === 'halo' || v.agent === 'inert') {
-    const isHalo = v.agent === 'halo';
+    const isHalo = v.agent === 'halo', cl = STD.clean;
     const key = isHalo ? v.haloAgent : v.inertAgent;
-    const [k1, k2] = (isHalo ? STD.clean.halo : STD.clean.inert)[key];
+    const [k1, k2] = (isHalo ? cl.halo : cl.inert)[key];
     name = `${isHalo ? '할로겐화합물' : '불활성기체'} ${key}`;
     if (bad(v.conc)) return err('소화농도에 0보다 큰 값을 넣어 주세요.');
-    const t = n0(v.t), Ss = k1 + k2 * t, sf = STD.clean.safety[v.cls], C = v.conc * sf;
+    const t = n0(v.t), Ss = k1 + k2 * t, sf = cl.safety[v.cls], C = v.conc * sf;
     if (C >= 100) return err('설계농도가 100% 이상이 됐어요. 소화농도를 확인해 주세요.');
-    steps.push(step({ t: '선형상수', f: 'S = K₁ + K₂ × t', sym: [['S', '소화약제별 선형상수 (㎥/kg)'], ['K₁', '약제 상수'], ['K₂', '약제 상수'], ['t', '방호구역 최소 예상온도 (℃)']], sub: `S = ${k1} + ${k2} × ${fx(t)}`, ans: `${fx(Ss, 4)} ㎥/kg` }));
-    steps.push(step({ t: '설계농도', f: 'C = C₀ × 안전계수', sym: [['C', '설계농도 (%)'], ['C₀', '소화농도 (%)'], ['안전계수', v.cls === 'B' ? 'B급 화재' : 'A·C급 화재']], sub: `C = ${fx(v.conc)} × ${sf}`, ans: `${fx(C)} %` }));
+    steps.push(step({ t: '선형상수', f: 'S = K₁ + K₂ × t', sym: [['S', '소화약제별 선형상수 (㎥/kg)'], ['K₁', `약제 상수 (${key})`], ['K₂', `약제 상수 (${key})`], ['t', '방호구역 최소 예상온도 (℃)']], sub: `S = ${k1} + ${k2} × ${fx(t)}`, ans: `${fx(Ss, 4)} ㎥/kg` }));
+    steps.push(step({ t: '설계농도', f: 'C = C₀ × 안전계수', sym: [['C', '설계농도 (%)'], ['C₀', '소화농도 (%)'], ['안전계수', `${v.cls === 'B' ? 'B급' : 'A·C급'} 화재 ${sf}`]], sub: `C = ${fx(v.conc)} × ${sf}`, ans: `${fx(C)} %` }));
+    const C95 = C * cl.ratio95;
     if (isHalo) {
       Wt = V / Ss * C / (100 - C);
       steps.push(step({ t: '약제량', f: 'W = V ÷ S × C ÷ (100 − C)', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)']], sub: `W = ${fx(V)} ÷ ${fx(Ss, 4)} × ${fx(C)} ÷ ${fx(100 - C)}`, ans: `${fx(Wt)} kg` }));
+      const W95 = V / Ss * C95 / (100 - C95), tt = cl.timeHalo, q = W95 / tt;
+      steps.push(step({ t: '95% 방출량', f: "W' = V ÷ S × 0.95C ÷ (100 − 0.95C)", sym: [["W'", '최소설계농도의 95%에 해당하는 약제량 (kg)'], ['0.95C', '설계농도의 95% (%)']], sub: `W' = ${fx(V)} ÷ ${fx(Ss, 4)} × ${fx(C95)} ÷ ${fx(100 - C95)}`, ans: `${fx(W95)} kg` }));
+      steps.push(step({ t: '방사 유량', f: "q = W' ÷ t", sym: [['q', '방사 유량 (kg/s)'], ["W'", '95% 방출량 (kg)'], ['t', `방사시간: 할로겐화합물 ${tt}초 이내`]], sub: `q = ${fx(W95)} ÷ ${tt}`, ans: `${fx(q)} kg/s` }));
+      extraTiles.push({ l: '방사 유량', v: fx(q), u: 'kg/s' });
       if (bad(v.haloB)) return err('저장용기 1병 충전량에 0보다 큰 값을 넣어 주세요.');
       bottles = up(Wt / v.haloB); bottleNote = `${fx(Wt)} ÷ ${fx(v.haloB)}`;
     } else {
-      const Vs = k1 + k2 * STD.clean.baseTemp;
+      const Vs = k1 + k2 * cl.baseTemp;
       const X = 2.303 * (Vs / Ss) * Math.log10(100 / (100 - C));
       Wt = X * V; unit = '㎥';
       steps.push(step({ t: '20℃ 비체적', f: 'V<sub>s</sub> = K₁ + K₂ × 20', sym: [['V<sub>s</sub>', '20℃에서 소화약제의 비체적 (㎥/kg)']], sub: `V<sub>s</sub> = ${k1} + ${k2} × 20`, ans: `${fx(Vs, 4)} ㎥/kg` }));
-      steps.push(step({ t: '체적당 약제량', f: 'X = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − C))', sym: [['X', '방호구역 1㎥당 약제 부피 (㎥/㎥)'], ['V<sub>s</sub>', '20℃ 비체적 (㎥/kg)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)']], sub: `X = 2.303 × (${fx(Vs, 4)} ÷ ${fx(Ss, 4)}) × log(100 ÷ ${fx(100 - C)})`, ans: `${fx(X, 4)} ㎥/㎥` }));
+      steps.push(step({ t: '1㎥당 약제량', f: 'X = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − C))', sym: [['X', '방호구역 1㎥당 약제 부피 (㎥/㎥)'], ['V<sub>s</sub>', '20℃ 비체적 (㎥/kg)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)'], ['log', '상용로그']], sub: `X = 2.303 × (${fx(Vs, 4)} ÷ ${fx(Ss, 4)}) × log(100 ÷ ${fx(100 - C)})`, ans: `${fx(X, 4)} ㎥/㎥` }));
       steps.push(step({ t: '약제량', f: 'Q = X × V', sym: [['Q', '약제량 (㎥)'], ['X', '1㎥당 약제 부피 (㎥/㎥)'], ['V', '방호구역 체적 (㎥)']], sub: `Q = ${fx(X, 4)} × ${fx(V)}`, ans: `${fx(Wt)} ㎥` }));
+      const X95 = 2.303 * (Vs / Ss) * Math.log10(100 / (100 - C95)), Q95 = X95 * V, tt = cl.timeInert[v.cls], q = Q95 / tt;
+      steps.push(step({ t: '95% 방출량', f: "Q' = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − 0.95C)) × V", sym: [["Q'", '최소설계농도의 95%에 해당하는 약제량 (㎥)'], ['0.95C', '설계농도의 95% (%)']], sub: `Q' = 2.303 × (${fx(Vs, 4)} ÷ ${fx(Ss, 4)}) × log(100 ÷ ${fx(100 - C95)}) × ${fx(V)}`, ans: `${fx(Q95)} ㎥` }));
+      steps.push(step({ t: '방사 유량', f: "q = Q' ÷ t", sym: [['q', '방사 유량 (㎥/s)'], ["Q'", '95% 방출량 (㎥)'], ['t', `방사시간: ${v.cls === 'B' ? 'B급 60초 (1분)' : 'A·C급 120초 (2분)'} 이내`]], sub: `q = ${fx(Q95)} ÷ ${tt}`, ans: `${fx(q, 3)} ㎥/s (${fx(q * 60)} ㎥/min)` }));
+      extraTiles.push({ l: '방사 유량', v: fx(q * 60), u: '㎥/min' });
       if (bad(v.inertB)) return err('저장용기 1병 약제량에 0보다 큰 값을 넣어 주세요.');
       bottles = up(Wt / v.inertB); bottleNote = `${fx(Wt)} ÷ ${fx(v.inertB)}`;
     }
   } else {
-    const [k, kA, fill] = STD.powder[v.powderType];
-    name = `분말 제${v.powderType}종`;
-    Wt = V * k + Ao * kA;
-    steps.push(step({ t: '약제량', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ['A', '자동폐쇄장치 없는 개구부 면적 (㎡)'], ['K₂', '개구부 1㎡당 가산량 (kg/㎡)']], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg` }));
+    const ty = v.powderType, [kG, kA, fill] = STD.powder[ty], [kP, pX, pY] = STD.powderLocal[ty], k = STD.powderLocalK;
+    name = `분말 제${ty}종`;
+    if (local) {
+      if (v.localFire === 'plane') {
+        Wt = v.As * kP * k;
+        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${kP} × ${k}`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(kP), `제${ty}종 표면적 1㎡당 약제량 (kg/㎡)`], [String(k), '할증 계수']], sub: `W = ${fx(v.As)} × ${kP} × ${k}`, ans: `${fx(Wt)} kg` }));
+      } else {
+        const q = pX - pY * space.a / space.A;
+        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${pX} − ${pY} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(pX), `제${ty}종 X 값`], [String(pY), `제${ty}종 Y 값`], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${pX} − ${pY} × ${fx(space.a)} ÷ ${fx(space.A)}`, ans: `${fx(q, 3)} kg/㎥` }));
+        Wt = space.V * q * k;
+        steps.push(step({ t: '약제량 (국소·입면화재)', f: `W = V × Q × ${k}`, sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(k), '할증 계수']], sub: `W = ${fx(space.V)} × ${fx(q, 3)} × ${k}`, ans: `${fx(Wt)} kg` }));
+      }
+    } else {
+      Wt = V * kG + Ao * kA;
+      steps.push(step({ t: '약제량 (전역)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${kG} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg` }));
+    }
     const vol = Wt * fill;
     steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = W × C', sym: [['V<sub>c</sub>', '저장용기 내용적 (L)'], ['W', '약제량 (kg)'], ['C', '충전비 (L/kg)']], sub: `V<sub>c</sub> = ${fx(Wt)} × ${fill}`, ans: `${fx(vol)} L` }));
     extraTiles.push({ l: '저장용기 내용적', v: fx(vol), u: 'L', tone: 'key' });
   }
   if (bottles !== null) steps.push(step({ t: '저장용기 수', f: 'n = ⌈W ÷ w⌉', sym: [['n', '저장용기 수 (병)'], ['W', `약제량 (${unit})`], ['w', `1병당 약제량 (${unit})`], ['⌈ ⌉', '올림']], sub: `n = ⌈${bottleNote}⌉`, ans: `${bottles}병` }));
 
-  const [hx, hy] = v.layout.split('x').map(Number), heads = hx * hy, perHead = Wt / heads;
-  steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${fx(Wt)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
-
-  return { cards: [
-    {
-      title: `${name} 소화설비`,
-      tiles: [
-        { l: '방호구역 체적', v: fx(V), u: '㎥' }, { l: '약제량', v: fx(Wt), u: unit, tone: 'key' },
-        ...(bottles !== null ? [{ l: '저장용기', v: fx(bottles), u: '병', tone: 'key' }] : []), ...extraTiles,
-        { l: '분사헤드', v: fx(heads), u: '개' }, { l: '헤드 1개당', v: fx(perHead), u: unit },
-      ],
-      notes: ['초안: 전역방출방식 기준으로 계산했어요.'],
-      steps,
-    },
-    gasDrawingCard(v.L, v.W, hx, hy),
-  ] };
+  const cards = [];
+  const head = { title: `${name} 소화설비 (${local ? '국소방출' : '전역방출'})`, steps, warns };
+  const tiles = [];
+  if (local) tiles.push(v.localFire === 'plane' ? { l: '방호대상물 표면적', v: fx(v.As), u: '㎡' } : { l: '방호공간 체적', v: fx(space.V), u: '㎥' });
+  else tiles.push({ l: '방호구역 체적', v: fx(V), u: '㎥' });
+  tiles.push({ l: '약제량', v: fx(Wt), u: unit, tone: 'key' });
+  if (bottles !== null) tiles.push({ l: '저장용기', v: fx(bottles), u: '병', tone: 'key' });
+  tiles.push(...extraTiles);
+  if (!local) {
+    const [hx, hy] = v.layout.split('x').map(Number), heads = hx * hy, perHead = Wt / heads;
+    steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${fx(Wt)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
+    tiles.push({ l: '분사헤드', v: fx(heads), u: '개' }, { l: '헤드 1개당', v: fx(perHead), u: unit });
+    head.tiles = tiles;
+    cards.push(head, gasDrawingCard(v.L, v.W, hx, hy));
+  } else {
+    head.tiles = tiles;
+    cards.push(head);
+    if (space) cards.push(space.card);
+  }
+  return { cards };
 }
 
 function gasDrawingCard(L, W, nx, ny) {
@@ -1097,35 +1389,77 @@ function gasDrawingCard(L, W, nx, ny) {
 }
 
 /* =========================================================
-   ⑦ 계산 — 포헤드 (주차장·차고, 항공기 격납고)
+   ⑦ 계산 — 포소화설비 (헤드식)
    ========================================================= */
-function calcFoamHead(v, place) {
+function calcFoam(v) {
   if (bad(v.L) || bad(v.W)) return { error: '가로와 세로에 0보다 큰 값을 넣어 주세요.' };
-  const c = STD.foamHead, A = v.L * v.W, zone = v.zone > 0 ? v.zone : A, S = Number(v.S) / 100, steps = [];
-  const per = v.headType === 'fw' ? c.perHeadFW : c.perHead, headName = v.headType === 'fw' ? '포워터스프링클러헤드' : '포헤드';
-  const heads = up(A / per);
+  const c = STD.foam, A = v.L * v.W, S = Number(v.S) / 100, steps = [], tiles = [], notes = [];
+  const placeName = { parking: '차고·주차장', hangar: '항공기 격납고', special: '특수가연물 저장·취급 공장·창고' }[v.place];
   steps.push(step({ t: '바닥면적', f: 'A = L × W', sym: [['A', '바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${fx(v.L)} × ${fx(v.W)}`, ans: `${fx(A)} ㎡` }));
-  steps.push(step({ t: `${headName} 개수`, f: `n = ⌈A ÷ ${per}⌉`, sym: [['n', `${headName} 개수 (개)`], ['A', '바닥면적 (㎡)'], [String(per), '헤드 1개당 바닥면적 (㎡)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(A)} ÷ ${per}⌉`, ans: `${heads}개` }));
-  const rate = c.rate[v.agentType];
-  const fHead = zone * rate, sHead = fHead * c.time;
-  steps.push(step({ t: '포헤드 방사량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포헤드 포수용액 방사량 (L/min)'], ['A<sub>z</sub>', '방사구역 면적 (㎡)'], ['q', '바닥 1㎡당 방사량 (L/min·㎡)']], sub: `Q₁ = ${fx(zone)} × ${rate}`, ans: `${fx(fHead)} L/min` }));
-  steps.push(step({ t: '포헤드 포수용액량', f: `V₁ = Q₁ × ${c.time}`, sym: [['V₁', '포헤드 포수용액량 (L)'], ['Q₁', '포헤드 방사량 (L/min)'], [String(c.time), '방사시간 (min)']], sub: `V₁ = ${fx(fHead)} × ${c.time}`, ans: `${fx(sHead)} L` }));
-  const Nr = Math.min(n0(v.reelN), c.reelMax), fReel = Nr * c.reelQ, sReel = fReel * c.reelT;
-  if (Nr > 0) {
-    steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${c.reelQ} × ${c.reelT}`, sym: [['V₂', '호스릴포·포소화전 포수용액량 (L)'], ['N', `개수 (최대 ${c.reelMax}개)`], [String(c.reelQ), '1개당 방사량 (L/min)'], [String(c.reelT), '방사시간 (min)']], sub: `V₂ = ${Nr} × ${c.reelQ} × ${c.reelT}`, ans: `${fx(sReel)} L` }));
+  let heads, headName, flowHead, solHead, sysName;
+
+  if (v.sys === 'caf') {
+    sysName = '압축공기포소화설비'; headName = '분사헤드';
+    const per = v.cafArea === 'tank' ? c.caf.perTank : c.caf.perSpecial;
+    heads = up(A / per);
+    steps.push(step({ t: '분사헤드 개수', f: `n = ⌈A ÷ ${per}⌉`, sym: [['n', '분사헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(per), `${v.cafArea === 'tank' ? '유류탱크 주위' : '특수가연물 저장소'} 헤드 1개당 바닥면적 (㎡)`], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(A)} ÷ ${per}⌉`, ans: `${heads}개` }));
+    const q = c.caf.density[v.cafDensity], Az = v.zone > 0 ? v.zone : A;
+    flowHead = Az * q; solHead = flowHead * c.time;
+    steps.push(step({ t: '방출량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방출량 (L/min)'], ['A<sub>z</sub>', '방호구역 면적 (㎡)'], ['q', `설계방출밀도: ${v.cafDensity === 'special' ? '특수가연물·알코올류·케톤류' : '일반가연물·탄화수소류'} (L/min·㎡)`]], sub: `Q₁ = ${fx(Az)} × ${q}`, ans: `${fx(flowHead)} L/min` }));
+  } else {
+    const capped = v.place !== 'hangar';
+    const Az = capped ? Math.min(A, c.zoneMax) : A;
+    steps.push(step({ t: '동시 방사 면적', sub: capped ? `바닥면적 ${fx(A)}㎡ → ${c.zoneMax}㎡를 넘으면 ${c.zoneMax}㎡ 안의 헤드만 동시에 방사` : '항공기 격납고: 격납고 안의 헤드 전체가 동시에 방사', ans: `${fx(Az)} ㎡` }));
+    if (v.sys === 'fw') {
+      sysName = '포워터스프링클러설비'; headName = '포워터스프링클러헤드';
+      heads = up(A / c.perHeadFW);
+      const Nz = up(Az / c.perHeadFW);
+      steps.push(step({ t: '헤드 개수', f: `n = ⌈A ÷ ${c.perHeadFW}⌉`, sym: [['n', '포워터스프링클러헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(c.perHeadFW), '헤드 1개당 바닥면적 (㎡)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(A)} ÷ ${c.perHeadFW}⌉`, ans: `${heads}개` }));
+      steps.push(step({ t: '동시 방사 헤드 수', f: `N = ⌈A<sub>z</sub> ÷ ${c.perHeadFW}⌉`, sym: [['N', '동시 방사 헤드 수 (개)'], ['A<sub>z</sub>', '동시 방사 면적 (㎡)']], sub: `N = ⌈${fx(Az)} ÷ ${c.perHeadFW}⌉`, ans: `${Nz}개` }));
+      flowHead = Nz * c.fwQ; solHead = flowHead * c.time;
+      steps.push(step({ t: '방사량', f: `Q₁ = N × ${c.fwQ}`, sym: [['Q₁', '포수용액 방사량 (L/min)'], ['N', '동시 방사 헤드 수 (개)'], [String(c.fwQ), '헤드 1개당 표준방사량 (L/min)']], sub: `Q₁ = ${Nz} × ${c.fwQ}`, ans: `${fx(flowHead)} L/min` }));
+    } else {
+      sysName = '포헤드설비'; headName = '포헤드';
+      heads = up(A / c.perHead);
+      steps.push(step({ t: '헤드 개수', f: `n = ⌈A ÷ ${c.perHead}⌉`, sym: [['n', '포헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(c.perHead), '헤드 1개당 바닥면적 (㎡)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(A)} ÷ ${c.perHead}⌉`, ans: `${heads}개` }));
+      const rate = v.place === 'special' ? c.rateSpecial : c.rate[v.agentType];
+      const rateWhy = v.place === 'special' ? '특수가연물 저장·취급: 약제 종류와 관계없이' : { protein: '단백포', synthetic: '합성계면활성제포', afff: '수성막포' }[v.agentType];
+      flowHead = Az * rate; solHead = flowHead * c.time;
+      steps.push(step({ t: '방사량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방사량 (L/min)'], ['A<sub>z</sub>', '동시 방사 면적 (㎡)'], ['q', `바닥 1㎡당 방사량: ${rateWhy} (L/min·㎡)`]], sub: `Q₁ = ${fx(Az)} × ${rate}`, ans: `${fx(flowHead)} L/min` }));
+    }
   }
-  const tot = sHead + sReel, agent = tot * S, water = tot * (1 - S), flow = fHead + fReel;
-  steps.push(step({ t: '포 약제량', f: 'W = (V₁ + V₂) × S', sym: [['W', '포 약제량 (L)'], ['V₁', '포헤드 포수용액량 (L)'], ['V₂', '호스릴포·포소화전 포수용액량 (L)'], ['S', '포 약제 농도']], sub: `W = (${fx(sHead)} + ${fx(sReel)}) × ${fx(S)}`, ans: `${fx(agent)} L` }));
-  steps.push(step({ t: '수원', f: 'Q<sub>w</sub> = (V₁ + V₂) × (1 − S)', sym: [['Q<sub>w</sub>', '수원 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${fx(tot)} × ${fx(1 - S)}`, ans: `${fx(water)} L (${fx(water / 1000)} ㎥)`, note: '초안: 포수용액에서 약제를 뺀 물의 양으로 봤어요.' }));
-  steps.push(step({ t: '펌프 토출량', f: 'Q<sub>p</sub> = Q₁ + N × ' + c.reelQ, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['Q₁', '포헤드 방사량 (L/min)'], ['N', '호스릴포·포소화전 개수 (개)']], sub: `Q<sub>p</sub> = ${fx(fHead)} + ${Nr} × ${c.reelQ}`, ans: `${fx(flow)} L/min` }));
+  steps.push(step({ t: `${sysName} 포수용액량`, f: `V₁ = Q₁ × ${c.time}`, sym: [['V₁', '포수용액량 (L)'], ['Q₁', '방사량 (L/min)'], [String(c.time), '방사시간 (min)']], sub: `V₁ = ${fx(flowHead)} × ${c.time}`, ans: `${fx(solHead)} L` }));
+  tiles.push({ l: '바닥면적', v: fx(A), u: '㎡' }, { l: headName, v: fx(heads), u: '개' });
+
+  if (v.sensor && v.sys !== 'caf') {
+    const ns = up(A / c.sensorArea);
+    steps.push(step({ t: '감지용 스프링클러헤드', f: `n<sub>s</sub> = ⌈A ÷ ${c.sensorArea}⌉`, sym: [['n<sub>s</sub>', '자동기동용 감지 스프링클러헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(c.sensorArea), '헤드 1개당 경계면적 (㎡)']], sub: `n<sub>s</sub> = ⌈${fx(A)} ÷ ${c.sensorArea}⌉`, ans: `${ns}개` }));
+    tiles.push({ l: '감지용 헤드', v: fx(ns), u: '개' });
+  }
+
+  let flowReel = 0, solReel = 0;
+  if (v.place !== 'special' && n0(v.reelN) > 0) {
+    const Nr = Math.min(n0(v.reelN), c.reelMax);
+    const small = v.place === 'parking' && A <= c.zoneMax, qr = small ? c.reelQsmall : c.reelQ;
+    flowReel = Nr * qr; solReel = flowReel * c.reelT;
+    steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${qr} × ${c.reelT}`, sym: [['V₂', '호스릴포·포소화전 포수용액량 (L)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], [String(qr), `방수구 1개당 방사량 (L/min)${small ? ', 1개층 바닥면적 200㎡ 이하' : ''}`], [String(c.reelT), '방사시간 (min)']], sub: `V₂ = ${Nr} × ${qr} × ${c.reelT}`, ans: `${fx(solReel)} L` }));
+  }
+  let sol, flow;
+  if (v.place === 'parking' && solReel > 0) {
+    sol = Math.max(solHead, solReel); flow = Math.max(flowHead, flowReel);
+    steps.push(step({ t: '포수용액량 (차고·주차장)', f: 'V = max(V₁, V₂)', sym: [['V', '포수용액량 (L)'], ['V₁', `${sysName} (L)`], ['V₂', '호스릴포·포소화전 (L)']], sub: `V = max(${fx(solHead)}, ${fx(solReel)})`, ans: `${fx(sol)} L`, note: '차고·주차장에 여러 설비를 같이 두면 설비별 수원 중 큰 값을 써요.' }));
+  } else {
+    sol = solHead + solReel; flow = flowHead + flowReel;
+    if (solReel > 0) steps.push(step({ t: '포수용액량 합계', f: 'V = V₁ + V₂', sym: [['V', '포수용액량 합계 (L)']], sub: `V = ${fx(solHead)} + ${fx(solReel)}`, ans: `${fx(sol)} L`, note: '초안: 항공기 격납고는 헤드 설비와 호스릴포를 더했어요.' }));
+  }
+  const agent = sol * S, water = sol * (1 - S);
+  steps.push(step({ t: '포 약제량', f: 'W = V × S', sym: [['W', '포 약제량 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `W = ${fx(sol)} × ${fx(S)}`, ans: `${fx(agent)} L` }));
+  steps.push(step({ t: '물 (약제 제외)', f: 'Q<sub>w</sub> = V × (1 − S)', sym: [['Q<sub>w</sub>', '약제를 뺀 물의 양 (L)']], sub: `Q<sub>w</sub> = ${fx(sol)} × ${fx(1 - S)}`, ans: `${fx(water)} L` }));
+  steps.push(step({ t: '펌프 토출량', sub: v.place === 'parking' && solReel > 0 ? `큰 쪽 설비 기준: max(${fx(flowHead)}, ${fx(flowReel)})` : `${fx(flowHead)}${flowReel ? ` + ${fx(flowReel)}` : ''}`, ans: `${fx(flow)} L/min` }));
   const p = pump('fh', v, flow, null, '방출구 설계압력 환산수두');
-  return { cards: [{
-    title: `${place} 포소화설비`,
-    tiles: [{ l: '바닥면적', v: fx(A), u: '㎡' }, { l: headName, v: fx(heads), u: '개' }, { l: '포 약제량', v: fx(agent), u: 'L', tone: 'key' }, { l: '수원', v: fx(water / 1000), u: '㎥', tone: 'key' }, ...pumpTiles(flow, p)],
-    warns: [p.warn, n0(v.reelN) > c.reelMax ? `호스릴포·포소화전은 최대 ${c.reelMax}개까지만 계산에 넣었어요.` : ''].filter(Boolean),
-    notes: ['초안: 방사구역 면적을 비우면 바닥면적 전체가 동시에 방사된다고 봤어요.'],
-    steps: [...steps, ...p.steps],
-  }] };
+  tiles.push({ l: '포수용액량', v: fx(sol / 1000), u: '㎥', tone: 'key' }, { l: '포 약제량', v: fx(agent), u: 'L', tone: 'key' }, { l: '물 (약제 제외)', v: fx(water / 1000), u: '㎥' }, ...pumpTiles(flow, p));
+  if (n0(v.reelN) > c.reelMax && v.place !== 'special') notes.push(`호스릴포·포소화전 방수구는 최대 ${c.reelMax}개까지만 계산에 넣었어요.`);
+  return { cards: [{ title: `${placeName} ${sysName}`, tiles, warns: [p.warn].filter(Boolean), notes, steps: [...steps, ...p.steps] }] };
 }
 
 /* =========================================================
@@ -1241,19 +1575,34 @@ TARGETS.forEach((t) => { state[t.id] = defaults(t); });
 
 function fieldHTML(f, val) {
   const id = 'f_' + f.id;
-  const hint = f.hint ? `<span class="hint">${f.hint}</span>` : '';
-  if (f.type === 'chk') return `<label class="chk wide" for="${id}"><input type="checkbox" id="${id}" data-k="${f.id}" ${val ? 'checked' : ''}><span>${f.label}${f.hint ? `<br><span class="hint">${f.hint}</span>` : ''}</span></label>`;
+  const hintText = typeof f.hint === 'function' ? f.hint() : f.hint;
+  const hint = hintText ? `<span class="hint">${hintText}</span>` : '';
+  if (f.type === 'chk') return `<label class="chk wide" for="${id}"><input type="checkbox" id="${id}" data-k="${f.id}" ${val ? 'checked' : ''}><span>${f.label}${hintText ? `<br><span class="hint">${hintText}</span>` : ''}</span></label>`;
   if (f.type === 'sel') return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><select id="${id}" data-k="${f.id}">${optsOf(f).map(([k, l]) => `<option value="${k}"${String(val) === String(k) ? ' selected' : ''}>${l}</option>`).join('')}</select>${hint}</label>`;
-  return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><span class="iw"><input type="number" step="any" inputmode="decimal" id="${id}" data-k="${f.id}" value="${val ?? ''}" placeholder="${f.ph || ''}">${f.unit ? `<span class="u">${f.unit}</span>` : ''}</span>${hint}</label>`;
+  const val_ = (x) => (typeof x === 'function' ? x() : x);
+  const lim = `${f.min != null ? ` min="${val_(f.min)}"` : ''}${f.max != null ? ` max="${val_(f.max)}"` : ''} step="${f.step || 'any'}"`;
+  const list = f.list ? `<datalist id="dl_${f.id}">${val_(f.list).map((o) => `<option value="${o}"></option>`).join('')}</datalist>` : '';
+  return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><span class="iw"><input type="number"${lim} inputmode="decimal" id="${id}" data-k="${f.id}" value="${val ?? ''}" placeholder="${f.ph || ''}"${f.list ? ` list="dl_${f.id}"` : ''}>${f.unit ? `<span class="u">${f.unit}</span>` : ''}</span>${list}${hint}</label>`;
 }
 
 function renderTargets() {
   $('#targets').innerHTML = TARGETS.map((t) => `<button type="button" data-t="${t.id}" aria-pressed="${t.id === current}"><b>${t.name}</b><small>${t.desc}</small></button>`).join('');
 }
 
+// 지금 화면에 보이는 입력칸 목록 (바뀌었는지 비교용)
+function layoutKey() {
+  const t = target(), v = state[t.id];
+  return t.sections.map((s) => {
+    if (s.show && !s.show(v)) return '-';
+    if (s.toggle && !v[s.toggle]) return 'off';
+    return s.fields.filter((f) => !f.show || f.show(v)).map((f) => f.id + (f.opts && typeof f.opts === 'function' ? optsOf(f).length : '')).join(',');
+  }).join('|');
+}
+
 function renderInputs() {
   const t = target(), v = state[t.id];
   $('#form').innerHTML = t.sections.map((s) => {
+    if (s.show && !s.show(v)) return '';
     const on = !s.toggle || v[s.toggle];
     const legend = s.toggle
       ? `<legend><input type="checkbox" id="f_${s.toggle}" data-k="${s.toggle}" ${on ? 'checked' : ''} aria-label="${s.title} 계산하기"><label for="f_${s.toggle}">${s.title}</label></legend>`
@@ -1291,31 +1640,45 @@ function renderResults() {
 
 /* 기준값 표 탭 */
 function renderStd() {
-  const s = STD, p = s.indoor.pipe;
+  const s = STD, p = s.indoor.pipe, w = s.sp.warehouse, f = s.foam;
   const groups = [
     ['공통', [
       ['펌프 수동력 상수', `${s.pumpConst}`, 'P = 0.163 × Q(㎥/min) × H(m)'],
-      ['고층건축물 수원 배수', `×${s.highRise.f30}`, `30~49층 또는 높이 ${s.highRise.heightM}m 이상`],
-      ['50층 이상 수원 배수', `×${s.highRise.f50}`, ''],
+      ['방수시간 (옥내소화전·스프링클러)', `29층 이하 20분 / 30~49층 ${20 * s.highRise.f30}분 / 50층 이상 ${20 * s.highRise.f50}분`, `높이 ${s.highRise.heightM}m 이상 고층건축물도 40분`],
       ['옥상수조', '유효수량의 1/3', '제외 조건은 건축물 화면에서 체크'],
     ]],
     ['옥내소화전', [
-      ['1개당 방수량', `${s.indoor.q} L/min`, ''], ['1개당 수원', `${s.indoor.vol} ㎥`, '20분 기준'],
+      ['1개당 방수량', `${s.indoor.q} L/min`, ''],
+      ['1개당 수원', `${s.indoor.vol} ㎥ (20분) / ${fx(s.indoor.vol * s.highRise.f30)} ㎥ (40분) / ${fx(s.indoor.vol * s.highRise.f50)} ㎥ (60분)`, `창고시설은 ${s.indoor.volWarehouse} ㎥`],
       ['수원 계산 최대 개수', `${s.indoor.nMax}개 (고층 ${s.indoor.nMaxHigh}개)`, ''], ['방수압 환산수두 기본값', `${s.indoor.h3} m`, ''],
-      ['수평거리', `${s.indoor.R} m`, `개수 자동 계산: 바닥 대각선 ${2 * s.indoor.R}m 이하면 1개, 넘으면 칸 대각선이 ${2 * s.indoor.R}m 이하가 되는 최소 칸 수`],
+      ['수평거리', `${s.indoor.R} m`, `개수: 바닥 대각선 ${2 * s.indoor.R}m 이하면 1개, 넘으면 칸 대각선이 ${2 * s.indoor.R}m 이하가 되는 최소 칸 수`],
       ['가지배관 최소 구경', `${p.branch} mm (호스릴 ${p.branchReel} mm)`, ''], ['수직배관 최소 구경', `${p.riser} mm (호스릴 ${p.riserReel} mm)`, ''],
       ['연결송수관 겸용 주배관', `${p.mainStandpipe} mm`, ''], ['연결송수관 겸용 방수구 연결 배관', `${p.outletStandpipe} mm`, ''],
     ]],
     ['옥외소화전', [
-      ['1개당 방수량', `${s.outdoor.q} L/min`, ''], ['1개당 수원', `${s.outdoor.vol} ㎥`, '20분 기준'], ['수원 계산 최대 개수', `${s.outdoor.nMax}개`, ''],
-      ['방수압 환산수두 기본값', `${s.outdoor.h3} m`, ''], ['수평거리', `${s.outdoor.R} m`, '개수 자동 계산: 둘레 ÷ 2R (초안 방식)'],
+      ['1개당 방수량', `${s.outdoor.q} L/min`, ''], ['1개당 수원', `${s.outdoor.vol} ㎥`, '20분'], ['수원 계산 최대 개수', `${s.outdoor.nMax}개`, ''],
+      ['방수압 환산수두 기본값', `${s.outdoor.h3} m`, ''], ['수평거리', `${s.outdoor.R} m`, '개수: 둘레 ÷ 2R (초안 방식)'],
     ]],
     ['스프링클러', [
-      ['헤드 1개당 방수량', `${s.sp.q} L/min`, ''], ['헤드 1개당 수원', `${s.sp.vol} ㎥`, '20분 기준'], ['방수압 환산수두 기본값', `${s.sp.h3} m`, ''],
+      ['헤드 1개당 방수량', `${s.sp.q} L/min`, ''],
+      ['헤드 1개당 수원', `${s.sp.vol} ㎥ (20분) / ${fx(s.sp.vol * s.highRise.f30)} ㎥ (40분) / ${fx(s.sp.vol * s.highRise.f50)} ㎥ (60분)`, ''],
+      ['방수압 환산수두 기본값', `${s.sp.h3} m`, ''],
       ['수평거리 R', `무대부·특수가연물 ${s.sp.R.stage} / 랙식 창고 ${s.sp.R.rack} / 아파트 세대 ${s.sp.R.apt} / 내화구조 ${s.sp.R.fireproof} / 그 외 ${s.sp.R.normal} m`, ''],
       ['기준개수', `아파트 ${s.sp.base.apt} / 11층 이상·지하가 ${s.sp.base.high} / 공장(특수가연물) ${s.sp.base.factorySpecial} / 공장 ${s.sp.base.factory} / 판매 ${s.sp.base.sales} / 근생·운수·복합 ${s.sp.base.neighborhood} / 그 밖 8m 이상 ${s.sp.base.highMount} · 8m 미만 ${s.sp.base.normal}`, '설치개수가 더 적으면 설치개수'],
       ['교차배관 최소 구경', `${s.sp.crossMin} mm`, ''], ['수직배수배관 구경', `${s.sp.drainMin} mm`, ''], ['한쪽 가지배관 헤드', `${s.sp.maxSide}개 이하`, '토너먼트 방식 아님'],
       ['헤드 수별 구경 (폐쇄형)', s.sp.pipe.map(([n, d]) => `${n === Infinity ? '그 이상' : n + '개 이하'} ${d}`).join(' / '), '단위 mm'],
+    ]],
+    ['스프링클러 (창고시설, 라지드롭형)', [
+      ['헤드 1개당 방수량', `${w.q} L/min`, ''],
+      ['헤드 1개당 수원', `${w.vol} ㎥ (20분) / 랙식 ${w.volRack} ㎥ (60분)`, ''],
+      ['기준개수', `${w.base}개`, '설치개수가 더 적으면 설치개수'],
+      ['한쪽 가지배관 헤드', `${w.maxSide}개 이하`, ''],
+      ['랙식 헤드 단 수', `⌈랙 높이 ÷ ${w.rackStep}⌉ + 1 (천장)`, `랙 높이 ${w.rackStep}m 이하마다`],
+    ]],
+    ['간이스프링클러', [
+      ['수원 (일반)', `${s.simple.cases.normal[0]}개 × ${s.simple.q} L/min × ${s.simple.cases.normal[1]}분`, ''],
+      ['수원 (근린생활시설·숙박시설·복합건축물)', `${s.simple.cases.special[0]}개 × ${s.simple.q} L/min × ${s.simple.cases.special[1]}분`, ''],
+      ['수평거리', `${s.simple.R} m`, '헤드 수·도면 계산용'],
     ]],
     ['거실제연', [
       ['400㎡ 미만', `바닥 1㎡당 ${s.smoke.perM2} ㎥/min, 최저 ${fx(s.smoke.minSmall)} ㎥/h`, ''],
@@ -1325,37 +1688,50 @@ function renderStd() {
       ['배출기 동력 상수', `${s.smoke.pConst}`, 'P = Pt × Q ÷ (6120 × η) × K'],
     ]],
     ['옥외탱크저장소 포', [
-      ['보조포소화전', `1개당 ${s.foamTank.hydrantQ} L/min × ${s.foamTank.hydrantT}분, 최대 ${s.foamTank.hydrantMax}개`, ''],
+      ['보조포소화전', `호스접속구 1개당 ${s.foamTank.hydrantQ} L/min × ${s.foamTank.hydrantT}분, 최대 ${s.foamTank.hydrantMax}개`, '쌍구형은 접속구 2개'],
       ['송액관 보정량', `내경 ${s.foamTank.lineMin}mm 초과만`, ''],
-      ['방출구 설계압력 환산수두 기본값', `${s.foamTank.h3} m`, '보조포소화전 노즐선단 방사압력 0.35MPa 기준. 포헤드·물분무는 헤드 사양값 입력'],
+      ['방출구 설계압력 환산수두 기본값', `${s.foamTank.h3} m`, '보조포소화전 노즐선단 방사압력 0.35MPa 기준'],
       ['고정포방출구 [포수용액량 L/㎡, 방출률 L/min·㎡]', Object.entries(s.foamTank.outlet).map(([k, o]) => `${k === 'special' ? '특형' : k + '형'}: ${o.lt21.join('/')} · ${o.f21to70.join('/')} · ${o.ge70.join('/')}`).join('<br>'), '인화점 21℃ 미만 · 21~70℃ · 70℃ 이상 순'],
-      ['수원 산정', '포수용액량 × (1 − 농도)', '초안 방식'],
+      ['펌프 토출량', '고정포방출구 방출량 + 보조포 접속구 수 × 400 L/min', ''],
     ]],
-    ['포헤드 (주차장·차고·항공기 격납고)', [
-      ['1㎡당 방사량', `단백포 ${s.foamHead.rate.protein} / 합성계면활성제포 ${s.foamHead.rate.synthetic} / 수성막포 ${s.foamHead.rate.afff} L/min·㎡`, `방사시간 ${s.foamHead.time}분`],
-      ['헤드 1개당 바닥면적', `포헤드 ${s.foamHead.perHead}㎡ / 포워터스프링클러 ${s.foamHead.perHeadFW}㎡`, ''],
-      ['호스릴포·포소화전', `1개당 ${s.foamHead.reelQ} L/min × ${s.foamHead.reelT}분, 최대 ${s.foamHead.reelMax}개`, '항공기 격납고는 따로 확인 필요'],
+    ['옥외탱크 배치', [
+      ['방유제 ~ 탱크 옆판', `지름 ${s.dike.dia}m 미만: 높이 × 1/3 / ${s.dike.dia}m 이상: 높이 × 1/2`, '인화점 200℃ 이상은 제외'],
+      ['보유공지', s.openSpace.tbl.map(([x, m]) => `${fx(x)}배 이하 ${m}m`).join(' / ') + ` / 4,000배 초과: 지름·높이 중 큰 값 (${s.openSpace.min}~${s.openSpace.max}m)`, ''],
+      ['탱크 사이 최소 거리', '보유공지 (두 탱크 중 큰 값)', ''],
+    ]],
+    ['포소화설비 (헤드식)', [
+      ['포헤드 1㎡당 방사량', `차고·주차장·항공기 격납고: 단백포 ${f.rate.protein} / 합성계면활성제포 ${f.rate.synthetic} / 수성막포 ${f.rate.afff} · 특수가연물: 모두 ${f.rateSpecial} L/min·㎡`, `방사시간 ${f.time}분`],
+      ['동시 방사 면적', `바닥면적 ${f.zoneMax}㎡ 초과 시 ${f.zoneMax}㎡`, '항공기 격납고는 전체 (초안)'],
+      ['헤드 1개당 바닥면적', `포헤드 ${f.perHead}㎡ / 포워터스프링클러 ${f.perHeadFW}㎡ / 압축공기포: 유류탱크 주위 ${f.caf.perTank}㎡, 특수가연물 저장소 ${f.caf.perSpecial}㎡ / 감지용 스프링클러헤드 ${f.sensorArea}㎡`, ''],
+      ['포워터스프링클러 표준방사량', `헤드 1개당 ${f.fwQ} L/min`, ''],
+      ['압축공기포 설계방출밀도', `일반가연물·탄화수소류 ${f.caf.density.general} / 특수가연물·알코올류·케톤류 ${f.caf.density.special} L/min·㎡`, `${f.time}분`],
+      ['호스릴포·포소화전', `방수구 1개당 ${f.reelQ} L/min (200㎡ 이하 층 ${f.reelQsmall}) × ${f.reelT}분, 최대 ${f.reelMax}개`, '차고·주차장은 설비별 수원 중 큰 값'],
     ]],
     ['물분무', [
       ...Object.values(s.spray.kinds).map((k) => [k.label, `${k.q} L/min·㎡`, '']),
       ['방사시간', `${s.spray.time}분`, ''],
     ]],
     ['이산화탄소', [
-      ['표면화재 [체적 미만, kg/㎥, 최저량 kg]', s.co2.surface.map(([v_, k, m]) => `${v_ === Infinity ? '그 이상' : v_ + '㎥ 미만'} ${k} (${m})`).join(' / '), ''],
-      ['표면화재 개구부 가산', `${s.co2.surfaceOpen} kg/㎡`, ''],
-      ['심부화재', Object.values(s.co2.deep).map(([k, l]) => `${l} ${k}`).join(' / '), 'kg/㎥'],
-      ['심부화재 개구부 가산', `${s.co2.deepOpen} kg/㎡`, ''], ['1병 충전량 기본값', `${s.co2.bottle} kg`, ''],
+      ['전역·표면화재 [체적 미만, kg/㎥, 최저량 kg]', s.co2.surface.map(([v_, k, m]) => `${v_ === Infinity ? '그 이상' : v_ + '㎥ 미만'} ${k} (${m})`).join(' / '), `개구부 ${s.co2.surfaceOpen} kg/㎡`],
+      ['전역·심부화재', Object.values(s.co2.deep).map(([k, l]) => `${l} ${k}`).join(' / '), `kg/㎥, 개구부 ${s.co2.deepOpen} kg/㎡`],
+      ['국소·평면화재', `표면적 1㎡당 ${s.co2.local.surface} kg × 고압식 ${s.co2.local.k.high} / 저압식 ${s.co2.local.k.low}`, ''],
+      ['국소·입면화재', `방호공간 1㎥당 ${s.co2.local.X} − ${s.co2.local.Y} × a/A (kg) × 고압식 ${s.co2.local.k.high} / 저압식 ${s.co2.local.k.low}`, `방호공간: 방호대상물에서 ${s.co2.local.gap}m`],
+      ['충전비', `고압식 ${s.co2.fill.high.join('~')} / 저압식 ${s.co2.fill.low.join('~')}`, `저장용기 기본 ${s.co2.bottleL} L`],
     ]],
     ['할론 1301', [
       ...Object.values(s.halon.kinds).map(([k, a, l]) => [l, `${k} kg/㎥, 개구부 ${a} kg/㎡`, '']),
-      ['1병 충전량 기본값', `${s.halon.bottle} kg`, ''],
+      ['충전비', s.halon.fill.join('~'), '1병 충전량(kg)은 직접 입력'],
     ]],
-    ['할로겐화합물 및 불활성기체 [K₁, K₂]', [
-      ...Object.entries(s.clean.halo).map(([k, [a, b]]) => [k, `${a}, ${b}`, '할로겐화합물']),
-      ...Object.entries(s.clean.inert).map(([k, [a, b]]) => [k, `${a}, ${b}`, '불활성기체']),
+    ['할로겐화합물 및 불활성기체', [
+      ...Object.entries(s.clean.halo).map(([k, [a, b]]) => [k, `K₁ ${a}, K₂ ${b}`, '할로겐화합물']),
+      ...Object.entries(s.clean.inert).map(([k, [a, b]]) => [k, `K₁ ${a}, K₂ ${b}`, '불활성기체']),
       ['안전계수', `A·C급 ${s.clean.safety.AC} / B급 ${s.clean.safety.B}`, ''],
+      ['95% 방출 시간', `할로겐화합물 ${s.clean.timeHalo}초 / 불활성기체 A·C급 ${s.clean.timeInert.AC}초, B급 ${s.clean.timeInert.B}초`, '최소설계농도의 95%'],
     ]],
-    ['분말 [kg/㎥, 개구부 kg/㎡, 충전비 L/kg]', Object.entries(s.powder).map(([k, a]) => [`제${k}종`, a.join(', '), ''])],
+    ['분말', [
+      ...Object.entries(s.powder).map(([k, a]) => [`제${k}종 전역`, `${a[0]} kg/㎥, 개구부 ${a[1]} kg/㎡, 충전비 ${a[2]} L/kg`, '']),
+      ...Object.entries(s.powderLocal).map(([k, a]) => [`제${k}종 국소`, `평면 ${a[0]} kg/㎡ / 입면 ${a[1]} − ${a[2]} × a/A kg/㎥`, `× ${s.powderLocalK}`]),
+    ]],
     ['소화수조·저수조', [
       ['기준면적', `1·2층 합계 ${fx(s.cistern.bigArea)}㎡ 이상 ${fx(s.cistern.baseBig)}㎡ / 그 밖 ${fx(s.cistern.baseNormal)}㎡`, `기준면적마다 ${s.cistern.unit}㎥`],
       ['흡수관투입구', '80㎥ 미만 1개 / 80㎥ 이상 2개', ''], ['채수구', '40㎥ 미만 1개 / 100㎥ 미만 2개 / 100㎥ 이상 3개', ''],
@@ -1367,7 +1743,7 @@ function renderStd() {
       ['내화구조·불연재료 마감', `기준면적 ×${s.ext.fireproofMul}`, ''],
     ]],
   ];
-  $('#view-std').innerHTML = `<p class="banner" style="margin:0">아래 값은 모두 검토 전 초안이에요. 틀린 값이 있으면 알려주세요. 코드 맨 위 <b>STD</b> 부분의 숫자만 바꾸면 계산에도 바로 반영돼요.</p>`
+  $('#view-std').innerHTML = `<p class="banner" style="margin:0">아래 값은 검토 중인 초안이에요. 틀린 값이 있으면 알려주세요. 코드 맨 위 <b>STD</b> 부분의 숫자만 바꾸면 계산에도 바로 반영돼요.</p>`
     + groups.map(([g, rows]) => `<section><h2>${g}</h2>${table(['항목', '값', '비고'], rows)}</section>`).join('');
 }
 
@@ -1387,11 +1763,11 @@ $('#form').addEventListener('input', (e) => {
 $('#form').addEventListener('change', (e) => {
   const k = e.target.dataset.k;
   if (!k || e.target.type === 'number') return;
+  const before = layoutKey();
   state[current][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-  const focusId = e.target.id;
-  renderInputs(); renderResults();
-  const el = document.getElementById(focusId);
-  if (el) el.focus();
+  // 보이는 입력칸이 바뀔 때만 다시 그려요. 고른 선택란을 다시 그리거나 포커스를 옮기면 모바일에서 목록이 한 번 더 떠요.
+  if (layoutKey() !== before) renderInputs();
+  renderResults();
 });
 $('#results').addEventListener('toggle', (e) => {
   const d = e.target;
