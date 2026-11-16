@@ -111,7 +111,8 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .warns { color: var(--warn); }
 .notes { color: var(--muted); }
 .err { color: var(--accent); font-weight: 500; margin: 0; }
-details.steps > summary { cursor: pointer; font-weight: 500; font-size: 14px; color: var(--muted); }
+details.steps > summary { cursor: pointer; font-weight: 500; font-size: 14px; color: var(--muted); width: fit-content; padding: 4px 0; }
+details.steps > summary:hover { color: var(--ink); }
 .step-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; margin-top: 10px; }
 .step { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; }
 .step-t { font-size: 13px; font-weight: 700; }
@@ -1223,6 +1224,7 @@ function calcExt(v) {
    ⑨ 화면 그리기
    ========================================================= */
 const state = {};
+const openSteps = new Set();   // 사용자가 펼친 '계산 과정' (값을 바꿔도 펼친 채로 유지)
 let current = TARGETS[0].id;
 const target = () => TARGETS.find((t) => t.id === current);
 const optsOf = (f) => (typeof f.opts === 'function' ? f.opts() : f.opts);
@@ -1274,7 +1276,7 @@ function cardHTML(c) {
     ${c.warns && c.warns.length ? `<ul class="warns">${c.warns.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
     ${c.extraTop || ''}
     ${c.notes && c.notes.length ? `<ul class="notes">${c.notes.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
-    ${c.steps && c.steps.length ? `<details class="steps" open><summary>계산 과정 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
+    ${c.steps && c.steps.length ? `<details class="steps" data-card="${c.title}"${openSteps.has(c.title) ? ' open' : ''}><summary>계산 과정 보기 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
     ${c.extra || ''}
   </article>`;
 }
@@ -1391,6 +1393,11 @@ $('#form').addEventListener('change', (e) => {
   const el = document.getElementById(focusId);
   if (el) el.focus();
 });
+$('#results').addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (!d.matches || !d.matches('details.steps')) return;
+  if (d.open) openSteps.add(d.dataset.card); else openSteps.delete(d.dataset.card);
+}, true);
 function showTab(std) {
   $('#tab-calc').setAttribute('aria-selected', String(!std));
   $('#tab-std').setAttribute('aria-selected', String(std));
