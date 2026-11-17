@@ -104,6 +104,43 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .card-h h3 { margin: 0; font-size: 18px; }
 .badge { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--soft); color: var(--muted); }
 .badge.on { background: var(--accent); color: var(--accent-ink); }
+/* 결과 묶음 행 */
+.res-hint { margin: 0; font-size: 13px; color: var(--muted); }
+.rows { display: grid; }
+.rrow { display: grid; grid-template-columns: 74px minmax(150px, max-content) 1fr; align-items: center; column-gap: 18px; row-gap: 6px; padding: 12px 0; border-top: 1px solid var(--line); }
+.rows > .rrow:first-child { border-top: 0; padding-top: 2px; }
+.rrow.nomain .subs { grid-column: 2 / -1; }
+.rows.flat .rrow { grid-template-columns: 1fr; padding: 0; }
+.rows.flat .rrow .subs { grid-column: 1; }
+.rg { font-size: 13px; font-weight: 700; color: var(--muted); }
+.subs { display: flex; flex-wrap: wrap; gap: 6px 26px; align-items: flex-end; }
+.val { justify-self: start; display: grid; gap: 1px; text-align: left; font: inherit; color: inherit; background: none; border: 0; padding: 4px 8px; margin: -4px -8px; border-radius: 7px; }
+.val .vl { font-size: 12px; color: var(--muted); }
+.val .vv { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.val .vv small { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+.val.main .vv { font-size: 26px; line-height: 1.2; color: var(--accent); }
+.val.sub .vv { font-size: 16px; }
+.val.mid .vv { font-size: 18px; }
+.val.sub.key .vv, .val.mid.key .vv { color: var(--accent); }
+.val.has { cursor: pointer; }
+.val.has .vv { text-decoration: underline dotted; text-decoration-color: var(--line); text-underline-offset: 5px; text-decoration-thickness: 2px; }
+.val.has:hover { background: var(--soft); }
+.val.has:hover .vv { text-decoration-color: var(--muted); }
+.val.has.on { background: var(--soft); box-shadow: inset 0 0 0 1px var(--line); }
+.val.has.on .vv { text-decoration-color: var(--accent); }
+.explain { margin: 0 0 10px; padding: 12px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); display: grid; gap: 10px; }
+.ex-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.ex-x { font: inherit; font-size: 13px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.ex-x:hover { color: var(--ink); }
+.step-list.chain { margin-top: 0; counter-reset: st; }
+.step-list.chain .step { background: var(--surface); }
+.step-list.chain .step-t::before { counter-increment: st; content: counter(st); display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 11px; }
+@media (max-width: 560px) {
+  .rrow { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 22px; padding: 10px 0; }
+  .rg { flex-basis: 100%; }
+  .subs { gap: 4px 18px; }
+  .val.main .vv { font-size: 24px; }
+}
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
 .tile { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; align-content: start; }
 .tile .tl { font-size: 12px; color: var(--muted); }
@@ -192,7 +229,7 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
       <button type="button" role="tab" id="tab-std" aria-selected="false">기준값 표</button>
     </div>
   </header>
-  <p class="banner">v0.4 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
+  <p class="banner">v0.5 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
 
   <section id="view-calc">
     <nav class="targets" id="targets" aria-label="대상 선택"></nav>
@@ -348,13 +385,14 @@ const sum = (arr, k) => arr.reduce((a, b) => a + n0(b[k]), 0);
 
 // 계산 과정 한 칸: 제목, 식, 기호마다 뜻, 대입, 답
 function step(o) {
-  return `<div class="step">
+  const html = `<div class="step">
     <div class="step-t">${o.t}</div>
     ${o.f ? `<div class="f-main">${o.f}</div>` : ''}
     ${o.sym ? `<dl class="f-sym">${o.sym.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>` : ''}
     ${o.sub ? `<div class="f-sub">${o.sub}${o.ans ? ` = <b>${o.ans}</b>` : ''}</div>` : ''}
     ${o.note ? `<p class="f-note">${o.note}</p>` : ''}
   </div>`;
+  return { t: o.t.replace(/<[^>]+>/g, ''), html, toString() { return html; } };
 }
 
 // 펌프: 전양정 → 수동력 → 축동력 → 전동기 동력
@@ -445,7 +483,7 @@ const TARGETS = [
         { id: 'rt_pressure', label: '가압수조를 가압송수장치로 설치', type: 'chk', def: false },
         { id: 'rt_freeze', label: '학교·공장·창고시설로 동결 우려가 있어 기동스위치에 보호판을 붙여 소화전함 안에 설치', type: 'chk', def: false },
       ]},
-      { title: '옥내소화전', toggle: 'in_use', toggleDef: false, fields: [
+      { title: '옥내소화전', toggle: 'in_use', toggleDef: true, fields: [
         { id: 'in_n', label: '가장 많이 설치된 층의 개수', type: 'num', unit: '개', def: null, ph: '비우면 가로·세로로 자동 계산', wide: true },
         { id: 'in_reel', label: '호스릴 옥내소화전', type: 'chk', def: false },
         ...pumpFields('in', { h1: 25, h2: 8, h3: STD.indoor.h3, h2label: '배관·호스 마찰손실' }),
@@ -481,7 +519,7 @@ const TARGETS = [
         { id: 'sm_eta', label: '배출기 효율 η', type: 'num', unit: '%', def: 55 },
         { id: 'sm_k', label: '여유율 K', type: 'num', def: 1.1 },
       ]},
-      { title: '겸용 펌프 (최종값)', show: (v) => v.in_use || v.out_use || v.sp_use, note: '겸용으로 체크한 설비를 합칠 때 쓰는 펌프 효율이에요.', fields: [
+      { title: '겸용 펌프 (최종값)', show: (v) => [v.in_use && v.in_share, v.out_use && v.out_share, v.sp_use && v.sp_share].filter(Boolean).length >= 2, note: '겸용으로 체크한 설비를 합칠 때 쓰는 펌프 효율이에요.', fields: [
         { id: 'sum_eta', label: '펌프 효율 η', type: 'num', unit: '%', def: 65 },
         { id: 'sum_k', label: '전달계수 K', type: 'num', def: 1.1 },
       ]},
@@ -693,7 +731,7 @@ function calcBuilding(v) {
   const cards = [], pool = [];
 
   cards.push({
-    title: '건물 개요',
+    title: '건물 개요', flat: true,
     tiles: [
       { l: '한 층 바닥면적', v: fx(A), u: '㎡' },
       { l: '연면적 (층별 동일 가정)', v: fx(A * floors), u: '㎡' },
@@ -868,7 +906,7 @@ function calcBuilding(v) {
 
   /* ── 최종값 (겸용 합산) ── */
   const sh = pool.filter((p) => p.share), solo = pool.filter((p) => !p.share);
-  if (sh.length) {
+  if (sh.length >= 2) {
     const Q = sum(sh, 'Q'), roof = sum(sh, 'roof'), flow = sum(sh, 'flow'), H = Math.max(...sh.map((p) => p.H));
     const pw = power(flow, H, v.sum_eta, v.sum_k);
     const names = sh.map((p) => p.name).join(' + ');
@@ -890,8 +928,6 @@ function calcBuilding(v) {
       notes: solo.length ? [`따로 계산한 설비: ${solo.map((p) => `${p.name} (수원 ${fx(p.Q + p.roof)} ㎥, 토출량 ${fx(p.flow)} L/min, 전양정 ${fx(p.H)} m)`).join(' / ')}`] : [],
       steps,
     });
-  } else if (pool.length) {
-    cards.push({ title: '최종값 (겸용 합산)', kind: 'total', notes: ['겸용으로 체크한 설비가 없어요. 각 설비 입력칸 아래 "수조·펌프 겸용"을 체크하면 여기서 합쳐서 보여줘요.'] });
   }
 
   return { cards };
@@ -1617,19 +1653,125 @@ function renderInputs() {
   }).join('');
 }
 
-function tileHTML(t) {
-  return `<div class="tile ${t.tone || ''}"><span class="tl">${t.l}</span><span class="tv">${t.v}${t.u ? `<small>${t.u}</small>` : ''}</span></div>`;
+/* 결과 배치: 값들을 묶음(행)으로 정리하고, 값을 누르면 그 값의 계산 과정만 펼쳐요 */
+const GROUPS = [
+  { g: '수원', main: ['수원 합계', '수원', '저수량'], sub: ['유효수량', '유효수량 합계', '옥상수조', '옥상수조 합계'] },
+  { g: '포 수원', main: ['포수용액량'], sub: ['포 약제량', '물 (약제 제외)'] },
+  { g: '약제', main: ['약제량'], sub: ['방사 유량', '헤드 1개당'] },
+  { g: '용기', main: ['저장용기', '저장용기 내용적'], sub: ['용기 1병 내용적'] },
+  { g: '배출', main: ['배출량'], sub: ['배출량 (분당)'] },
+  { g: '펌프', main: ['펌프 토출량', '가압송수장치 양수량'], sub: ['전양정'] },
+  { g: '동력', main: ['전동기 동력', '배출기 동력'], sub: ['축동력', '수동력'] },
+  { g: '배치', main: ['탱크 사이'], sub: ['방유제 최소 크기'] },
+  { g: '설치 개수', main: ['전체 개수', '전체 소화기'], sub: ['층당 설치개수', '설치개수', '층당 헤드', '전체 헤드', '기준개수', '동시 개방 헤드', '포헤드', '포워터스프링클러헤드', '감지용 헤드', '분사헤드', '보조포 접속구', '흡수관투입구', '채수구', '층당 개수', '추가 완강기', '층당 능력단위', '층당 소화기'] },
+];
+// 값 → 보여줄 계산 단계 (마지막 항목이 그 값 자체, 앞 항목은 그 값에 쓰인 단계)
+const CHAIN = {
+  '수원 합계': [/설치개수$|^기준개수$|^동시 개방/, /^수원 \(유효수량\)$|^수원$|^유효수량 합계$/, /^옥상수조 (수원|합계)$/, /^수원 합계$/],
+  '유효수량': [/설치개수$|^기준개수$|^동시 개방/, /^수원 \(유효수량\)$|^수원$/],
+  '옥상수조': [/^옥상수조 수원$/],
+  '수원': [/^설치개수$|^바닥을 뺀|^펌프 토출량$/, /^수원$/],
+  '펌프 토출량': [/설치개수$|^기준개수$|^동시 개방/, /^펌프 토출량/],
+  '축동력': ['수동력', '축동력'],
+  '전동기 동력': ['수동력', '축동력', '전동기 동력'],
+  '포수용액량': [/액표면적|^방사시간$|호스접속구|송액관|동시 방사|^헤드 개수$|^방사량$|^방출량$|분사헤드 개수|포수용액량/, /포수용액량/],
+  '포 방출 면적': ['탱크 액표면적'],
+  '보조포 접속구': ['보조포소화전 호스접속구 수'],
+  '약제량': [/^방호(구역|공간) 체적$|^방호공간 크기$|벽 면적|1㎥당 약제량|^선형상수$|^설계농도$|비체적/, /^약제량/],
+  '저장용기': [/1병당 충전량|^저장용기 내용적$/, /^저장용기 수$/],
+  '용기 1병 내용적': ['저장용기 내용적'],
+  '방사 유량': ['95% 방출량', '방사 유량'],
+  '층당 설치개수': ['바닥 대각선', '층당 설치개수'],
+  '포헤드': [/^헤드 개수$/], '포워터스프링클러헤드': [/^헤드 개수$/],
+  '감지용 헤드': ['감지용 스프링클러헤드'],
+  '동시 개방 헤드': [/^동시 개방/],
+  '배출량': [/^배출량 \((?!분당)/],
+  '저수량': ['기준면적', '저수량'],
+  '층당 개수': ['층당 설치개수'], '전체 개수': ['층당 설치개수', '전체 설치개수'],
+  '층당 능력단위': ['능력단위 기준면적', '층당 필요 능력단위'],
+  '층당 소화기': ['층당 소화기 개수'],
+  '전체 소화기': ['층당 필요 능력단위', '층당 소화기 개수', '전체 소화기 개수'],
+  '탱크 사이': [/보유공지$/, '두 탱크 사이 거리'],
+};
+const hit = (m, s) => (typeof m === 'string' ? s === m : m.test(s));
+function chainOf(label) {
+  const n = label.match(/^(\d)번 (~ 방유제|보유공지)$/);
+  if (n) return [n[2] === '보유공지' ? `${n[1]}번 탱크 보유공지` : `${n[1]}번 탱크 ~ 방유제 거리`];
+  return CHAIN[label];
+}
+function stepIdx(card, label) {
+  const ts = (card.steps || []).map((s) => (s && s.t) || '');
+  // 마지막 단계가 없으면(예: 간이스프링클러는 옥상수조 단계가 없음) 뒤에서부터 하나씩 줄여 가며 찾아요
+  for (let ch = chainOf(label); ch && ch.length; ch = ch.slice(0, -1)) {
+    const last = ch[ch.length - 1];
+    const end = ts.reduce((a, s, i) => (hit(last, s) ? i : a), -1);
+    if (end >= 0) return ts.map((s, i) => i).filter((i) => i <= end && ch.some((m) => hit(m, ts[i])));
+  }
+  for (const f of [(s) => s === label, (s) => s.startsWith(label), (s) => s.includes(label)]) {
+    const r = ts.map((s, i) => (f(s) ? i : -1)).filter((i) => i >= 0);
+    if (r.length) return r;
+  }
+  return [];
+}
+function groupTiles(c) {
+  const tiles = (c.tiles || []).filter((x) => x && x.l);
+  if (c.flat) return [{ g: '', items: tiles }];
+  const used = new Set(), rows = [];
+  const tank = {};
+  tiles.forEach((x) => { const m = x.l.match(/^(\d)번 (.+)$/); if (m) { (tank[m[1]] = tank[m[1]] || []).push({ ...x, dl: m[2] === '~ 방유제' ? '방유제까지' : m[2] }); used.add(x); } });
+  for (const G of GROUPS) {
+    const main = tiles.find((x) => !used.has(x) && G.main.includes(x.l));
+    if (main) used.add(main);
+    const subs = tiles.filter((x) => !used.has(x) && G.sub.includes(x.l)).sort((a, b) => G.sub.indexOf(a.l) - G.sub.indexOf(b.l));
+    subs.forEach((x) => used.add(x));
+    if (main || subs.length) rows.push({ g: G.g, main, items: subs });
+  }
+  Object.keys(tank).sort().forEach((k) => rows.push({ g: `${k}번 탱크`, items: tank[k] }));
+  const rest = tiles.filter((x) => !used.has(x));
+  if (rest.length) rows.push({ g: '기초 수치', items: rest });
+  // '배치' 묶음은 탱크별 묶음 뒤로
+  const i = rows.findIndex((r) => r.g === '배치');
+  if (i >= 0) rows.push(rows.splice(i, 1)[0]);
+  return rows;
+}
+const openVal = new Map();   // 카드 제목 → 펼친 값 이름
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+function valHTML(c, x, cls) {
+  const inner = `<span class="vl">${x.dl || x.l}</span><span class="vv">${x.v}${x.u ? `<small>${x.u}</small>` : ''}</span>`;
+  const tone = x.tone === 'key' ? ' key' : '';
+  if (!stepIdx(c, x.l).length) return `<div class="val ${cls}${tone}">${inner}</div>`;
+  const on = openVal.get(c.title) === x.l;
+  return `<button type="button" class="val ${cls}${tone} has${on ? ' on' : ''}" data-card="${esc(c.title)}" data-l="${esc(x.l)}" aria-expanded="${on}">${inner}</button>`;
+}
+function explainHTML(c, label) {
+  const idx = stepIdx(c, label);
+  if (!idx.length) return '';
+  const name = (c.tiles.find((x) => x.l === label) || {}).dl || label;
+  return `<div class="explain"><div class="ex-h"><span><b>${name}</b> 계산 과정${idx.length > 1 ? ` · ${idx.length}단계` : ''}</span><button type="button" class="ex-x" data-card="${esc(c.title)}" aria-label="계산 과정 닫기">닫기</button></div><div class="step-list chain">${idx.map((i) => c.steps[i]).join('')}</div></div>`;
+}
+function rowsHTML(c) {
+  const open = openVal.get(c.title);
+  return `<div class="rows${c.flat ? ' flat' : ''}">${groupTiles(c).map((r) => {
+    const items = [r.main, ...r.items].filter(Boolean);
+    const isOpen = open && items.some((x) => x.l === open);
+    return `<div class="rrow${r.main ? '' : ' nomain'}">
+      ${r.g ? `<div class="rg">${r.g}</div>` : ''}
+      ${r.main ? valHTML(c, r.main, 'main') : ''}
+      ${r.items.length ? `<div class="subs">${r.items.map((x) => valHTML(c, x, r.main ? 'sub' : 'mid')).join('')}</div>` : ''}
+    </div>${isOpen ? explainHTML(c, open) : ''}`;
+  }).join('')}</div>`;
 }
 function cardHTML(c) {
   const badge = c.badge ? `<span class="badge${c.badge === '겸용' || c.badgeOn ? ' on' : ''}">${c.badge}</span>` : '';
+  const hasTiles = c.tiles && c.tiles.length;
   return `<article class="card ${c.kind || ''}">
     <header class="card-h"><h3>${c.title}</h3>${badge}</header>
     ${c.error ? `<p class="err">${c.error}</p>` : ''}
-    ${c.tiles ? `<div class="tiles">${c.tiles.map(tileHTML).join('')}</div>` : ''}
+    ${hasTiles ? rowsHTML(c) : ''}
     ${c.warns && c.warns.length ? `<ul class="warns">${c.warns.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
     ${c.extraTop || ''}
     ${c.notes && c.notes.length ? `<ul class="notes">${c.notes.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
-    ${c.steps && c.steps.length ? `<details class="steps" data-card="${c.title}"${openSteps.has(c.title) ? ' open' : ''}><summary>계산 과정 보기 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
+    ${c.steps && c.steps.length ? `<details class="steps" data-card="${esc(c.title)}"${openSteps.has(c.title) ? ' open' : ''}><summary>전체 계산 과정 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
     ${c.extra || ''}
   </article>`;
 }
@@ -1639,7 +1781,8 @@ function renderResults() {
   let r;
   try { r = t.calc(state[t.id]); }
   catch (e) { r = { error: '계산하다가 문제가 생겼어요: ' + e.message }; console.error(e); }
-  $('#results').innerHTML = r.error ? `<article class="card"><p class="err">${r.error}</p></article>` : r.cards.map(cardHTML).join('');
+  $('#results').innerHTML = r.error ? `<article class="card"><p class="err">${r.error}</p></article>`
+    : `<p class="res-hint">밑줄 친 값을 누르면 그 값의 계산 과정만 펼쳐져요.</p>` + r.cards.map(cardHTML).join('');
 }
 
 /* 기준값 표 탭 */
@@ -1772,6 +1915,16 @@ $('#form').addEventListener('change', (e) => {
   // 보이는 입력칸이 바뀔 때만 다시 그려요. 고른 선택란을 다시 그리거나 포커스를 옮기면 모바일에서 목록이 한 번 더 떠요.
   if (layoutKey() !== before) renderInputs();
   renderResults();
+});
+$('#results').addEventListener('click', (e) => {
+  const b = e.target.closest('button.val.has, button.ex-x');
+  if (!b) return;
+  const card = b.dataset.card;
+  if (b.classList.contains('ex-x') || openVal.get(card) === b.dataset.l) openVal.delete(card);
+  else openVal.set(card, b.dataset.l);
+  renderResults();
+  const again = [...document.querySelectorAll('#results button.val.has')].find((x) => x.dataset.card === card && x.dataset.l === b.dataset.l);
+  if (again) again.focus({ preventScroll: true });
 });
 $('#results').addEventListener('toggle', (e) => {
   const d = e.target;
