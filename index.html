@@ -613,7 +613,11 @@ const TARGETS = [
         { id: 'db', label: '뒤쪽 벽까지', type: 'num', unit: 'm', def: 0, ph: '없음' },
       ]},
       { title: '분사헤드 배치 (토너먼트)', show: (v) => !isLocal(v), fields: [
-        { id: 'layout', label: '헤드 수 (가로 × 세로)', type: 'sel', wide: true, def: '4x2', opts: [['2x1', '2개 (2 × 1)'], ['2x2', '4개 (2 × 2)'], ['4x2', '8개 (4 × 2)'], ['4x4', '16개 (4 × 4)'], ['8x4', '32개 (8 × 4)'], ['8x8', '64개 (8 × 8)']] },
+        { id: 'headMode', label: '헤드 수 정하는 방법', type: 'sel', wide: true, def: 'pick', opts: [['pick', '목록에서 고르기'], ['calc', '분구면적·방출률로 계산하기']] },
+        { id: 'layout', label: '헤드 수 (가로 × 세로)', type: 'sel', wide: true, def: '4x2', show: (v) => v.headMode !== 'calc', opts: () => GAS_LAYOUTS.map(([k, n, l]) => [k, l]) },
+        { id: 'hA', label: '헤드 1개 분구면적 a', type: 'num', unit: '㎟', def: null, show: (v) => v.headMode === 'calc' },
+        { id: 'hQ', label: '방출률 q', type: 'num', unit: () => `${state.gas.agent === 'inert' ? '㎥' : 'kg'}/㎟·min`, def: null, show: (v) => v.headMode === 'calc', dep: (v) => v.agent },
+        { id: 'hT', label: '방사시간 t', type: 'num', unit: '초', def: null, ph: '비우면 기준 방사시간', wide: true, show: (v) => v.headMode === 'calc', dep: (v) => v.agent + v.co2fire + v.cls, hint: () => `기준: ${gasTime(state.gas).why}` },
       ]},
     ],
   },
@@ -1200,6 +1204,16 @@ function tankLayoutCard(v) {
 /* =========================================================
    ⑥ 계산 — 가스계 (+ 토너먼트 배관도)
    ========================================================= */
+// 토너먼트 배치: [값, 헤드 수, 표시]
+const GAS_LAYOUTS = [['2x1', 2, '2개 (2 × 1)'], ['2x2', 4, '4개 (2 × 2)'], ['4x2', 8, '8개 (4 × 2)'], ['4x4', 16, '16개 (4 × 4)'], ['8x4', 32, '32개 (8 × 4)'], ['8x8', 64, '64개 (8 × 8)']];
+// 전역방출 기준 방사시간 (초)
+function gasTime(v) {
+  if (v.agent === 'co2') return v.co2fire === 'surface' ? { s: 60, why: '이산화탄소 표면화재 1분 (60초)' } : { s: 420, why: '이산화탄소 심부화재 7분 (420초)' };
+  if (v.agent === 'halon') return { s: 10, why: '할론 10초' };
+  if (v.agent === 'powder') return { s: 30, why: '분말 30초' };
+  if (v.agent === 'halo') return { s: 10, why: '할로겐화합물 10초' };
+  return v.cls === 'B' ? { s: 60, why: '불활성기체 B급 화재 1분 (60초)' } : { s: 120, why: '불활성기체 A·C급 화재 2분 (120초)' };
+}
 function halonFill(v) {
   const key = v.halonType === '2402' ? (v.halonPress === 'p' ? '2402p' : '2402s') : v.halonType;
   const [min, max, incl] = STD.halon.fill[key];
@@ -1393,11 +1407,34 @@ function calcGas(v) {
   if (bottles !== null) tiles.push({ l: '저장용기', v: fx(bottles), u: '병', tone: 'key' });
   tiles.push(...extraTiles);
   if (!local) {
-    const [hx, hy] = v.layout.split('x').map(Number), heads = hx * hy, perHead = Wt / heads;
-    steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${fx(Wt)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
+    let [hx, hy] = v.layout.split('x').map(Number), heads = hx * hy, drawNote = '';
+    if (v.headMode === 'calc') {
+      const tm = gasTime(v), ts = v.hT > 0 ? v.hT : tm.s, tmin = ts / 60;
+      steps.push(step({ t: '방사시간', sub: `${v.hT > 0 ? `직접 입력 ${fx(ts)}초` : `기준값: ${tm.why}`} → 식에는 분 단위로 t = ${fx(tmin, 3)}분을 넣어요` }));
+      if (bad(v.hA) || bad(v.hQ)) {
+        heads = NaN;
+        warns.push('헤드 1개 분구면적과 방출률을 넣으면 분사헤드 수가 나와요.');
+      } else {
+        const per = v.hA * v.hQ * tmin;
+        heads = up(Wt / per);
+        steps.push(step({ t: '분사헤드 수', f: 'n<sub>h</sub> = ⌈W ÷ (a × q × t)⌉', sym: [['n<sub>h</sub>', '분사헤드 수 (개)'], ['W', `약제량 (${unit})`], ['a', '헤드 1개 분구면적 (㎟)'], ['q', `방출률 (${unit}/㎟·min)`], ['t', '방사시간 (min)'], ['⌈ ⌉', '올림']], sub: `n<sub>h</sub> = ⌈${fx(Wt)} ÷ (${fx(v.hA)} × ${fx(v.hQ)} × ${fx(tmin, 3)})⌉ = ⌈${fx(Wt)} ÷ ${fx(per)}⌉`, ans: `${heads}개` }));
+        const lay = GAS_LAYOUTS.find(([, n]) => n >= heads);
+        if (lay) {
+          [hx, hy] = lay[0].split('x').map(Number);
+          if (lay[1] !== heads) drawNote = `토너먼트 배관은 헤드 수가 2, 4, 8, 16…개여야 고르게 나뉘어서, 배관도는 ${heads}개 이상인 가장 작은 배치인 ${lay[1]}개(가로 ${hx} × 세로 ${hy})로 그렸어요.`;
+        } else { hx = hy = 0; drawNote = '헤드가 64개를 넘으면 배관도는 그리지 않아요.'; }
+      }
+    }
+    const perHead = Wt / heads;
+    if (Number.isFinite(perHead)) steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${fx(Wt)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
     tiles.push({ l: '분사헤드', v: fx(heads), u: '개' }, { l: '헤드 1개당', v: fx(perHead), u: unit });
     head.tiles = tiles;
-    cards.push(head, gasDrawingCard(v.L, v.W, hx, hy));
+    cards.push(head);
+    if (hx > 0 && Number.isFinite(heads)) {
+      const dc = gasDrawingCard(v.L, v.W, hx, hy);
+      if (drawNote) dc.notes = [drawNote, ...(dc.notes || [])];
+      cards.push(dc);
+    } else if (drawNote) cards.push({ title: '분사헤드 배관도 (토너먼트)', notes: [drawNote] });
   } else {
     head.tiles = tiles;
     cards.push(head);
@@ -1654,7 +1691,7 @@ function fieldHTML(f, val) {
   const val_ = (x) => (typeof x === 'function' ? x() : x);
   const lim = `${f.min != null ? ` min="${val_(f.min)}"` : ''}${f.max != null ? ` max="${val_(f.max)}"` : ''} step="${f.step || 'any'}"`;
   const list = f.list ? `<datalist id="dl_${f.id}">${val_(f.list).map((o) => `<option value="${o}"></option>`).join('')}</datalist>` : '';
-  return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><span class="iw"><input type="number"${lim} inputmode="decimal" id="${id}" data-k="${f.id}" value="${val ?? ''}" placeholder="${f.ph || ''}"${f.list ? ` list="dl_${f.id}"` : ''}>${f.unit ? `<span class="u">${f.unit}</span>` : ''}</span>${list}${hint}</label>`;
+  return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><span class="iw"><input type="number"${lim} inputmode="decimal" id="${id}" data-k="${f.id}" value="${val ?? ''}" placeholder="${f.ph || ''}"${f.list ? ` list="dl_${f.id}"` : ''}>${f.unit ? `<span class="u">${val_(f.unit)}</span>` : ''}</span>${list}${hint}</label>`;
 }
 
 function renderTargets() {
@@ -1713,6 +1750,7 @@ const CHAIN = {
   '저장용기': [/1병당 충전량|^저장용기 내용적$/, /^저장용기 수$/],
   '용기 1병 내용적': ['저장용기 내용적'],
   '방사 유량': ['95% 방출량', '방사 유량'],
+  '분사헤드': [/^방사시간$/, /^분사헤드 (수|개수)$/],
   '층당 설치개수': ['바닥 대각선', '층당 설치개수'],
   '설치개수': [/^유효 수평거리$/, /^설치개수$/],
   '포헤드': [/^헤드 개수$/], '포워터스프링클러헤드': [/^헤드 개수$/],
