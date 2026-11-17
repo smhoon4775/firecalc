@@ -2154,40 +2154,19 @@ const choOf = (s) => [...norm(s)].map((ch) => { const c = ch.charCodeAt(0) - 0xa
 const ALIAS = { sp: '스프링클러', 스프링쿨러: '스프링클러', co2: '이산화탄소', 탄산가스: '이산화탄소', 할로겐: '할로겐화합물', 청정소화약제: '할로겐화합물', 불활성: '불활성기체', 제연: '거실제연', 포: '포소화', 소화기: '소화기구', 탱크: '옥외탱크저장소', 펌프: '펌프', 양정: '전양정', 동력: '동력' };
 let SIDX = [];
 function buildIndex() {
+  // 검색 목록은 '선택'만: 선택란의 항목과, 체크해서 켜는 설비(옥외소화전·거실제연 등)
   const out = [];
   TARGETS.forEach((T) => {
-    out.push({ k: 'menu', t: T.id, label: T.name, path: '메뉴', more: T.desc });
     T.sections.forEach((s, si) => {
-      out.push({ k: 'sec', t: T.id, si, label: s.title, path: T.name, more: (s.kw || '') + (s.note || '') });
+      if (s.toggle) out.push({ k: 'opt', t: T.id, si, label: s.title, path: `${T.name} › 설비 켜기`, more: s.kw || '' });
       s.fields.forEach((f) => {
-        if (f.type === 'btn') return;
-        const h = typeof f.hint === 'function' ? '' : (f.hint || '');
-        out.push({ k: 'field', t: T.id, si, f: f.id, label: plain(f.label), path: `${T.name} › ${s.title}`, more: (f.kw || '') + h });
         if (f.type === 'sel') optsOf(f).forEach(([val, lab]) => out.push({ k: 'opt', t: T.id, si, f: f.id, val, label: plain(lab), path: `${T.name} › ${s.title} › ${plain(f.label)}` }));
       });
     });
   });
-  // 내용(결과) 값: 건축물은 설비를 모두 켠 상태로 찾아 둬요
-  TARGETS.forEach((T) => {
-    const v = { ...state[T.id] };
-    T.sections.forEach((s) => { if (s.toggle) v[s.toggle] = true; });
-    let r; try { r = T.calc(v); } catch (err) { r = null; }
-    ((r && r.cards) || []).forEach((c) => (c.tiles || []).forEach((x) => {
-      if (x && x.l) out.push({ k: 'res', t: T.id, card: c.title, l: x.l, label: x.dl || x.l, path: `${T.name} › ${c.title}` });
-    }));
-  });
-  renderStd();
-  document.querySelectorAll('#view-std section').forEach((sec, gi) => {
-    const g = sec.querySelector('h2').textContent;
-    out.push({ k: 'std', gi, label: g, path: '기준값 표' });
-    sec.querySelectorAll('tbody tr').forEach((tr, ri) => {
-      const td = tr.querySelectorAll('td');
-      if (td[0]) out.push({ k: 'std', gi, ri, label: td[0].textContent, path: `기준값 표 › ${g}`, more: [...td].slice(1).map((x) => x.textContent).join(' ') });
-    });
-  });
   const seen = new Set();
-  SIDX = out.filter((e) => { const key = e.k + e.label + e.path; if (seen.has(key)) return false; seen.add(key); return true; });
-  SIDX.forEach((e) => { e.n = norm(e.label); e.c = choOf(e.label); e.np = norm(e.path + (e.more || '')); });
+  SIDX = out.filter((e) => { const key = e.label + e.path; if (seen.has(key)) return false; seen.add(key); return true; });
+  SIDX.forEach((e) => { e.n = norm(e.label); e.c = choOf(e.label); e.np = norm(e.more || ''); });
 }
 const KIND = { menu: '메뉴', opt: '선택', sec: '묶음', field: '칸', res: '내용', std: '기준값' };
 function searchIdx(q) {
@@ -2220,8 +2199,8 @@ function showHits() {
   sHits = searchIdx(q); sAct = sHits.length ? 0 : -1;
   if (!q.trim()) { box.hidden = true; $('#q').setAttribute('aria-expanded', 'false'); return; }
   box.innerHTML = sHits.length
-    ? sHits.map((e, i) => `<li role="option" id="sr${i}" data-i="${i}" aria-selected="${i === sAct}"><span class="sl"><span class="sk">${KIND[e.k]}</span>${markHit(e.label, q)}</span><span class="sp">${e.path}</span></li>`).join('')
-    : `<li class="empty" aria-disabled="true">‘${q.replace(/</g, '&lt;')}’에 맞는 항목이 없어요</li>`;
+    ? sHits.map((e, i) => `<li role="option" id="sr${i}" data-i="${i}" aria-selected="${i === sAct}"><span class="sl">${markHit(e.label, q)}</span><span class="sp">${e.path}</span></li>`).join('')
+    : `<li class="empty" aria-disabled="true">‘${q.replace(/</g, '&lt;')}’에 맞는 선택 항목이 없어요</li>`;
   box.hidden = false; $('#q').setAttribute('aria-expanded', 'true');
   $('#q').setAttribute('aria-activedescendant', sAct >= 0 ? 'sr' + sAct : '');
 }
