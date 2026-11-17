@@ -43,6 +43,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; max-width: 100%; overflow-x: hidden; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; }
@@ -191,7 +192,7 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
       <button type="button" role="tab" id="tab-std" aria-selected="false">기준값 표</button>
     </div>
   </header>
-  <p class="banner">v0.3 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
+  <p class="banner">v0.4 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
 
   <section id="view-calc">
     <nav class="targets" id="targets" aria-label="대상 선택"></nav>
@@ -442,19 +443,20 @@ const TARGETS = [
         { id: 'rt_above', label: '수원이 최상층 방수구보다 높은 위치에 있음', type: 'chk', def: false },
         { id: 'rt_backup', label: '주펌프와 동등 이상의 별도 펌프 (내연기관 연동 또는 비상전원)', type: 'chk', def: false },
         { id: 'rt_pressure', label: '가압수조를 가압송수장치로 설치', type: 'chk', def: false },
+        { id: 'rt_freeze', label: '학교·공장·창고시설로 동결 우려가 있어 기동스위치에 보호판을 붙여 소화전함 안에 설치', type: 'chk', def: false },
       ]},
-      { title: '옥내소화전', toggle: 'in_use', fields: [
+      { title: '옥내소화전', toggle: 'in_use', toggleDef: false, fields: [
         { id: 'in_n', label: '가장 많이 설치된 층의 개수', type: 'num', unit: '개', def: null, ph: '비우면 가로·세로로 자동 계산', wide: true },
         { id: 'in_reel', label: '호스릴 옥내소화전', type: 'chk', def: false },
         ...pumpFields('in', { h1: 25, h2: 8, h3: STD.indoor.h3, h2label: '배관·호스 마찰손실' }),
         { id: 'in_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: true },
       ]},
-      { title: '옥외소화전', toggle: 'out_use', fields: [
+      { title: '옥외소화전', toggle: 'out_use', toggleDef: false, fields: [
         { id: 'out_n', label: '설치개수', type: 'num', unit: '개', def: null, ph: '비우면 건물 둘레로 자동 계산', wide: true },
         ...pumpFields('out', { h1: 5, h2: 6, h3: STD.outdoor.h3, h2label: '배관·호스 마찰손실' }),
         { id: 'out_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: false },
       ]},
-      { title: '스프링클러', toggle: 'sp_use', fields: [
+      { title: '스프링클러', toggle: 'sp_use', toggleDef: false, fields: [
         { id: 'sp_type', label: '종류', type: 'sel', wide: true, def: 'sp', opts: [['sp', '스프링클러설비'], ['simple', '간이스프링클러설비']] },
         { id: 'sp_simpleCase', label: '수원 기준', type: 'sel', wide: true, def: 'normal', show: (v) => v.sp_type === 'simple', opts: () => [['normal', `일반: ${STD.simple.cases.normal[0]}개 × ${STD.simple.q} L/min × ${STD.simple.cases.normal[1]}분`], ['special', `근린생활시설·숙박시설·복합건축물: ${STD.simple.cases.special[0]}개 × ${STD.simple.q} L/min × ${STD.simple.cases.special[1]}분`]] },
         { id: 'sp_rack', label: '랙식 창고 (창고시설 기준: 헤드당 160 L/min, 60분)', type: 'chk', def: false, show: (v) => v.sp_type !== 'simple' },
@@ -470,7 +472,7 @@ const TARGETS = [
         ...pumpFields('sp', { h1: 25, h2: 10, h3: STD.sp.h3 }),
         { id: 'sp_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: true },
       ]},
-      { title: '거실제연', toggle: 'sm_use', fields: [
+      { title: '거실제연', toggle: 'sm_use', toggleDef: false, fields: [
         { id: 'sm_A', label: '거실 바닥면적', type: 'num', unit: '㎡', def: null, ph: '비우면 한 층 바닥면적' },
         { id: 'sm_D', label: '직경 (대각선 길이)', type: 'num', unit: 'm', def: null, ph: '비우면 가로·세로 대각선' },
         { id: 'sm_div', label: '구획 방법', type: 'sel', wide: true, opts: [['boundary', '제연경계로 구획'], ['wall', '벽으로 구획']], def: 'boundary' },
@@ -479,7 +481,7 @@ const TARGETS = [
         { id: 'sm_eta', label: '배출기 효율 η', type: 'num', unit: '%', def: 55 },
         { id: 'sm_k', label: '여유율 K', type: 'num', def: 1.1 },
       ]},
-      { title: '겸용 펌프 (최종값)', note: '겸용으로 체크한 설비를 합칠 때 쓰는 펌프 효율이에요.', fields: [
+      { title: '겸용 펌프 (최종값)', show: (v) => v.in_use || v.out_use || v.sp_use, note: '겸용으로 체크한 설비를 합칠 때 쓰는 펌프 효율이에요.', fields: [
         { id: 'sum_eta', label: '펌프 효율 η', type: 'num', unit: '%', def: 65 },
         { id: 'sum_k', label: '전달계수 K', type: 'num', def: 1.1 },
       ]},
@@ -649,6 +651,7 @@ function roofTank(v, isHigh) {
     if (n0(v.height) > 0 && v.height <= 10) ex.push('건축물 높이 10m 이하');
     if (v.rt_backup) ex.push('주펌프와 동등 이상의 별도 펌프');
     if (v.rt_pressure) ex.push('가압수조를 가압송수장치로 설치');
+    if (v.rt_freeze) ex.push('학교·공장·창고시설 동결 우려 (기동스위치 보호판)');
   }
   return { need: ex.length === 0, ex };
 }
@@ -700,6 +703,7 @@ function calcBuilding(v) {
     notes: [
       rt.need ? '옥상수조 제외 조건에 해당하지 않아서, 유효수량의 1/3을 옥상수조에 추가해요.' : `옥상수조 제외: ${rt.ex.join(', ')}`,
       isHigh ? '고층건축물 기준을 적용했어요. 수원 배수가 커지고, 옥내소화전은 최대 5개까지 계산에 넣어요.' : '',
+      !(v.in_use || v.out_use || v.sp_use || v.sm_use) ? '왼쪽(폰에서는 위쪽) 입력칸에서 옥내소화전·옥외소화전·스프링클러·거실제연 중 계산할 설비를 체크하세요.' : '',
     ].filter(Boolean),
     steps: [step({ t: '한 층 바닥면적', f: 'A = L × W', sym: [['A', '한 층 바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${fx(L)} × ${fx(W)}`, ans: `${fx(A)} ㎡` })],
   });
