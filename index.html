@@ -25,6 +25,7 @@
   --warn: #9a5700;
   --warn-bg: #fff3dc;
   --pipe-branch: #2f5d8a;
+  --nav: #e3ded8; --nav-btn: #f8f6f3;
   --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
   color-scheme: light;
@@ -33,13 +34,13 @@
   :root:not([data-theme="light"]) {
     --bg: #161514; --surface: #201e1d; --ink: #ece9e6; --muted: #a39c96; --line: #3a3632;
     --accent: #ff5a5f; --accent-ink: #1a0b0c; --soft: #2b2826; --warn: #f0a54a; --warn-bg: #2c2216;
-    --pipe-branch: #7fb2e5; color-scheme: dark;
+    --pipe-branch: #7fb2e5; color-scheme: dark; --nav: #2a2725; --nav-btn: #1c1a19;
   }
 }
 :root[data-theme="dark"] {
   --bg: #161514; --surface: #201e1d; --ink: #ece9e6; --muted: #a39c96; --line: #3a3632;
   --accent: #ff5a5f; --accent-ink: #1a0b0c; --soft: #2b2826; --warn: #f0a54a; --warn-bg: #2c2216;
-  --pipe-branch: #7fb2e5; color-scheme: dark;
+  --pipe-branch: #7fb2e5; color-scheme: dark; --nav: #2a2725; --nav-btn: #1c1a19;
 }
 
 * { box-sizing: border-box; }
@@ -52,21 +53,48 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .top h1 { margin: 0; font-size: 26px; text-wrap: balance; }
 .top h1 span { color: var(--accent); }
-.top p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; }
+.top p { margin: 4px 0 0; color: var(--muted); max-width: 62ch; text-wrap: pretty; }
 .tabs { display: flex; gap: 4px; background: var(--soft); padding: 4px; border-radius: 8px; }
 .tabs button { font: inherit; border: 0; background: transparent; color: var(--muted); padding: 7px 14px; border-radius: 6px; cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 .banner { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid var(--warn); background: var(--warn-bg); font-size: 14px; border-radius: 0 6px 6px 0; }
 
-.targets { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 20px 0; }
+/* 메뉴 띠: 검색 + 메뉴 */
+.menubar { margin: 18px 0 26px; padding: 14px; background: var(--nav); border-radius: 12px; display: grid; gap: 12px; }
+.targets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 700px) { .targets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .targets button {
-  text-align: left; font: inherit; background: var(--surface); color: var(--ink);
-  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px;
+  text-align: left; font: inherit; background: var(--nav-btn); color: var(--ink);
+  border: 1px solid transparent; border-radius: 8px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; align-content: start;
 }
 .targets button b { font-size: 15px; }
 .targets button small { color: var(--muted); font-size: 12px; line-height: 1.35; }
-.targets button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .targets button:hover { border-color: var(--muted); }
+.targets button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.targets button[aria-pressed="true"] small { color: inherit; opacity: .85; }
+@media (max-width: 560px) { .targets button { padding: 8px 10px; } .targets button small { font-size: 11px; } }
+
+.search { position: relative; }
+.search input { width: 100%; font: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 10px 38px; }
+@media (max-width: 700px) { .search input { font-size: 16px; } }
+.search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.s-ico { position: absolute; left: 12px; top: 50%; width: 17px; height: 17px; transform: translateY(-50%); fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
+.sr { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.14); max-height: min(420px, 60vh); overflow-y: auto; }
+.sr li { display: grid; gap: 1px; padding: 8px 10px; border-radius: 7px; cursor: pointer; }
+.sr li[aria-selected="true"], .sr li:hover { background: var(--soft); }
+.sr .sl { font-size: 15px; }
+.sr .sl mark { background: none; color: var(--accent); font-weight: 700; }
+.sr .sp { font-size: 12px; color: var(--muted); }
+.sr .sk { display: inline-block; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-right: 6px; vertical-align: 1px; }
+.sr .empty { color: var(--muted); cursor: default; }
+.sr .empty:hover { background: none; }
+.flash { animation: flash 1.8s ease-out; border-radius: 8px; }
+@keyframes flash { 0%, 35% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+
+/* 조건 / 내용 제목 */
+.col { min-width: 0; }
+.col-h { margin: 0 0 12px; padding-bottom: 8px; font-size: 14px; font-weight: 700; color: var(--ink); border-bottom: 2px solid var(--ink); }
+.std-note { margin: 0; font-size: 14px; color: var(--muted); }
 
 .layout { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; gap: 24px; align-items: start; }
 @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
@@ -92,6 +120,8 @@ input[type=number] { font-variant-numeric: tabular-nums; }
 input::placeholder { color: var(--muted); opacity: .8; }
 .u { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .hint { color: var(--muted); font-size: 12px; }
+.btn-act { font: inherit; font-size: 14px; font-weight: 700; color: var(--accent); background: var(--surface); border: 1.5px solid var(--accent); border-radius: 8px; padding: 9px 12px; cursor: pointer; text-align: center; }
+.btn-act:hover { background: var(--soft); }
 .chk { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
 .chk input { margin-top: 3px; accent-color: var(--accent); }
 input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -216,6 +246,95 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
 .std h2 { margin: 0 0 8px; font-size: 16px; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* 도면 그리기 */
+.plan-modal { position: fixed; inset: 0; z-index: 50; background: rgba(20, 16, 14, .5); display: grid; place-items: center; padding: 20px; }
+.plan-box { width: min(1240px, 100%); height: min(860px, 100%); background: var(--surface); border-radius: 12px; display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.plan-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.plan-h h2 { margin: 0; font-size: 17px; }
+.plan-x, .pl-btn, .pl-tipb button, .pl-mini { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.plan-x:hover, .pl-btn:hover, .pl-tipb button:hover, .pl-mini:hover { background: var(--soft); }
+.pl-tipb button:disabled { opacity: .45; cursor: default; }
+.plan-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 16px; background: var(--nav); }
+.pl-seg { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px; }
+.pl-seg button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.pl-seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.pl-tl { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.pl-tl select, .pl-tl input, .pl-quick input, .pl-f input, .pl-eh input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+.pl-tl input { width: 64px; }
+.pl-sp { flex: 1; }
+.plan-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; min-height: 0; }
+.plan-left { display: grid; grid-template-rows: 1fr auto; min-height: 0; padding: 12px; gap: 8px; }
+.pl-canvas { min-height: 0; display: grid; place-items: center; background: var(--bg); border-radius: 8px; overflow: hidden; }
+.pl-canvas svg { width: 100%; height: 100%; max-height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+.pl-tip { margin: 0; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 30px; }
+.pl-tipb { display: inline-flex; gap: 6px; }
+.plan-side { border-left: 1px solid var(--line); padding: 12px 14px; overflow-y: auto; display: grid; gap: 12px; align-content: start; }
+.pl-quick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.pl-quick > span { width: 100%; font-weight: 700; color: var(--ink); }
+.pl-quick input { width: 70px; }
+.pl-h3 { margin: 4px 0 -4px; font-size: 13px; }
+.pl-row { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 4px; border-radius: 8px; }
+.pl-row.on { background: var(--soft); }
+.pl-pick { display: flex; align-items: center; gap: 8px; font: inherit; font-size: 14px; color: var(--ink); background: none; border: 0; padding: 4px; cursor: pointer; text-align: left; min-width: 0; }
+.pl-pick b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-pick span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }
+.pl-chip { width: 12px; height: 12px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 35%, transparent); border: 1.5px solid var(--accent); flex: none; }
+.pl-chip.sub { background: repeating-linear-gradient(45deg, var(--muted) 0 2px, transparent 2px 5px); border-color: var(--muted); }
+.pl-mini { padding: 3px 7px; font-size: 12px; }
+.pl-empty { margin: 0; font-size: 13px; color: var(--muted); }
+.pl-edit { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.pl-eh { display: grid; gap: 6px; }
+.pl-sub { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+.pl-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pl-pts { display: grid; grid-template-columns: auto 1fr 1fr; gap: 6px; align-items: end; max-height: 220px; overflow-y: auto; }
+.pl-pn { font-size: 12px; color: var(--muted); padding-bottom: 8px; }
+.pl-f { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.pl-f input { width: 100%; min-width: 0; }
+.pl-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pl-tot { display: grid; gap: 2px; padding: 10px; border-radius: 8px; background: var(--soft); }
+.pl-tot span { font-size: 12px; color: var(--muted); }
+.pl-tot b { font-size: 22px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pl-tot small { font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+.pl-note { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--muted); }
+.pl-apply { font: inherit; font-size: 15px; font-weight: 700; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 8px; padding: 11px; cursor: pointer; }
+.pl-apply:disabled { opacity: .4; cursor: default; }
+@media (max-width: 860px) {
+  .plan-modal { padding: 0; }
+  .plan-box { height: 100%; border-radius: 0; display: block; overflow-y: auto; overscroll-behavior: contain; }
+  .plan-main { display: block; }
+  .plan-left { display: grid; grid-template-rows: auto auto; min-height: auto; }
+  .pl-canvas { height: 56vh; }
+  .plan-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .pl-tl input, .pl-tl select, .pl-quick input, .pl-f input, .pl-eh input[type=text] { font-size: 16px; }
+}
+/* 도면 SVG */
+.plan-svg { display: block; font-family: var(--font-body); }
+.plan-svg .pl-bg { fill: var(--surface); stroke: var(--muted); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-g { stroke: var(--line); stroke-width: .5px; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-g.maj { stroke: var(--muted); stroke-opacity: .45; stroke-width: .8px; }
+.plan-svg .pl-ax { fill: var(--muted); }
+.plan-svg .pl-sh { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 2px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.plan-svg .pl-sh.sub { stroke: var(--muted); stroke-dasharray: 6 4; }
+.plan-svg .pl-sh.on { stroke-width: 3.5px; }
+.plan-svg.edit .pl-sh { cursor: pointer; }
+.plan-svg .pl-hl { stroke: var(--muted); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-dim { fill: var(--ink); font-weight: 600; paint-order: stroke; stroke: var(--surface); stroke-width: .28em; stroke-linejoin: round; }
+.plan-svg .pl-dim.sub { fill: var(--muted); }
+.plan-svg .pl-nm { fill: var(--ink); font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: .28em; stroke-linejoin: round; }
+.plan-svg .pl-ar { fill: var(--accent); font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: .28em; stroke-linejoin: round; }
+.plan-svg .pl-ar.sub { fill: var(--muted); }
+.plan-svg .pl-circ { fill: none; stroke: var(--pipe-branch); stroke-width: 1.5px; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-cd { stroke: var(--pipe-branch); stroke-width: 1px; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-cdot { fill: var(--pipe-branch); }
+.plan-svg .pl-ct { fill: var(--pipe-branch); font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: .28em; stroke-linejoin: round; }
+.plan-svg .pl-hd { fill: var(--surface); stroke: var(--accent); stroke-width: 2px; vector-effect: non-scaling-stroke; cursor: grab; }
+.plan-svg .pl-dr { fill: color-mix(in srgb, var(--accent) 8%, transparent); stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.plan-svg polyline.pl-dr { fill: none; }
+.plan-svg .pl-dp { fill: var(--accent); }
+.plan-svg .pl-dp.first { fill: var(--surface); stroke: var(--accent); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.plan-svg .pl-cur { fill: var(--ink); }
+.plan-fig { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 6px; }
+.plan-fig svg { width: 100%; height: auto; max-height: 420px; }
 </style>
 </head>
 
@@ -231,13 +350,19 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
       <button type="button" role="tab" id="tab-std" aria-selected="false">기준값 표</button>
     </div>
   </header>
-  <p class="banner">v0.6 초안이에요. 기준값과 산정 방식은 아직 검토 전이라, <b>기준값 표</b> 탭에서 쓰인 값을 확인하고 틀린 곳을 알려주세요.</p>
+  <div class="menubar">
+    <div class="search" role="search">
+      <svg class="s-ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="설비·약제·항목 검색" aria-label="검색" aria-controls="sr" aria-expanded="false" aria-autocomplete="list">
+      <ul id="sr" class="sr" role="listbox" hidden></ul>
+    </div>
+    <nav class="targets" id="targets" aria-label="메뉴"></nav>
+  </div>
 
   <section id="view-calc">
-    <nav class="targets" id="targets" aria-label="대상 선택"></nav>
     <div class="layout">
-      <form class="inputs" id="form" onsubmit="return false"></form>
-      <div class="results" id="results" aria-live="polite"></div>
+      <div class="col"><h2 class="col-h">조건</h2><form class="inputs" id="form" onsubmit="return false"></form></div>
+      <div class="col"><h2 class="col-h">내용</h2><div class="results" id="results" aria-live="polite"></div></div>
     </div>
   </section>
 
@@ -248,7 +373,7 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
 'use strict';
 
 /* =========================================================
-   ① 기준값 (초안)
+   ① 기준값
    틀린 값은 여기 숫자만 고치면 계산과 '기준값 표' 탭에 같이 반영돼요.
    ========================================================= */
 const STD = {
@@ -375,6 +500,14 @@ const STD = {
       other:     [200, '그 밖의 것'],
     },
     fireproofMul: 2,
+    // 부속용도별 추가 소화기구 (NFTC 101 표 2.1.1.3)
+    acc: {
+      perUnit: 25, autoSmall: 10,
+      kinds: {
+        boiler: '보일러실(아파트의 방화구획된 것 제외)·건조실·세탁소·대량화기취급소',
+        kitchen: '주방 (음식점·다중이용업소·호텔·기숙사·노유자시설·의료시설·업무시설·공장 등)',
+      },
+    },
   },
 };
 
@@ -462,7 +595,7 @@ const USES = [
   ['apt', '아파트 (공동주택)'], ['underground', '지하가·지하역사'], ['office', '업무시설'], ['warehouse', '창고시설'], ['etc', '그 밖의 소방대상물'],
 ];
 const pumpFields = (p, d) => [
-  { id: p + '_h1', label: '실양정 h₁', type: 'num', unit: 'm', def: d.h1 },
+  { id: p + '_h1', label: '실양정 h₁', type: 'num', unit: 'm', def: d.h1, kw: '전양정 펌프 양정 토출량 수동력 축동력 전동기 동력' },
   { id: p + '_h2', label: (d.h2label || '마찰손실양정') + ' h₂', type: 'num', unit: 'm', def: d.h2 },
   { id: p + '_h3', label: (d.h3label || '방수압 환산수두') + ' h₃', type: 'num', unit: 'm', def: d.h3, ph: d.h3ph || '', hint: d.h3hint || '기준값으로 들어가 있어요. 고칠 수 있어요.' },
   { id: p + '_eta', label: '펌프 효율 η', type: 'num', unit: '%', def: 65 },
@@ -519,7 +652,8 @@ const TARGETS = [
         ...pumpFields('sp', { h1: 25, h2: 10, h3: STD.sp.h3 }),
         { id: 'sp_share', label: '수조·펌프 겸용 (최종값에 합산)', type: 'chk', def: true },
       ]},
-      { title: '거실제연', toggle: 'sm_use', toggleDef: false, fields: [
+      { title: '거실제연', toggle: 'sm_use', toggleDef: false, kw: '도면 면적 직경 배출량 배출기', fields: [
+        { id: 'sm_planBtn', type: 'btn', act: 'plan', label: '도면 그려서 면적·직경 구하기', hint: () => planHint() },
         { id: 'sm_A', label: '거실 바닥면적', type: 'num', unit: '㎡', def: null, ph: '비우면 한 층 바닥면적' },
         { id: 'sm_D', label: '직경 (대각선 길이)', type: 'num', unit: 'm', def: null, ph: '비우면 가로·세로 대각선' },
         { id: 'sm_div', label: '구획 방법', type: 'sel', wide: true, opts: [['boundary', '제연경계로 구획'], ['wall', '벽으로 구획']], def: 'boundary' },
@@ -687,6 +821,11 @@ const TARGETS = [
         { id: 'fireproof', label: '내화구조이고 실내 마감이 불연·준불연·난연재료', type: 'chk', def: true },
         { id: 'unit', label: '소화기 1개 능력단위', type: 'num', unit: '단위', def: 3 },
         { id: 'rooms', label: '33㎡ 이상으로 구획된 실 (전체)', type: 'num', unit: '실', def: 0, hint: '구획된 실마다 1개씩 추가해요.' },
+      ]},
+      { title: '부속용도 추가 소화기구', toggle: 'acc_use', toggleDef: false, kw: '자동확산소화기 보일러실 건조실 세탁소 대량화기취급소 주방 K급 주방화재용', note: '위 능력단위와 별도로, 부속용도로 쓰는 부분에 추가로 설치해요.', fields: [
+        { id: 'acc_kind', label: '부속용도', type: 'sel', wide: true, def: 'boiler', opts: () => Object.entries(STD.ext.acc.kinds) },
+        { id: 'acc_area', label: '해당 용도 바닥면적', type: 'num', unit: '㎡', def: 20 },
+        { id: 'acc_exempt', label: '스프링클러설비·간이스프링클러설비·물분무등소화설비 또는 상업용 주방자동소화장치가 설치됨', type: 'chk', def: false, hint: '자동확산소화기를 설치하지 않을 수 있어요.' },
       ]},
     ],
   },
@@ -1038,9 +1177,22 @@ function spDrawingCard(L, W, nx, ny, maxSide = STD.sp.maxSide, extraNote = '') {
   };
 }
 
+function planHint() {
+  const v = state.building, d = v.sm_plan;
+  if (!d || !d.shapes.length) return '사각형·다각형으로 거실 평면을 그리면 바닥면적과 직경을 구해서 아래 칸에 넣어줘요.';
+  const st = plStats(d);
+  return `그린 도면: 도형 ${d.shapes.length}개, 면적 ${fx(st.area)}㎡, 직경 ${fx(st.D)}m${v.sm_fromPlan ? ' → 아래 칸에 들어가 있어요' : ''}`;
+}
 function smokeCard(v, floorA, diag) {
   const c = STD.smoke, steps = [];
   const A = v.sm_A > 0 ? v.sm_A : floorA, D = v.sm_D > 0 ? v.sm_D : diag;
+  const fromPlan = v.sm_fromPlan && v.sm_plan && v.sm_plan.shapes.length;
+  if (fromPlan) {
+    const d = v.sm_plan, st = plStats(d);
+    const parts = d.shapes.map((s) => { const a = Math.abs(polyArea(ptsOf(s))); return `${s.name}${s.type === 'rect' ? ` ${fx(s.w)} × ${fx(s.h)}` : ''} = ${s.sub ? '−' : ''}${fx(a)}㎡`; });
+    steps.push(step({ t: '거실 바닥면적 (도면)', sub: parts.join('<br>') + (st.overlap ? '<br>겹친 부분은 한 번만 세고, 빼기 도형은 더하기 도형과 겹친 부분만 뺐어요' : ''), ans: `${fx(A)} ㎡` }));
+    steps.push(step({ t: '직경 (도면)', sub: '더하기 도형을 모두 담는 가장 작은 원의 지름', ans: `${fx(D)} m` }));
+  }
   let Qh;
   if (A < c.bigArea) {
     const q0 = A * c.perM2 * 60;
@@ -1063,6 +1215,7 @@ function smokeCard(v, floorA, diag) {
   steps.push(step({ t: '배출기 동력', f: 'P = P<sub>t</sub> × Q<sub>m</sub> ÷ (6120 × η) × K', sym: [['P', '배출기 동력 (kW)'], ['P<sub>t</sub>', '배출기 전압 (mmAq)'], ['Q<sub>m</sub>', '배출량 (㎥/min)'], ['6120', '단위 환산 상수 (102 × 60)'], ['η', '배출기 효율'], ['K', '여유율']], sub: `P = ${fx(pt)} × ${fx(Qm)} ÷ (6120 × ${fx(e)}) × ${fx(k)}`, ans: `${fx(P)} kW` }));
   return {
     title: '거실제연',
+    extraTop: fromPlan ? `<figure class="plan-fig">${planSVG(v.sm_plan)}</figure>` : '',
     tiles: [{ l: '거실 바닥면적', v: fx(A), u: '㎡' }, { l: '직경', v: fx(D), u: 'm' }, { l: '배출량', v: fx(Qh), u: '㎥/h', tone: 'key' }, { l: '배출량 (분당)', v: fx(Qm), u: '㎥/min' }, { l: '배출기 동력', v: fx(P), u: 'kW', tone: 'key' }],
     warns: e > 0 ? [] : ['배출기 효율에 0보다 큰 값을 넣어 주세요.'],
     steps,
@@ -1655,12 +1808,34 @@ function calcExt(v) {
     step({ t: '층당 소화기 개수', f: 'n = ⌈U ÷ u⌉', sym: [['n', '층당 소화기 개수 (개)'], ['U', '필요 능력단위'], ['u', '소화기 1개 능력단위']], sub: `n = ⌈${units} ÷ ${fx(v.unit)}⌉`, ans: `${perFloor}개` }),
     step({ t: '전체 소화기 개수', f: 'n<sub>T</sub> = n × F + R', sym: [['n<sub>T</sub>', '전체 소화기 개수 (개)'], ['n', '층당 개수 (개)'], ['F', '층수 (층)'], ['R', '33㎡ 이상 구획된 실마다 추가 (개)']], sub: `n<sub>T</sub> = ${perFloor} × ${fx(v.floors)} + ${rooms}`, ans: `${fx(total)}개` }),
   ];
-  return { cards: [{
+  const cards = [{
     title: '소화기구',
     tiles: [{ l: '층당 능력단위', v: fx(units), u: '단위' }, { l: '층당 소화기', v: fx(perFloor), u: '개' }, { l: '전체 소화기', v: fx(total), u: '개', tone: 'key' }],
-    notes: ['보행거리(소형 20m, 대형 30m) 안에 들어오는지는 평면을 보고 따로 확인해야 해요.'],
+    notes: ['보행거리(소형 20m 이내, 대형 30m 이내) 안에 들어오는지는 평면을 보고 따로 확인해야 해요.'],
     steps,
-  }] };
+  }];
+  if (v.acc_use) cards.push(accCard(v));
+  return { cards };
+}
+// 부속용도 추가 소화기구 + 자동확산소화기
+function accCard(v) {
+  const c = STD.ext.acc, A = n0(v.acc_area);
+  if (!(A > 0)) return { title: '부속용도 추가 소화기구', error: '해당 용도 바닥면적에 0보다 큰 값을 넣어 주세요.' };
+  const U = up(A / c.perUnit), n = up(U / v.unit), auto = A <= c.autoSmall ? 1 : 2, kitchen = v.acc_kind === 'kitchen';
+  const steps = [
+    step({ t: '추가 능력단위', f: `U = ⌈A ÷ ${c.perUnit}⌉`, sym: [['U', '추가로 필요한 능력단위'], ['A', '해당 용도 바닥면적 (㎡)'], [String(c.perUnit), `바닥면적 ${c.perUnit}㎡마다 능력단위 1단위 이상`], ['⌈ ⌉', '올림']], sub: `U = ⌈${fx(A)} ÷ ${c.perUnit}⌉`, ans: `${U}단위` }),
+    step({ t: '추가 소화기 개수', f: 'n = ⌈U ÷ u⌉', sym: [['n', '추가 소화기 개수 (개)'], ['U', '추가 능력단위'], ['u', '소화기 1개 능력단위']], sub: `n = ⌈${U} ÷ ${fx(v.unit)}⌉`, ans: `${n}개` }),
+    step({ t: '자동확산소화기', sub: v.acc_exempt ? '스프링클러설비 등이 설치돼 있어서 설치하지 않을 수 있어요.' : `바닥면적 ${fx(A)}㎡ → ${A <= c.autoSmall ? `${c.autoSmall}㎡ 이하라서 1개` : `${c.autoSmall}㎡ 초과라서 2개 이상`}`, ans: v.acc_exempt ? '생략 가능' : `${auto}개` }),
+  ];
+  return {
+    title: '부속용도 추가 소화기구', badge: kitchen ? '주방' : '보일러실 등',
+    tiles: [{ l: '자동확산소화기', v: v.acc_exempt ? '생략 가능' : fx(auto), u: v.acc_exempt ? '' : '개', tone: 'key' }, { l: '추가 능력단위', v: fx(U), u: '단위' }, { l: '추가 소화기', v: fx(n), u: '개' }],
+    notes: [
+      kitchen ? '추가 소화기 중 1개 이상은 주방화재용 소화기(K급)로 설치해야 해요.' : '',
+      v.acc_exempt ? '' : `자동확산소화기는 ${c.autoSmall}㎡ 초과면 2개 이상을, 보일러·조리기구 등 방호대상에 유효하게 분사될 수 있는 위치에 배치될 수 있는 수량으로 설치해요.`,
+    ].filter(Boolean),
+    steps,
+  };
 }
 
 /* =========================================================
@@ -1686,6 +1861,7 @@ function fieldHTML(f, val) {
   const id = 'f_' + f.id;
   const hintText = typeof f.hint === 'function' ? f.hint() : f.hint;
   const hint = hintText ? `<span class="hint">${hintText}</span>` : '';
+  if (f.type === 'btn') return `<div class="fld wide"><button type="button" class="btn-act" data-act="${f.act}">${f.label}</button>${hint}</div>`;
   if (f.type === 'chk') return `<label class="chk wide" for="${id}"><input type="checkbox" id="${id}" data-k="${f.id}" ${val ? 'checked' : ''}><span>${f.label}${hintText ? `<br><span class="hint">${hintText}</span>` : ''}</span></label>`;
   if (f.type === 'sel') return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><select id="${id}" data-k="${f.id}">${optsOf(f).map(([k, l]) => `<option value="${k}"${String(val) === String(k) ? ' selected' : ''}>${l}</option>`).join('')}</select>${hint}</label>`;
   const val_ = (x) => (typeof x === 'function' ? x() : x);
@@ -1710,15 +1886,15 @@ function layoutKey() {
 
 function renderInputs() {
   const t = target(), v = state[t.id];
-  $('#form').innerHTML = t.sections.map((s) => {
+  $('#form').innerHTML = t.sections.map((s, si) => {
     if (s.show && !s.show(v)) return '';
     const on = !s.toggle || v[s.toggle];
     const legend = s.toggle
       ? `<legend><input type="checkbox" id="f_${s.toggle}" data-k="${s.toggle}" ${on ? 'checked' : ''} aria-label="${s.title} 계산하기"><label for="f_${s.toggle}">${s.title}</label></legend>`
       : `<legend>${s.title}</legend>`;
-    if (!on) return `<fieldset class="sec off">${legend}</fieldset>`;
+    if (!on) return `<fieldset class="sec off" data-si="${si}">${legend}</fieldset>`;
     const fields = s.fields.filter((f) => !f.show || f.show(v)).map((f) => fieldHTML(f, v[f.id])).join('');
-    return `<fieldset class="sec">${legend}${s.note ? `<p class="sec-note">${s.note}</p>` : ''}<div class="fields">${fields}</div></fieldset>`;
+    return `<fieldset class="sec" data-si="${si}">${legend}${s.note ? `<p class="sec-note">${s.note}</p>` : ''}<div class="fields">${fields}</div></fieldset>`;
   }).join('');
 }
 
@@ -1732,7 +1908,7 @@ const GROUPS = [
   { g: '펌프', main: ['펌프 토출량', '가압송수장치 양수량'], sub: ['전양정'] },
   { g: '동력', main: ['전동기 동력', '배출기 동력'], sub: ['축동력', '수동력'] },
   { g: '배치', main: ['탱크 사이'], sub: ['방유제 최소 크기'] },
-  { g: '설치 개수', main: ['전체 개수', '전체 소화기'], sub: ['층당 설치개수', '설치개수', '층당 헤드', '전체 헤드', '기준개수', '동시 개방 헤드', '포헤드', '포워터스프링클러헤드', '감지용 헤드', '분사헤드', '보조포 접속구', '흡수관투입구', '채수구', '층당 개수', '추가 완강기', '층당 능력단위', '층당 소화기'] },
+  { g: '설치 개수', main: ['전체 개수', '전체 소화기', '자동확산소화기'], sub: ['추가 능력단위', '추가 소화기', '층당 설치개수', '설치개수', '층당 헤드', '전체 헤드', '기준개수', '동시 개방 헤드', '포헤드', '포워터스프링클러헤드', '감지용 헤드', '분사헤드', '보조포 접속구', '흡수관투입구', '채수구', '층당 개수', '추가 완강기', '층당 능력단위', '층당 소화기'] },
 ];
 // 값 → 보여줄 계산 단계 (마지막 항목이 그 값 자체, 앞 항목은 그 값에 쓰인 단계)
 const CHAIN = {
@@ -1757,10 +1933,12 @@ const CHAIN = {
   '감지용 헤드': ['감지용 스프링클러헤드'],
   '동시 개방 헤드': [/^동시 개방/],
   '배출량': [/^배출량 \((?!분당)/],
+  '거실 바닥면적': [/^거실 바닥면적/], '직경': [/^직경/],
   '저수량': ['기준면적', '저수량'],
   '층당 개수': ['층당 설치개수'], '전체 개수': ['층당 설치개수', '전체 설치개수'],
   '층당 능력단위': ['능력단위 기준면적', '층당 필요 능력단위'],
   '층당 소화기': ['층당 소화기 개수'],
+  '추가 소화기': ['추가 능력단위', '추가 소화기 개수'],
   '전체 소화기': ['층당 필요 능력단위', '층당 소화기 개수', '전체 소화기 개수'],
   '탱크 사이': [/보유공지$/, '두 탱크 사이 거리'],
 };
@@ -1959,23 +2137,615 @@ function renderStd() {
     ['소화기구', [
       ...Object.values(s.ext.kinds).map(([a, l]) => [l, `${a}㎡마다 능력단위 1`, '']),
       ['내화구조·불연재료 마감', `기준면적 ×${s.ext.fireproofMul}`, ''],
+      ['부속용도 추가 (보일러실·건조실·세탁소·대량화기취급소, 주방)', `바닥면적 ${s.ext.acc.perUnit}㎡마다 능력단위 1단위 이상`, '주방은 1개 이상 K급'],
+      ['자동확산소화기', `바닥면적 ${s.ext.acc.autoSmall}㎡ 이하 1개 / ${s.ext.acc.autoSmall}㎡ 초과 2개 이상`, '스프링클러설비·간이스프링클러설비·물분무등소화설비 또는 상업용 주방자동소화장치가 있으면 설치하지 않을 수 있음'],
     ]],
   ];
-  $('#view-std').innerHTML = `<p class="banner" style="margin:0">아래 값은 검토 중인 초안이에요. 틀린 값이 있으면 알려주세요. 코드 맨 위 <b>STD</b> 부분의 숫자만 바꾸면 계산에도 바로 반영돼요.</p>`
+  $('#view-std').innerHTML = `<p class="std-note">계산에 쓰인 기준값이에요. 코드 맨 위 <b>STD</b> 부분의 숫자만 바꾸면 계산에도 바로 반영돼요.</p>`
     + groups.map(([g, rows]) => `<section><h2>${g}</h2>${table(['항목', '값', '비고'], rows)}</section>`).join('');
 }
+
+/* ⑨-2 검색: 메뉴·조건 칸·선택지·기준값 표를 찾아서 그 자리로 바로 이동해요 */
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const plain = (s) => String(s).replace(/<[^>]+>/g, '');
+const norm = (s) => plain(s).toLowerCase().replace(/[\s·・,()[\]{}/\-_.:~'"`]/g, '');
+const choOf = (s) => [...norm(s)].map((ch) => { const c = ch.charCodeAt(0) - 0xac00; return c >= 0 && c < 11172 ? CHO[Math.floor(c / 588)] : ch; }).join('');
+// 다른 이름으로 찾아도 나오게
+const ALIAS = { sp: '스프링클러', 스프링쿨러: '스프링클러', co2: '이산화탄소', 탄산가스: '이산화탄소', 할로겐: '할로겐화합물', 청정소화약제: '할로겐화합물', 불활성: '불활성기체', 제연: '거실제연', 포: '포소화', 소화기: '소화기구', 탱크: '옥외탱크저장소', 펌프: '펌프', 양정: '전양정', 동력: '동력' };
+let SIDX = [];
+function buildIndex() {
+  const out = [];
+  TARGETS.forEach((T) => {
+    out.push({ k: 'menu', t: T.id, label: T.name, path: '메뉴', more: T.desc });
+    T.sections.forEach((s, si) => {
+      out.push({ k: 'sec', t: T.id, si, label: s.title, path: T.name, more: (s.kw || '') + (s.note || '') });
+      s.fields.forEach((f) => {
+        if (f.type === 'btn') return;
+        const h = typeof f.hint === 'function' ? '' : (f.hint || '');
+        out.push({ k: 'field', t: T.id, si, f: f.id, label: plain(f.label), path: `${T.name} › ${s.title}`, more: (f.kw || '') + h });
+        if (f.type === 'sel') optsOf(f).forEach(([val, lab]) => out.push({ k: 'opt', t: T.id, si, f: f.id, val, label: plain(lab), path: `${T.name} › ${s.title} › ${plain(f.label)}` }));
+      });
+    });
+  });
+  // 내용(결과) 값: 건축물은 설비를 모두 켠 상태로 찾아 둬요
+  TARGETS.forEach((T) => {
+    const v = { ...state[T.id] };
+    T.sections.forEach((s) => { if (s.toggle) v[s.toggle] = true; });
+    let r; try { r = T.calc(v); } catch (err) { r = null; }
+    ((r && r.cards) || []).forEach((c) => (c.tiles || []).forEach((x) => {
+      if (x && x.l) out.push({ k: 'res', t: T.id, card: c.title, l: x.l, label: x.dl || x.l, path: `${T.name} › ${c.title}` });
+    }));
+  });
+  renderStd();
+  document.querySelectorAll('#view-std section').forEach((sec, gi) => {
+    const g = sec.querySelector('h2').textContent;
+    out.push({ k: 'std', gi, label: g, path: '기준값 표' });
+    sec.querySelectorAll('tbody tr').forEach((tr, ri) => {
+      const td = tr.querySelectorAll('td');
+      if (td[0]) out.push({ k: 'std', gi, ri, label: td[0].textContent, path: `기준값 표 › ${g}`, more: [...td].slice(1).map((x) => x.textContent).join(' ') });
+    });
+  });
+  const seen = new Set();
+  SIDX = out.filter((e) => { const key = e.k + e.label + e.path; if (seen.has(key)) return false; seen.add(key); return true; });
+  SIDX.forEach((e) => { e.n = norm(e.label); e.c = choOf(e.label); e.np = norm(e.path + (e.more || '')); });
+}
+const KIND = { menu: '메뉴', opt: '선택', sec: '묶음', field: '칸', res: '내용', std: '기준값' };
+function searchIdx(q) {
+  const nq = norm(q);
+  if (!nq) return [];
+  const isCho = /^[ㄱ-ㅎ]+$/.test(nq);
+  const qs = [nq];
+  Object.entries(ALIAS).forEach(([a, b]) => { if (norm(a) === nq || (nq.length >= 2 && norm(a).startsWith(nq))) qs.push(norm(b)); });
+  const pri = { menu: 0, opt: 1, sec: 2, res: 3, field: 4, std: 5 };
+  return SIDX.map((e) => {
+    let sc = -1;
+    for (const x of qs) {
+      const hay = isCho ? e.c : e.n;
+      if (hay === x) sc = Math.max(sc, 100);
+      else if (hay.startsWith(x)) sc = Math.max(sc, 80);
+      else if (hay.includes(x)) sc = Math.max(sc, 60);
+      else if (!isCho && e.np.includes(x)) sc = Math.max(sc, 20);
+    }
+    return sc < 0 ? null : { e, sc: sc - pri[e.k] * 3 - e.label.length * 0.05 };
+  }).filter(Boolean).filter((x, i, all) => x.sc >= 50 || all.filter((y) => y.sc >= 50).length < 4).sort((a, b) => b.sc - a.sc).slice(0, 14).map((x) => x.e);
+}
+let sHits = [], sAct = -1;
+function markHit(label, q) {
+  const i = label.toLowerCase().indexOf(q.trim().toLowerCase());
+  if (!q.trim() || i < 0) return label;
+  return label.slice(0, i) + '<mark>' + label.slice(i, i + q.trim().length) + '</mark>' + label.slice(i + q.trim().length);
+}
+function showHits() {
+  const q = $('#q').value, box = $('#sr');
+  sHits = searchIdx(q); sAct = sHits.length ? 0 : -1;
+  if (!q.trim()) { box.hidden = true; $('#q').setAttribute('aria-expanded', 'false'); return; }
+  box.innerHTML = sHits.length
+    ? sHits.map((e, i) => `<li role="option" id="sr${i}" data-i="${i}" aria-selected="${i === sAct}"><span class="sl"><span class="sk">${KIND[e.k]}</span>${markHit(e.label, q)}</span><span class="sp">${e.path}</span></li>`).join('')
+    : `<li class="empty" aria-disabled="true">‘${q.replace(/</g, '&lt;')}’에 맞는 항목이 없어요</li>`;
+  box.hidden = false; $('#q').setAttribute('aria-expanded', 'true');
+  $('#q').setAttribute('aria-activedescendant', sAct >= 0 ? 'sr' + sAct : '');
+}
+function moveAct(d) {
+  if (!sHits.length) return;
+  sAct = (sAct + d + sHits.length) % sHits.length;
+  document.querySelectorAll('#sr li[data-i]').forEach((li) => li.setAttribute('aria-selected', String(+li.dataset.i === sAct)));
+  const li = document.getElementById('sr' + sAct);
+  if (li) { li.scrollIntoView({ block: 'nearest' }); $('#q').setAttribute('aria-activedescendant', li.id); }
+}
+// 찾은 칸이 지금 숨어 있으면, 선택란·체크를 바꿔서 보이게 해요
+function reveal(T, si, fid, fixed) {
+  const v = state[T.id], s = T.sections[si], f = fid ? s.fields.find((x) => x.id === fid) : null;
+  const base = { ...v, ...fixed };
+  if (s.toggle) base[s.toggle] = true;
+  const ok = () => (!s.show || s.show(v)) && (!s.toggle || v[s.toggle]) && (!f || !f.show || f.show(v));
+  Object.assign(v, base);
+  if (ok()) return;
+  const knobs = [];
+  T.sections.forEach((S) => S.fields.forEach((F) => {
+    if (fixed && F.id in fixed) return;
+    if (F.type === 'sel') optsOf(F).forEach(([val]) => knobs.push([F.id, val]));
+    if (F.type === 'chk') knobs.push([F.id, !base[F.id]]);
+  }));
+  for (const [k, val] of knobs) { Object.assign(v, base); v[k] = val; if (ok()) return; }
+  for (let i = 0; i < knobs.length; i++) for (let j = i + 1; j < knobs.length; j++) {
+    if (knobs[i][0] === knobs[j][0]) continue;
+    Object.assign(v, base); v[knobs[i][0]] = knobs[i][1]; v[knobs[j][0]] = knobs[j][1];
+    if (ok()) return;
+  }
+  Object.assign(v, base);
+}
+function flash(el) {
+  if (!el) return;
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 1900);
+}
+function goEntry(e) {
+  $('#sr').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); $('#q').blur();
+  if (e.k === 'std') {
+    showTab(true);
+    const sec = document.querySelectorAll('#view-std section')[e.gi];
+    const el = sec && (e.ri != null ? sec.querySelectorAll('tbody tr')[e.ri] : sec);
+    if (el) requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: e.ri != null ? 'center' : 'start' }); flash(el); });
+    return;
+  }
+  if (e.k === 'res') {
+    showTab(false);
+    current = e.t;
+    const T = target(), v = state[T.id];
+    const cardOn = () => { try { return (T.calc(v).cards || []).some((c) => c.title === e.card); } catch (err) { return false; } };
+    if (!cardOn()) {
+      const s = T.sections.find((S) => S.toggle && (e.card.startsWith(S.title) || S.title.startsWith(e.card)));
+      if (s) v[s.toggle] = true;
+      if (!cardOn()) T.sections.forEach((S) => { if (S.toggle && !cardOn()) v[S.toggle] = true; });
+    }
+    openVal.set(e.card, e.l);
+    renderTargets(); renderInputs(); renderResults();
+    const btn = [...document.querySelectorAll('#results .val')].find((b) => (b.dataset.card === e.card && b.dataset.l === e.l) || (!b.dataset.l && b.querySelector('.vl') && b.querySelector('.vl').textContent === e.label && b.closest('.card').querySelector('h3').textContent === e.card));
+    const el = btn || document.querySelector('#results');
+    requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); flash(el); });
+    return;
+  }
+  showTab(false);
+  current = e.t;
+  const T = target();
+  if (e.si != null) reveal(T, e.si, e.f, e.k === 'opt' ? { [e.f]: e.val } : null);
+  if (e.k === 'opt' && current === 'gas' && e.f === 'halonType') {
+    const g = state.gas, K = STD.halon.kinds;
+    if (!K[g.halonKind][1][g.halonType]) g.halonKind = Object.keys(K).find((x) => K[x][1][g.halonType]);
+  }
+  renderTargets(); renderInputs(); renderResults();
+  let el = null;
+  if (e.f) { const c = document.getElementById('f_' + e.f); el = c && (c.closest('.fld, .chk') || c.closest('fieldset')); }
+  if (!el && e.si != null) el = document.querySelector(`#form fieldset[data-si="${e.si}"]`);
+  if (!el) el = document.querySelector('#view-calc .layout');
+  requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: e.k === 'menu' ? 'start' : 'center' }); flash(el); });
+}
+$('#q').addEventListener('focus', () => { buildIndex(); if ($('#q').value.trim()) showHits(); });
+$('#q').addEventListener('input', showHits);
+$('#q').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); if ($('#sr').hidden) showHits(); else moveAct(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveAct(-1); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (sHits[sAct]) goEntry(sHits[sAct]); }
+  else if (e.key === 'Escape') { if (!$('#sr').hidden) { $('#sr').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); } else { $('#q').value = ''; } }
+});
+$('#sr').addEventListener('mousedown', (e) => e.preventDefault());
+$('#sr').addEventListener('click', (e) => { const li = e.target.closest('li[data-i]'); if (li) goEntry(sHits[+li.dataset.i]); });
+document.addEventListener('click', (e) => { if (!e.target.closest('.search')) { $('#sr').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && !e.target.closest('input, select, textarea') && !document.querySelector('.plan-modal:not([hidden])')) { e.preventDefault(); $('#q').focus(); }
+});
+
+/* ⑨-3 도면 그리기: 사각형·다각형으로 평면을 그려서 바닥면적과 직경을 구해요 */
+const PL = { data: null, tool: 'rect', sel: null, draft: null, hover: null, drag: null, hist: [] };
+const r2 = (x) => Math.round(x * 100) / 100;
+function plNew() { return { W: 60, H: 40, grid: 1, shapes: [], seq: 1 }; }
+function ptsOf(s) { return s.type === 'rect' ? [[s.x, s.y], [s.x + s.w, s.y], [s.x + s.w, s.y + s.h], [s.x, s.y + s.h]] : s.pts; }
+function polyArea(P) { let a = 0; for (let i = 0; i < P.length; i++) { const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % P.length]; a += x1 * y2 - x2 * y1; } return a / 2; }
+function centroid(P) {
+  const A = polyArea(P);
+  if (Math.abs(A) < 1e-9) return P.reduce((m, p) => [m[0] + p[0] / P.length, m[1] + p[1] / P.length], [0, 0]);
+  let cx = 0, cy = 0;
+  for (let i = 0; i < P.length; i++) { const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % P.length], f = x1 * y2 - x2 * y1; cx += (x1 + x2) * f; cy += (y1 + y2) * f; }
+  return [cx / (6 * A), cy / (6 * A)];
+}
+function inPoly([x, y], P) {
+  let c = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [xi, yi] = P[i], [xj, yj] = P[j];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+// 겹친 부분은 한 번만, 빼기 도형은 빼서 정확히 계산 (가로 띠로 잘라서 띠마다 길이 × 높이)
+function netArea(shapes) {
+  const polys = shapes.map((s) => ({ sub: !!s.sub, P: ptsOf(s) })).filter((p) => p.P.length >= 3);
+  if (!polys.length) return 0;
+  const edges = [];
+  polys.forEach((p) => p.P.forEach((a, j) => { const b = p.P[(j + 1) % p.P.length]; if (a[1] !== b[1]) edges.push([a, b]); }));
+  const ys = new Set();
+  polys.forEach((p) => p.P.forEach((q) => ys.add(q[1])));
+  for (let i = 0; i < edges.length; i++) for (let j = i + 1; j < edges.length; j++) {
+    const [[x1, y1], [x2, y2]] = edges[i], [[x3, y3], [x4, y4]] = edges[j];
+    const d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(d) < 1e-12) continue;
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / d, u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / d;
+    if (t > 1e-9 && t < 1 - 1e-9 && u > 1e-9 && u < 1 - 1e-9) ys.add(y1 + t * (y2 - y1));
+  }
+  const Y = [...ys].sort((a, b) => a - b);
+  const merge = (I) => { I.sort((a, b) => a[0] - b[0]); const o = []; I.forEach(([a, b]) => { if (o.length && a <= o[o.length - 1][1]) o[o.length - 1][1] = Math.max(o[o.length - 1][1], b); else o.push([a, b]); }); return o; };
+  let area = 0;
+  for (let k = 0; k + 1 < Y.length; k++) {
+    const y0 = Y[k], y1 = Y[k + 1];
+    if (y1 - y0 < 1e-12) continue;
+    const ym = (y0 + y1) / 2, add = [], sub = [];
+    polys.forEach((p) => {
+      const xs = [];
+      p.P.forEach((a, j) => { const b = p.P[(j + 1) % p.P.length]; if ((a[1] <= ym) !== (b[1] <= ym)) xs.push(a[0] + ((ym - a[1]) * (b[0] - a[0])) / (b[1] - a[1])); });
+      xs.sort((a, b) => a - b);
+      for (let m = 0; m + 1 < xs.length; m += 2) (p.sub ? sub : add).push([xs[m], xs[m + 1]]);
+    });
+    const A = merge(add), S = merge(sub);
+    let len = 0;
+    A.forEach(([a, b]) => {
+      let cur = a;
+      S.forEach(([c, d]) => { if (d <= cur || c >= b) return; if (c > cur) len += c - cur; cur = Math.max(cur, d); });
+      if (b > cur) len += b - cur;
+    });
+    area += len * (y1 - y0);
+  }
+  return area;
+}
+// 더하기 도형을 모두 담는 가장 작은 원
+function minCircle(P) {
+  const pts = P.slice();
+  for (let i = pts.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pts[i], pts[j]] = [pts[j], pts[i]]; }
+  const inC = (c, p) => c && Math.hypot(p[0] - c[0], p[1] - c[1]) <= c[2] + 1e-7;
+  const c2 = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.hypot(a[0] - b[0], a[1] - b[1]) / 2];
+  const c3 = (a, b, c) => {
+    const d = 2 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1]));
+    if (Math.abs(d) < 1e-12) { const cs = [c2(a, b), c2(a, c), c2(b, c)]; return cs.sort((x, y) => y[2] - x[2])[0]; }
+    const A = a[0] ** 2 + a[1] ** 2, B = b[0] ** 2 + b[1] ** 2, C = c[0] ** 2 + c[1] ** 2;
+    const x = (A * (b[1] - c[1]) + B * (c[1] - a[1]) + C * (a[1] - b[1])) / d, y = (A * (c[0] - b[0]) + B * (a[0] - c[0]) + C * (b[0] - a[0])) / d;
+    return [x, y, Math.hypot(a[0] - x, a[1] - y)];
+  };
+  let c = null;
+  for (let i = 0; i < pts.length; i++) if (!inC(c, pts[i])) {
+    c = [pts[i][0], pts[i][1], 0];
+    for (let j = 0; j < i; j++) if (!inC(c, pts[j])) {
+      c = c2(pts[i], pts[j]);
+      for (let k = 0; k < j; k++) if (!inC(c, pts[k])) c = c3(pts[i], pts[j], pts[k]);
+    }
+  }
+  return c;
+}
+function plStats(d) {
+  const shapes = d.shapes.filter((s) => Math.abs(polyArea(ptsOf(s))) > 1e-9);
+  const addPts = shapes.filter((s) => !s.sub).flatMap(ptsOf);
+  const circ = addPts.length ? minCircle(addPts) : null;
+  const plainSum = shapes.reduce((m, s) => m + (s.sub ? -1 : 1) * Math.abs(polyArea(ptsOf(s))), 0);
+  const area = netArea(shapes);
+  return { area, circ, D: circ ? circ[2] * 2 : 0, overlap: Math.abs(plainSum - area) > 1e-6, n: shapes.length };
+}
+
+/* 도면 SVG — 편집 화면과 결과 카드에 같이 써요 */
+function planSVG(d, o = {}) {
+  const { vb, inner } = planParts(d, o);
+  return `<svg class="plan-svg${o.edit ? ' edit' : ''}" viewBox="${vb}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="거실 평면 도면">${inner}</svg>`;
+}
+function planParts(d, o = {}) {
+  const { W, H } = d, st0 = plStats(d);
+  // 결과 카드(보기 전용)는 그린 도형과 원만 보이게 잘라서 보여줘요
+  let bx0 = 0, by0 = 0, bx1 = W, by1 = H;
+  if (!o.edit && d.shapes.length) {
+    const P = d.shapes.flatMap(ptsOf);
+    bx0 = Math.min(...P.map((q) => q[0])); by0 = Math.min(...P.map((q) => q[1])); bx1 = Math.max(...P.map((q) => q[0])); by1 = Math.max(...P.map((q) => q[1]));
+  }
+  const big = Math.max(bx1 - bx0, by1 - by0) || 1, M = big * 0.09, fs = big / (o.edit ? 44 : 32);
+  const st = st0;
+  const maj = [1, 2, 5, 10, 20, 50, 100].find((m) => big / m <= 12) || 100;
+  const g = d.grid, minor = big / g <= 160 ? g : maj / 5;
+  const out = [];
+  out.push(`<defs><pattern id="pl-hatch${o.edit ? 'e' : 'v'}" width="${fs * 0.8}" height="${fs * 0.8}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${fs * 0.8}" class="pl-hl"/></pattern></defs>`);
+  if (o.edit) out.push(`<rect x="0" y="0" width="${W}" height="${H}" class="pl-bg"/>`);
+  if (o.edit) for (let x = 0; x <= W + 1e-9; x += minor) out.push(`<line x1="${r2(x)}" y1="0" x2="${r2(x)}" y2="${H}" class="pl-g${Math.abs(x / maj - Math.round(x / maj)) < 1e-6 ? ' maj' : ''}"/>`);
+  if (o.edit) for (let y = 0; y <= H + 1e-9; y += minor) out.push(`<line x1="0" y1="${r2(y)}" x2="${W}" y2="${r2(y)}" class="pl-g${Math.abs(y / maj - Math.round(y / maj)) < 1e-6 ? ' maj' : ''}"/>`);
+  if (o.edit) {
+    for (let x = 0; x <= W + 1e-9; x += maj) out.push(`<text x="${x}" y="${-fs * 1.9}" class="pl-ax" font-size="${fs * 0.8}" text-anchor="middle">${r2(x)}</text>`);
+    for (let y = maj; y <= H + 1e-9; y += maj) out.push(`<text x="${-fs * 1.7}" y="${y + fs * 0.3}" class="pl-ax" font-size="${fs * 0.8}" text-anchor="end">${r2(y)}</text>`);
+    out.push(`<text x="${W}" y="${H + fs * 1.6}" class="pl-ax" font-size="${fs * 0.85}" text-anchor="end">단위 m · 격자 ${d.grid} m</text>`);
+  } else out.push(`<text x="${bx1}" y="${by1 + fs * 2.2}" class="pl-ax" font-size="${fs * 0.85}" text-anchor="end">단위 m</text>`);
+  // 도형
+  d.shapes.forEach((s) => {
+    const P = ptsOf(s), on = o.edit && PL.sel === s.id;
+    out.push(`<polygon points="${P.map((p) => p.join(',')).join(' ')}" class="pl-sh${s.sub ? ' sub' : ''}${on ? ' on' : ''}" ${s.sub ? `fill="url(#pl-hatch${o.edit ? 'e' : 'v'})"` : ''} data-id="${s.id}"/>`);
+  });
+  // 치수
+  d.shapes.forEach((s) => {
+    const P = ptsOf(s), A = Math.abs(polyArea(P));
+    if (A < 1e-9) return;
+    const idx = s.type === 'rect' ? [0, 3] : P.map((p, i) => i);
+    idx.forEach((i) => {
+      const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      if (L < big * 0.03) return;
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      let nx = (b[1] - a[1]) / L, ny = -(b[0] - a[0]) / L;
+      if (inPoly([mx + nx * 0.01 * big, my + ny * 0.01 * big], P)) { nx = -nx; ny = -ny; }
+      const off = fs * 0.85;
+      out.push(`<text x="${r2(mx + nx * off)}" y="${r2(my + ny * off + fs * 0.32)}" class="pl-dim${s.sub ? ' sub' : ''}" font-size="${fs * 0.9}" text-anchor="middle">${fx(L)}</text>`);
+    });
+    const [cx, cy] = centroid(P);
+    out.push(`<text x="${r2(cx)}" y="${r2(cy - fs * 0.2)}" class="pl-nm" font-size="${fs}" text-anchor="middle">${esc(s.name)}${s.sub && !s.name.includes('빼기') ? ' (빼기)' : ''}</text>`);
+    out.push(`<text x="${r2(cx)}" y="${r2(cy + fs * 1.05)}" class="pl-ar${s.sub ? ' sub' : ''}" font-size="${fs * 1.05}" text-anchor="middle">${s.sub ? '−' : ''}${fx(A)}㎡</text>`);
+  });
+  // 가장 작은 원 (직경)
+  if (st.circ && st.D > 0) {
+    const [cx, cy, R] = st.circ;
+    out.push(`<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r2(R)}" class="pl-circ"/><circle cx="${r2(cx)}" cy="${r2(cy)}" r="${fs * 0.18}" class="pl-cdot"/>`);
+    out.push(`<line x1="${r2(cx - R)}" y1="${r2(cy)}" x2="${r2(cx + R)}" y2="${r2(cy)}" class="pl-cd"/>`);
+    out.push(`<text x="${r2(cx)}" y="${r2(cy - fs * 0.45)}" class="pl-ct" font-size="${fs * 0.95}" text-anchor="middle">직경 ${fx(st.D)} m</text>`);
+  }
+  if (o.edit) {
+    const sel = d.shapes.find((s) => s.id === PL.sel), hr = fs * 0.42;
+    if (sel && PL.tool === 'select') ptsOf(sel).forEach((p, i) => out.push(`<circle cx="${p[0]}" cy="${p[1]}" r="${hr}" class="pl-hd" data-v="${i}"/>`));
+    const dr = PL.draft;
+    if (dr && dr.type === 'rect') {
+      const x = Math.min(dr.a[0], dr.b[0]), y = Math.min(dr.a[1], dr.b[1]), w = Math.abs(dr.b[0] - dr.a[0]), h = Math.abs(dr.b[1] - dr.a[1]);
+      out.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="pl-dr"/>`);
+      if (w > 0 && h > 0) out.push(`<text x="${x + w / 2}" y="${y + h / 2 + fs * 0.35}" class="pl-nm" font-size="${fs}" text-anchor="middle">${fx(w)} × ${fx(h)} = ${fx(w * h)}㎡</text>`);
+    }
+    if (dr && dr.type === 'poly') {
+      const P = dr.pts.concat(PL.hover ? [PL.hover] : []);
+      out.push(`<polyline points="${P.map((p) => p.join(',')).join(' ')}" class="pl-dr"/>`);
+      dr.pts.forEach((p, i) => out.push(`<circle cx="${p[0]}" cy="${p[1]}" r="${i === 0 ? hr * 1.4 : hr * 0.8}" class="pl-dp${i === 0 ? ' first' : ''}"/>`));
+      if (PL.hover && dr.pts.length) { const a = dr.pts[dr.pts.length - 1], L = Math.hypot(PL.hover[0] - a[0], PL.hover[1] - a[1]); if (L > 0) out.push(`<text x="${(a[0] + PL.hover[0]) / 2}" y="${(a[1] + PL.hover[1]) / 2 - fs * 0.5}" class="pl-dim" font-size="${fs * 0.9}" text-anchor="middle">${fx(L)}</text>`); }
+    }
+    if (PL.hover && PL.tool !== 'select') {
+      const [x, y] = PL.hover;
+      out.push(`<circle cx="${x}" cy="${y}" r="${fs * 0.22}" class="pl-cur"/><text x="${x + fs * 0.5}" y="${y - fs * 0.5}" class="pl-ax" font-size="${fs * 0.8}">(${r2(x)}, ${r2(y)})</text>`);
+    }
+  }
+  let x0 = bx0 - M, y0 = by0 - M, x1 = bx1 + M, y1 = by1 + M;
+  if (st.circ && st.D > 0) { const [cx, cy, R] = st.circ, m = fs * 0.6; x0 = Math.min(x0, cx - R - m); y0 = Math.min(y0, cy - R - m); x1 = Math.max(x1, cx + R + m); y1 = Math.max(y1, cy + R + m); }
+  return { vb: `${r2(x0)} ${r2(y0)} ${r2(x1 - x0)} ${r2(y1 - y0)}`, inner: out.join('') };
+}
+
+/* 편집 화면 */
+function plEnsure() {
+  const v = state.building;
+  if (!v.sm_plan) v.sm_plan = plNew();
+  PL.data = v.sm_plan;
+}
+function plPush() { PL.hist.push(JSON.stringify(PL.data.shapes)); if (PL.hist.length > 80) PL.hist.shift(); }
+function plUndo() { if (!PL.hist.length) return; PL.data.shapes = JSON.parse(PL.hist.pop()); if (!PL.data.shapes.some((s) => s.id === PL.sel)) PL.sel = null; plDraw(true); }
+function plSnap([x, y]) {
+  const g = PL.data.grid, c = (a, m) => Math.min(m, Math.max(0, a));
+  return [r2(c(Math.round(x / g) * g, PL.data.W)), r2(c(Math.round(y / g) * g, PL.data.H))];
+}
+function plPoint(e) {
+  const svg = $('#pl-canvas svg'), pt = svg.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+  return [p.x, p.y];
+}
+function plPx(px) { const svg = $('#pl-canvas svg'); return px * (svg.viewBox.baseVal.width / svg.getBoundingClientRect().width); }
+function plFlip(s) { s.sub = !s.sub; const m = s.name.match(/^(실|빼기) (\d+)$/); if (m) s.name = `${s.sub ? '빼기' : '실'} ${m[2]}`; }
+function plAdd(s) { plPush(); s.id = 's' + PL.data.seq; s.name = s.name || `${s.sub ? '빼기' : '실'} ${PL.data.seq}`; PL.data.seq++; PL.data.shapes.push(s); PL.sel = s.id; plDraw(true); }
+function plFinishPoly() {
+  const dr = PL.draft;
+  if (!dr || dr.type !== 'poly' || dr.pts.length < 3) return;
+  PL.draft = null;
+  plAdd({ type: 'poly', pts: dr.pts.map((p) => p.slice()), sub: false });
+}
+const PL_TIPS = {
+  rect: '도면 위를 끌면 사각형이 그려져요. 꼭짓점은 격자에 맞춰져요.',
+  poly: '꼭짓점을 차례로 누르세요. 처음 점을 다시 누르거나 [완성]을 누르면 도형이 닫혀요.',
+  select: '도형을 눌러 고르고, 끌어서 옮기세요. 고른 도형의 꼭짓점(동그라미)을 끌면 모양이 바뀌어요.',
+};
+function plDraw(all) {
+  const svg = $('#pl-canvas svg');
+  if (!svg) $('#pl-canvas').innerHTML = planSVG(PL.data, { edit: true });
+  else { const { vb, inner } = planParts(PL.data, { edit: true }); svg.setAttribute('viewBox', vb); svg.innerHTML = inner; }
+  const dr = PL.draft;
+  $('#pl-tip').innerHTML = dr && dr.type === 'poly'
+    ? `점 ${dr.pts.length}개 · 처음 점을 다시 누르거나 [완성]을 누르세요. <span class="pl-tipb"><button type="button" data-pl="finish"${dr.pts.length < 3 ? ' disabled' : ''}>완성</button><button type="button" data-pl="back">점 하나 지우기</button><button type="button" data-pl="cancel">그리기 취소</button></span>`
+    : PL_TIPS[PL.tool];
+  document.querySelectorAll('#plan [data-tool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tool === PL.tool)));
+  if (all) { plList(); plEdit(); }
+  plSum();
+}
+function plList() {
+  const L = PL.data.shapes;
+  $('#pl-list').innerHTML = L.length
+    ? L.map((s) => `<div class="pl-row${PL.sel === s.id ? ' on' : ''}" data-id="${s.id}"><button type="button" class="pl-pick" data-id="${s.id}"><span class="pl-chip${s.sub ? ' sub' : ''}"></span><b>${esc(s.name)}</b><span>${s.sub ? '−' : ''}${fx(Math.abs(polyArea(ptsOf(s))))}㎡</span></button><button type="button" class="pl-mini" data-pl="toggle" data-id="${s.id}">${s.sub ? '더하기로' : '빼기로'}</button><button type="button" class="pl-mini" data-pl="del" data-id="${s.id}" aria-label="${esc(s.name)} 지우기">지우기</button></div>`).join('')
+    : '<p class="pl-empty">아직 그린 도형이 없어요.</p>';
+}
+function plEdit() {
+  const s = PL.data.shapes.find((x) => x.id === PL.sel), box = $('#pl-edit');
+  if (!s) { box.innerHTML = ''; box.hidden = true; return; }
+  box.hidden = false;
+  const num = (k, l, val) => `<label class="pl-f"><span>${l}</span><input type="number" step="any" inputmode="decimal" data-pe="${k}" value="${r2(val)}"></label>`;
+  box.innerHTML = `<div class="pl-eh"><input type="text" data-pe="name" value="${esc(s.name)}" aria-label="도형 이름"><label class="pl-sub"><input type="checkbox" data-pe="sub"${s.sub ? ' checked' : ''}> 빼기 (계단실·기둥 등)</label></div>`
+    + (s.type === 'rect'
+      ? `<div class="pl-grid4">${num('x', '왼쪽 x', s.x)}${num('y', '위쪽 y', s.y)}${num('w', '가로', s.w)}${num('h', '세로', s.h)}</div>`
+      : `<div class="pl-pts">${s.pts.map((p, i) => `<span class="pl-pn">${i + 1}</span>${num(`px${i}`, 'x', p[0])}${num(`py${i}`, 'y', p[1])}`).join('')}</div>`);
+}
+function plSum() {
+  const st = plStats(PL.data);
+  $('#pl-sum').innerHTML = `<div class="pl-tot"><span>바닥면적</span><b>${fx(st.area)}<small>㎡</small></b></div><div class="pl-tot"><span>직경</span><b>${st.D > 0 ? fx(st.D) : '-'}<small>m</small></b></div>`
+    + `<p class="pl-note">면적: 더하기 도형을 합치고 빼기 도형을 뺐어요${st.overlap ? '. 도형끼리 겹친 부분은 한 번만 셌고, 빼기 도형은 더하기 도형과 겹친 부분만 빼요' : ''}.<br>직경: 더하기 도형을 모두 담는 가장 작은 원의 지름이에요 (도면의 점선 원).</p>`;
+  $('#pl-apply').disabled = !(st.area > 0);
+}
+function openPlan() {
+  plEnsure();
+  PL.draft = null; PL.drag = null; PL.hover = null; PL.hist = [];
+  if (!$('#plan')) document.body.insertAdjacentHTML('beforeend', PLAN_HTML);
+  $('#pl-W').value = PL.data.W; $('#pl-H').value = PL.data.H; $('#pl-grid').value = String(PL.data.grid);
+  $('#plan').hidden = false;
+  document.body.style.overflow = 'hidden';
+  plDraw(true);
+  $('#plan .plan-x').focus();
+}
+function closePlan() {
+  $('#plan').hidden = true;
+  document.body.style.overflow = '';
+  PL.draft = null;
+  if (current === 'building') { renderInputs(); renderResults(); }
+}
+const PLAN_HTML = `<div class="plan-modal" id="plan" hidden role="dialog" aria-modal="true" aria-labelledby="pl-title">
+  <div class="plan-box">
+    <header class="plan-h"><h2 id="pl-title">도면 그려서 면적·직경 구하기</h2><button type="button" class="plan-x">닫기</button></header>
+    <div class="plan-tools">
+      <div class="pl-seg" role="group" aria-label="그리기 도구"><button type="button" data-tool="rect">사각형</button><button type="button" data-tool="poly">다각형</button><button type="button" data-tool="select">고르기·옮기기</button></div>
+      <label class="pl-tl">격자 <select id="pl-grid"><option value="0.1">0.1 m</option><option value="0.5">0.5 m</option><option value="1">1 m</option><option value="2">2 m</option><option value="5">5 m</option></select></label>
+      <label class="pl-tl">도면 크기 <input id="pl-W" type="number" min="1" step="any" inputmode="decimal"> × <input id="pl-H" type="number" min="1" step="any" inputmode="decimal"> m</label>
+      <span class="pl-sp"></span>
+      <button type="button" class="pl-btn" data-pl="undo">되돌리기</button><button type="button" class="pl-btn" data-pl="clear">모두 지우기</button>
+    </div>
+    <div class="plan-main">
+      <div class="plan-left"><div id="pl-canvas" class="pl-canvas"></div><p id="pl-tip" class="pl-tip"></p></div>
+      <aside class="plan-side">
+        <div class="pl-quick"><span>크기로 추가</span><input id="pl-aw" type="number" min="0" step="any" inputmode="decimal" placeholder="가로" aria-label="가로 (m)"> × <input id="pl-ah" type="number" min="0" step="any" inputmode="decimal" placeholder="세로" aria-label="세로 (m)"> m <button type="button" class="pl-btn" data-pl="quick">추가</button></div>
+        <h3 class="pl-h3">도형</h3>
+        <div id="pl-list"></div>
+        <div id="pl-edit" class="pl-edit" hidden></div>
+        <div id="pl-sum" class="pl-sum"></div>
+        <button type="button" id="pl-apply" class="pl-apply">거실 바닥면적·직경에 넣기</button>
+      </aside>
+    </div>
+  </div>
+</div>`;
+
+// 편집 화면 이벤트 (화면은 처음 열 때 만들어지니까 document에 걸어요)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-act="plan"]')) { openPlan(); return; }
+  const m = e.target.closest('#plan');
+  if (!m) return;
+  if (e.target.closest('.plan-x')) { closePlan(); return; }
+  const tb = e.target.closest('[data-tool]');
+  if (tb) { PL.tool = tb.dataset.tool; PL.draft = null; plDraw(true); return; }
+  const pick = e.target.closest('.pl-pick');
+  if (pick) { PL.sel = pick.dataset.id; PL.tool = 'select'; plDraw(true); return; }
+  const b = e.target.closest('[data-pl]');
+  if (b) {
+    const a = b.dataset.pl, s = PL.data.shapes.find((x) => x.id === b.dataset.id);
+    if (a === 'undo') plUndo();
+    if (a === 'clear' && PL.data.shapes.length) { plPush(); PL.data.shapes = []; PL.sel = null; plDraw(true); }
+    if (a === 'del' && s) { plPush(); PL.data.shapes = PL.data.shapes.filter((x) => x !== s); if (PL.sel === s.id) PL.sel = null; plDraw(true); }
+    if (a === 'toggle' && s) { plPush(); plFlip(s); plDraw(true); }
+    if (a === 'finish') plFinishPoly();
+    if (a === 'back' && PL.draft) { PL.draft.pts.pop(); if (!PL.draft.pts.length) PL.draft = null; plDraw(); }
+    if (a === 'cancel') { PL.draft = null; plDraw(); }
+    if (a === 'quick') {
+      const w = Number($('#pl-aw').value), h = Number($('#pl-ah').value);
+      if (!(w > 0 && h > 0)) { $('#pl-aw').focus(); return; }
+      const right = PL.data.shapes.reduce((mx, sh) => Math.max(mx, ...ptsOf(sh).map((p) => p[0])), 0);
+      const x = right + w <= PL.data.W ? right : 0;
+      if (w > PL.data.W) PL.data.W = $('#pl-W').value = Math.ceil(w);
+      if (h > PL.data.H) PL.data.H = $('#pl-H').value = Math.ceil(h);
+      plAdd({ type: 'rect', x, y: 0, w, h, sub: false });
+      $('#pl-aw').value = $('#pl-ah').value = '';
+    }
+    return;
+  }
+  if (e.target.closest('#pl-apply')) {
+    const st = plStats(PL.data), v = state.building;
+    if (!(st.area > 0)) return;
+    v.sm_use = true; v.sm_A = r2(st.area); v.sm_D = r2(st.D); v.sm_fromPlan = true;
+    closePlan();
+    const el = document.getElementById('f_sm_A');
+    if (el) { el.closest('fieldset').scrollIntoView({ behavior: 'smooth', block: 'center' }); flash(el.closest('.fld')); }
+  }
+});
+document.addEventListener('change', (e) => {
+  if (!e.target.closest('#plan')) return;
+  const id = e.target.id;
+  if (id === 'pl-grid') { PL.data.grid = Number(e.target.value); plDraw(); }
+  if (id === 'pl-W' || id === 'pl-H') { const n = Number(e.target.value); if (n > 0) { PL.data[id === 'pl-W' ? 'W' : 'H'] = n; plDraw(); } else e.target.value = PL.data[id === 'pl-W' ? 'W' : 'H']; }
+  if (e.target.dataset.pe === 'sub') { const s = PL.data.shapes.find((x) => x.id === PL.sel); if (s && s.sub !== e.target.checked) { plPush(); plFlip(s); plDraw(true); } }
+});
+document.addEventListener('input', (e) => {
+  const k = e.target.dataset && e.target.dataset.pe;
+  if (!k || k === 'sub') return;
+  const s = PL.data.shapes.find((x) => x.id === PL.sel);
+  if (!s) return;
+  if (k === 'name') { s.name = e.target.value || s.name; plDraw(); plList(); return; }
+  const n = Number(e.target.value);
+  if (e.target.value === '' || !Number.isFinite(n)) return;
+  if (!PL.editing) { plPush(); PL.editing = true; setTimeout(() => { PL.editing = false; }, 800); }
+  if (s.type === 'rect') { if ((k === 'w' || k === 'h') && !(n > 0)) return; s[k] = n; }
+  else { const m = k.match(/^p([xy])(\d+)$/); if (m) s.pts[+m[2]][m[1] === 'x' ? 0 : 1] = n; }
+  plDraw(); plList();
+});
+document.addEventListener('keydown', (e) => {
+  if (!$('#plan') || $('#plan').hidden) return;
+  if (e.target.closest('input, select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (PL.draft) { PL.draft = null; plDraw(); } else if (PL.sel) { PL.sel = null; plDraw(true); } else closePlan(); }
+  else if (e.key === 'Enter' && PL.draft) { e.preventDefault(); plFinishPoly(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && PL.draft) { e.preventDefault(); PL.draft.pts.pop(); if (!PL.draft.pts.length) PL.draft = null; plDraw(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && PL.sel) { e.preventDefault(); plPush(); PL.data.shapes = PL.data.shapes.filter((x) => x.id !== PL.sel); PL.sel = null; plDraw(true); }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); plUndo(); }
+});
+// 그리기
+document.addEventListener('pointerdown', (e) => {
+  const svg = e.target.closest('#pl-canvas svg');
+  if (!svg || e.button > 0) return;
+  e.preventDefault();
+  const raw = plPoint(e), p = plSnap(raw);
+  if (PL.tool === 'rect') { PL.draft = { type: 'rect', a: p, b: p }; svg.setPointerCapture(e.pointerId); plDraw(); return; }
+  if (PL.tool === 'poly') {
+    if (!PL.draft) PL.draft = { type: 'poly', pts: [p] };
+    else {
+      const P = PL.draft.pts, f = P[0], last = P[P.length - 1];
+      if (P.length >= 3 && Math.hypot(raw[0] - f[0], raw[1] - f[1]) <= Math.max(PL.data.grid * 0.6, plPx(16))) { plFinishPoly(); return; }
+      if (!(p[0] === last[0] && p[1] === last[1])) P.push(p);
+    }
+    plDraw(); return;
+  }
+  // 고르기·옮기기
+  const sel = PL.data.shapes.find((x) => x.id === PL.sel);
+  if (sel) {
+    const P = ptsOf(sel), r = plPx(14);
+    const vi = P.findIndex((q) => Math.hypot(q[0] - raw[0], q[1] - raw[1]) <= r);
+    if (vi >= 0) { PL.drag = { kind: 'v', i: vi, snap: JSON.stringify(PL.data.shapes), moved: false, opp: P[(vi + 2) % 4] }; svg.setPointerCapture(e.pointerId); return; }
+  }
+  const hit = [...PL.data.shapes].reverse().find((s) => inPoly(raw, ptsOf(s)));
+  PL.sel = hit ? hit.id : null;
+  if (hit) { PL.drag = { kind: 'm', start: p, orig: JSON.parse(JSON.stringify(hit)), snap: JSON.stringify(PL.data.shapes), moved: false }; svg.setPointerCapture(e.pointerId); }
+  plDraw(true);
+});
+document.addEventListener('pointermove', (e) => {
+  const svg = $('#pl-canvas svg');
+  if (!svg || $('#plan').hidden) return;
+  if (!e.target.closest('#pl-canvas svg') && !PL.draft && !PL.drag) { if (PL.hover) { PL.hover = null; plDraw(); } return; }
+  const p = plSnap(plPoint(e));
+  if (PL.draft && PL.draft.type === 'rect') { PL.draft.b = p; plDraw(); return; }
+  if (PL.drag) {
+    const s = PL.data.shapes.find((x) => x.id === PL.sel);
+    if (!s) return;
+    if (PL.drag.kind === 'm') {
+      const dx = p[0] - PL.drag.start[0], dy = p[1] - PL.drag.start[1], o = PL.drag.orig;
+      if (s.type === 'rect') { s.x = r2(o.x + dx); s.y = r2(o.y + dy); } else s.pts = o.pts.map((q) => [r2(q[0] + dx), r2(q[1] + dy)]);
+      PL.drag.moved = PL.drag.moved || dx !== 0 || dy !== 0;
+    } else if (s.type === 'rect') {
+      const [ox, oy] = PL.drag.opp, w = Math.abs(p[0] - ox), h = Math.abs(p[1] - oy);
+      if (w > 0 && h > 0) { s.x = Math.min(p[0], ox); s.y = Math.min(p[1], oy); s.w = w; s.h = h; PL.drag.moved = true; }
+    } else { s.pts[PL.drag.i] = p; PL.drag.moved = true; }
+    plDraw(); plList();
+    return;
+  }
+  const h = PL.hover;
+  if (!h || h[0] !== p[0] || h[1] !== p[1]) { PL.hover = p; plDraw(); }
+});
+document.addEventListener('pointerup', (e) => {
+  if (!$('#plan') || $('#plan').hidden) return;
+  if (PL.draft && PL.draft.type === 'rect') {
+    const { a, b } = PL.draft, w = Math.abs(b[0] - a[0]), h = Math.abs(b[1] - a[1]);
+    PL.draft = null;
+    if (w > 0 && h > 0) plAdd({ type: 'rect', x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), w, h, sub: false });
+    else plDraw();
+    return;
+  }
+  if (PL.drag) {
+    if (PL.drag.moved) { PL.hist.push(PL.drag.snap); }
+    PL.drag = null;
+    plDraw(true);
+  }
+});
+document.addEventListener('dblclick', (e) => { if (e.target.closest('#pl-canvas svg') && PL.draft && PL.draft.type === 'poly') plFinishPoly(); });
 
 /* ⑩ 사용자가 무언가 하면 */
 $('#targets').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-t]');
   if (!b) return;
   current = b.dataset.t;
+  showTab(false);
   renderTargets(); renderInputs(); renderResults();
 });
 $('#form').addEventListener('input', (e) => {
   const k = e.target.dataset.k;
   if (!k || e.target.type !== 'number') return;
   state[current][k] = e.target.value === '' ? null : Number(e.target.value);
+  if (current === 'building' && (k === 'sm_A' || k === 'sm_D')) state.building.sm_fromPlan = false;
   renderResults();
 });
 $('#form').addEventListener('change', (e) => {
@@ -2017,6 +2787,7 @@ function showTab(std) {
 $('#tab-calc').addEventListener('click', () => showTab(false));
 $('#tab-std').addEventListener('click', () => showTab(true));
 
+if (matchMedia('(min-width: 700px)').matches) $('#q').placeholder = '찾고 싶은 설비·약제·항목을 검색하세요 (예: 할로겐화합물, 보유공지, ㅂㅇㄱㅈ)   단축키 /';
 renderTargets(); renderInputs(); renderResults();
 </script>
 </body>
