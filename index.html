@@ -61,26 +61,67 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 
 /* 메뉴 띠: 검색 + 메뉴 */
 .menubar { margin: 18px 0 26px; padding: 14px; background: var(--nav); border-radius: 12px; display: grid; gap: 12px; }
-.targets { display: grid; gap: 8px; }
+.targets { display: grid; gap: 10px; }
 .menu-main { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .menu-main button {
-  text-align: left; font: inherit; background: var(--nav-btn); color: var(--ink);
-  border: 1px solid transparent; border-radius: 8px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; align-content: start;
+  position: relative; overflow: hidden; text-align: left; font: inherit; color: var(--ink);
+  background: var(--nav-btn); border: 1px solid transparent; border-radius: 12px; padding: 11px 12px; cursor: pointer;
+  display: flex; gap: 10px; align-items: flex-start;
+  transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, border-color .25s, background .25s;
 }
+.menu-main button::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, color-mix(in srgb, var(--accent) 12%, transparent) 50%, transparent 70%); transform: translateX(-100%); transition: transform .6s cubic-bezier(.2,.8,.2,1); pointer-events: none; }
+.menu-main button:hover::before { transform: translateX(100%); }
+.mm-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); transition: background .25s, transform .25s; }
+.mm-ic svg { width: 19px; height: 19px; fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: stroke .25s; }
+.mm-t { display: grid; gap: 2px; min-width: 0; }
 .menu-main button b { font-size: 15px; }
 .menu-main button small { color: var(--muted); font-size: 12px; line-height: 1.35; }
-.menu-main button:hover { border-color: var(--muted); }
-.menu-main button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.menu-main button:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 35%, transparent); box-shadow: 0 12px 26px -16px color-mix(in srgb, var(--accent) 60%, rgba(0,0,0,.5)); background: var(--surface); }
+.menu-main button:hover .mm-ic { transform: scale(1.06); }
+.menu-main button:active { transform: translateY(0); }
+.menu-main button[aria-pressed="true"] { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #3a0610)); border-color: transparent; color: var(--accent-ink); box-shadow: 0 12px 28px -14px var(--accent); }
 .menu-main button[aria-pressed="true"] small { color: inherit; opacity: .85; }
-.menu-sub { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; background: var(--nav-btn); border-radius: 10px; }
-.menu-sub button { font: inherit; font-size: 14px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 13px; cursor: pointer; }
-.menu-sub button:hover { border-color: var(--muted); }
-.menu-sub button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; }
+.menu-main button[aria-pressed="true"] .mm-ic { background: rgba(255,255,255,.16); }
+.menu-main button[aria-pressed="true"] .mm-ic svg { stroke: var(--accent-ink); }
+.menu-sub { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; background: var(--nav-btn); border-radius: 12px; position: relative; }
+.menu-sub.enter { animation: subIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.menu-sub.enter button { animation: chipIn .5s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i) * 34ms + 60ms); }
+@keyframes subIn { from { opacity: 0; transform: translateY(-6px); clip-path: inset(0 0 100% 0 round 12px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 12px); } }
+@keyframes chipIn { from { opacity: 0; transform: translateY(8px) scale(.94); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+.menu-sub button { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; transition: transform .2s cubic-bezier(.2,.8,.2,1), background .2s, border-color .2s, color .2s, box-shadow .2s; }
+.menu-sub button:hover { transform: translateY(-1px); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 6%, var(--surface)); box-shadow: 0 6px 14px -10px color-mix(in srgb, var(--accent) 70%, transparent); }
+.menu-sub button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; box-shadow: 0 8px 18px -12px rgba(0,0,0,.6); }
 @media (max-width: 700px) {
   .menu-main { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  .menu-main button { padding: 8px 10px; } .menu-main button small { display: none; } .menu-main button b { font-size: 14px; }
+  .menu-main button { padding: 9px 10px; gap: 8px; align-items: center; } .menu-main button small { display: none; } .menu-main button b { font-size: 14px; }
+  .mm-ic { width: 28px; height: 28px; border-radius: 8px; } .mm-ic svg { width: 16px; height: 16px; }
   .menu-sub { padding: 6px; } .menu-sub button { font-size: 13px; padding: 5px 11px; }
 }
+/* 선택 목록·칩 */
+.cs-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s, background .15s; }
+.cs-btn:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: var(--surface); }
+.cs-btn[aria-expanded="true"] { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
+.cs-v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cs-ar { width: 12px; height: 12px; flex: none; fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .22s cubic-bezier(.2,.8,.2,1), stroke .15s; }
+.cs-btn[aria-expanded="true"] .cs-ar { transform: rotate(180deg); stroke: var(--accent); }
+.cs-pop { position: fixed; z-index: 90; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 22px 48px -14px rgba(0,0,0,.38), 0 2px 6px rgba(0,0,0,.06); transform-origin: top center; }
+.cs-pop.up { transform-origin: bottom center; }
+.cs-pop.show { animation: csIn .2s cubic-bezier(.2,.8,.2,1); }
+@keyframes csIn { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
+.cs-pop.up.show { animation-name: csInUp; }
+@keyframes csInUp { from { opacity: 0; transform: translateY(4px) scale(.97); } }
+.cs-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 14px; line-height: 1.4; cursor: pointer; color: var(--ink); transition: background .12s; }
+.cs-opt + .cs-opt { margin-top: 1px; }
+.cs-opt.act { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.cs-opt.sel { color: var(--accent); font-weight: 700; }
+.cs-ck { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; visibility: hidden; }
+.cs-opt.sel .cs-ck { visibility: visible; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 13px; padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; transition: background .18s, border-color .18s, color .18s, box-shadow .18s, transform .18s; }
+.chip:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); transform: translateY(-1px); }
+.chip[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; box-shadow: 0 6px 14px -8px var(--accent); transform: none; }
+@media (max-width: 700px) { .cs-btn { font-size: 16px; } .cs-opt { font-size: 15px; padding: 11px 12px; } }
+@media (prefers-reduced-motion: reduce) { .menu-sub.enter, .menu-sub.enter button, .cs-pop.show { animation: none; } .menu-main button, .menu-sub button, .chip { transition: none; } }
 
 .search { position: relative; }
 .search input { width: 100%; font: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 10px 38px; }
@@ -108,7 +149,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-body); 
 
 /* 입력칸 */
 .inputs { display: grid; gap: 12px; margin: 0; }
-fieldset.sec { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 10px 14px 14px; }
+fieldset.sec { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 10px 14px 14px; box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 10px 24px -22px rgba(0,0,0,.35); }
 fieldset.sec.off { background: transparent; padding-bottom: 6px; }
 fieldset.sec legend { padding: 0 6px; font-weight: 700; font-size: 14px; display: flex; gap: 8px; align-items: center; }
 .sec-note { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
@@ -121,14 +162,17 @@ select { max-width: 100%; text-overflow: ellipsis; }
 .iw { display: flex; align-items: center; gap: 6px; }
 input[type=number], select {
   font: inherit; font-size: 14px; color: var(--ink); background: var(--bg);
-  border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; min-width: 0;
+  border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; width: 100%; min-width: 0; transition: border-color .15s, box-shadow .15s, background .15s;
 }
+input[type=number]:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+input[type=number]:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); outline: none; }
 input[type=number] { font-variant-numeric: tabular-nums; }
 input::placeholder { color: var(--muted); opacity: .8; }
 .u { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .hint { color: var(--muted); font-size: 12px; }
 .btn-act { font: inherit; font-size: 14px; font-weight: 700; color: var(--accent); background: var(--surface); border: 1.5px solid var(--accent); border-radius: 8px; padding: 9px 12px; cursor: pointer; text-align: center; }
-.btn-act:hover { background: var(--soft); }
+.btn-act { transition: background .2s, color .2s, box-shadow .2s, transform .2s; }
+.btn-act:hover { background: var(--accent); color: var(--accent-ink); box-shadow: 0 10px 22px -12px var(--accent); transform: translateY(-1px); }
 .u-sel { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 4px; max-width: 74px; flex: none; }
 @media (max-width: 700px) { .u-sel { font-size: 16px; } }
 .chk { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; cursor: pointer; }
@@ -137,7 +181,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 
 /* 결과 */
 .results { display: grid; gap: 16px; min-width: 0; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 14px; min-width: 0; box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 14px 32px -26px rgba(0,0,0,.4); }
 .card.total { border: 2px solid var(--accent); }
 .card-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .card-h h3 { margin: 0; font-size: 18px; }
@@ -317,6 +361,42 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
   .plan-side { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
   .pl-tl input, .pl-tl select, .pl-quick input, .pl-f input, .pl-eh input[type=text] { font-size: 16px; }
 }
+/* 일정지점 입체 도면 */
+.net-svg .r-drop { stroke: var(--pipe-branch); stroke-width: 1.8; }
+.nt-iso .r-cross, .nt-iso .r-riser { stroke: var(--accent); stroke-width: 3.4; }
+.nt-iso .r-branch { stroke: var(--pipe-branch); stroke-width: 2.6; }
+.net-svg .nt-hd { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
+.net-svg .nt-hd.on { fill: var(--accent); stroke: var(--accent); }
+.net-svg .nt-hd.sel { stroke: #e8a200; stroke-width: 2.6; }
+.net-svg .nt-hdl { stroke: var(--ink); stroke-width: 1.4; }
+.net-svg .nt-hn { font-size: 13px; font-weight: 700; fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.net-svg .nt-hn.on { fill: var(--accent); }
+.net-svg .nt-start { fill: var(--ink); }
+.net-svg .nt-sl { font-weight: 700; fill: var(--ink); }
+.net-fig [data-head], .net-fig [data-seg] { cursor: pointer; }
+/* 누설틈새 도면 */
+.lk-svg { display: block; width: 100%; height: auto; font-family: var(--font-body); }
+.drawing .lk-svg text { font-family: var(--font-body); }
+.lk-canvas .lk-svg { height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lk-fig svg { min-width: 520px; }
+.lk-svg .lk-grid { stroke: var(--line); stroke-width: .6; opacity: .7; }
+.lk-svg .lk-r rect { fill: var(--surface); stroke: var(--muted); stroke-width: 1.6; transition: stroke .15s; }
+.lk-svg .lk-r.src rect { fill: color-mix(in srgb, var(--accent) 11%, var(--surface)); stroke: var(--accent); stroke-width: 2.2; }
+.lk-svg .lk-r.sink rect { fill: color-mix(in srgb, var(--pipe-branch) 12%, var(--surface)); stroke: var(--pipe-branch); stroke-width: 2.2; }
+.lk-svg .lk-r.sel rect { stroke: #e8a200; stroke-width: 3; }
+.lk-svg .lk-r.pend rect { stroke: #e8a200; stroke-width: 3; stroke-dasharray: 7 4; }
+.lk-svg .lk-rn { font-size: 15px; font-weight: 700; fill: var(--ink); pointer-events: none; }
+.lk-svg .lk-rk { font-size: 11px; fill: var(--muted); pointer-events: none; }
+#lk-canvas .lk-r { cursor: grab; }
+#lk-canvas svg.mode-room { cursor: copy; }
+.lk-svg .lk-dl { stroke: var(--ink); stroke-width: 2; }
+.lk-svg .lk-ds { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+.lk-svg .lk-d.sel .lk-dl, .lk-svg .lk-d.sel .lk-ds { stroke: #e8a200; }
+.lk-svg .lk-d:hover .lk-dl { stroke: var(--accent); }
+.lk-svg .lk-dt { font-size: 12.5px; font-weight: 700; fill: var(--accent); paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }
+.lk-svg .lk-hit { stroke: transparent; stroke-width: 18; cursor: pointer; pointer-events: stroke; }
+.pl-f input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; width: 100%; min-width: 0; }
+@media (max-width: 860px) { .lk-canvas { height: 46vh; } .pl-f input[type=text] { font-size: 16px; } }
 /* 배관 도면 수리계산 */
 .net-open { margin: 8px 0 0; }
 .net-fig svg { min-width: 520px; }
@@ -377,7 +457,7 @@ table.t { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-
 .nt-le .nt-c { font-size: 12px; white-space: nowrap; }
 .muted { color: var(--muted); }
 details.more { margin-top: 6px; } details.more summary { cursor: pointer; font-size: 13px; color: var(--muted); }
-@media (max-width: 860px) { .plan-main.nt-main { display: block; } .nt-le input, .pl-f select { font-size: 16px; } .nt-canvas { display: block; overflow: auto; } .nt-canvas .net-svg { width: auto; min-width: 100%; height: 100%; } }
+@media (max-width: 860px) { .plan-main.nt-main { display: block; } .nt-le input, .pl-f select { font-size: 16px; } .nt-canvas { display: block; overflow: auto; } .nt-canvas .net-svg { width: auto; min-width: 100%; height: 100%; } .nt-canvas .net-svg.nt-iso { width: 100%; min-width: 600px; height: auto; } }
 /* 도면 SVG */
 .plan-svg { display: block; font-family: var(--font-body); }
 .plan-svg .pl-bg { fill: var(--surface); stroke: var(--muted); stroke-width: 1px; vector-effect: non-scaling-stroke; }
@@ -599,22 +679,34 @@ const STD = {
       },
     },
   },
+  // 특별피난계단의 계단실 및 부속실 제연설비 (NFTC 501A)
+  press: {
+    dP: 40, dPsp: 12.5, force: 110, c: 0.827, zoneMax: 20,
+    // 출입문 틈새면적 A = (L / ℓ) × Ad : [이름, ℓ (m), Ad (㎡)]
+    door: { in: ['외여닫이 (제연구역 실내 쪽으로 열림)', 5.6, 0.01], out: ['외여닫이 (제연구역 실외 쪽으로 열림)', 5.6, 0.02], dbl: ['쌍여닫이', 9.2, 0.03], ev: ['승강기 출입문', 8.0, 0.06] },
+    // 창문 틈새면적 = k × 틈새 길이 : [이름, k (㎡/m)]
+    win: { np: ['여닫이식 창문 (창틀에 방수팩킹 없음)', 2.55e-4], p: ['여닫이식 창문 (창틀에 방수팩킹 있음)', 3.61e-5], sl: ['미닫이식 창문', 1.00e-4] },
+    // 방연풍속 (m/s 이상)
+    vel: { both: ['계단실·부속실 동시 제연 또는 계단실 단독 제연', 0.5], room: ['부속실·승강장 단독 제연, 면하는 옥내가 거실', 0.7], corr: ['부속실·승강장 단독 제연, 면하는 옥내가 방화구조 복도', 0.5] },
+  },
   // 배관 마찰손실 기본값 (도면 수리계산). 문제에 값이 주어지면 도면 화면에서 고쳐 써요
   fric: {
     C: 100,
     sizes: [15, 20, 25, 32, 40, 50, 65, 80, 90, 100, 125, 150],
+    pipeSizes: [15, 20, 25, 32, 40, 50, 65, 80, 90, 100, 125, 150],
     // 배관용 탄소강관(SPP) 안지름 (mm)
     idSPP: { 15: 16.1, 20: 21.6, 25: 27.6, 32: 35.7, 40: 41.6, 50: 52.9, 65: 67.9, 80: 80.7, 90: 93.2, 100: 105.3, 125: 130.8, 150: 155.2 },
     // 관부속·밸브 상당길이 (m), sizes 순서. 90A는 80A와 100A의 가운데 값
     types: {
       elbow: ['90° 엘보', [0.60, 0.75, 0.90, 1.20, 1.50, 2.10, 2.40, 3.00, 3.60, 4.20, 5.10, 6.00]],
-      teeB:  ['분류 티', [0.90, 1.20, 1.50, 1.80, 2.10, 3.00, 3.60, 4.50, 5.40, 6.30, 7.50, 9.00]],
-      teeR:  ['직류 티', [0.18, 0.24, 0.27, 0.36, 0.45, 0.60, 0.75, 0.90, 1.05, 1.20, 1.50, 1.80]],
       red:   ['레듀셔', [0.36, 0.45, 0.54, 0.72, 0.90, 1.20, 1.50, 1.80, 2.10, 2.40, 3.00, 3.60]],
+      teeR:  ['직류 티', [0.18, 0.24, 0.27, 0.36, 0.45, 0.60, 0.75, 0.90, 1.05, 1.20, 1.50, 1.80]],
+      teeB:  ['분류 티', [0.90, 1.20, 1.50, 1.80, 2.10, 3.00, 3.60, 4.50, 5.40, 6.30, 7.50, 9.00]],
       gate:  ['게이트밸브', [0.12, 0.15, 0.18, 0.24, 0.30, 0.39, 0.48, 0.60, 0.71, 0.81, 0.99, 1.20]],
-      check: ['체크밸브', [1.2, 1.6, 2.0, 2.5, 3.1, 4.0, 4.6, 5.7, 6.65, 7.6, 10.0, 12.0]],
       angle: ['앵글밸브', [2.4, 3.6, 4.5, 5.4, 6.5, 8.4, 10.2, 12.0, 14.25, 16.5, 21.0, 24.0]],
+      check: ['체크밸브', [1.2, 1.6, 2.0, 2.5, 3.1, 4.0, 4.6, 5.7, 6.65, 7.6, 10.0, 12.0]],
     },
+    defOn: ['elbow', 'red', 'teeR', 'teeB'],               // 처음부터 계산에 넣는 관부속
     // 소방호스 100 m당 마찰손실수두 (m), 130 L/min 기준
     hose: { r40: ['40 mm 고무내장 호스', 12], c40: ['40 mm 마호스', 26], r50: ['50 mm 고무내장 호스', 3], c50: ['50 mm 마호스', 7] },
   },
@@ -987,7 +1079,7 @@ const TARGETS = [
     id: 'hyd', name: '수리학', desc: '성능시험배관, 관경, 방수압·방수량·K', calc: calcHyd,
     sections: [
       { title: '계산 종류', fields: [
-        { id: 'hy_kind', label: '무엇을 구할까요', type: 'sel', wide: true, def: 'perf', opts: [['perf', '성능시험배관 (관경·유량·압력)'], ['pipe', '관경 계산'], ['kq', '방수압·방수량·K']] },
+        { id: 'hy_kind', label: '무엇을 구할까요', type: 'sel', wide: true, chips: true, def: 'perf', opts: [['perf', '성능시험배관'], ['pipe', '관경 계산'], ['kq', '방수압·방수량·K']] },
       ]},
       { title: '성능시험배관', show: (v) => v.hy_kind === 'perf', fields: [
         { id: 'pf_Q', label: '펌프 정격토출량 Q', type: 'num', unit: 'L/min', def: 520 },
@@ -1008,7 +1100,7 @@ const TARGETS = [
         { id: 'kq_P', label: '방수압 P', type: 'num', units: ['MPa', 'kPa'], def: 0.1, show: (v) => v.kq_find !== 'P' },
         { id: 'kq_K', label: '방출계수 K', type: 'num', def: 80, show: (v) => v.kq_mode === 'K' && v.kq_find !== 'K' },
         { id: 'kq_d', label: '노즐 구경 d', type: 'num', unit: 'mm', def: 13, show: (v) => v.kq_mode === 'd' && v.kq_find !== 'd' },
-        { id: 'kq_C', label: '유량계수 C', type: 'num', def: 0.99, show: (v) => v.kq_mode === 'd', hint: '0.6597 × 0.99 ≈ 0.653이라서, 0.653으로 푸는 문제는 0.99를 넣으면 같아요.' },
+        { id: 'kq_C', label: '유량계수 C', type: 'num', def: 1, show: (v) => v.kq_mode === 'd' && !v.kq_653, hint: '문제에 유량계수가 없으면 1로 두세요.' },
       ]},
     ],
   },
@@ -1033,7 +1125,7 @@ const kqSec = (title, d) => ({
   fields: TARGETS.find((t) => t.id === 'hyd').sections.find((s) => s.title === '방수압·방수량·K').fields.map((f) => ({ ...f, def: f.id in d ? d[f.id] : f.def })),
 });
 const NET_SEC = (sp) => ({
-  title: '배관 수리계산 (도면)', toggle: 'net_use', toggleDef: true, kw: '마찰손실 하젠윌리엄스 상당길이 관부속 엘보 티 레듀셔 배관 도면 수리계산 방사압 전양정',
+  title: '배관 수리계산 (도면)', toggle: 'net_use', toggleDef: sp, kw: '마찰손실 하젠윌리엄스 상당길이 관부속 엘보 티 레듀셔 배관 도면 수리계산 방사압 전양정',
   note: sp
     ? '헤드 배치대로 펌프 → 수직배관 → 교차배관 → 가지배관 → 헤드를 자동으로 그려서, 헤드마다 방수압·방수량과 마찰손실, 전양정을 구해요. 배관 길이·구경·관부속, 열린 헤드, 높이는 도면에서 고쳐요.'
     : '층마다 수직배관 → 방수구 → 호스 → 노즐을 자동으로 그려서, 노즐마다 방수압·방수량과 마찰손실, 전양정을 구해요. 배관 길이·구경·관부속, 열린 노즐, 높이는 도면에서 고쳐요.',
@@ -1043,7 +1135,7 @@ const pumpSec = (p, d) => ({ title: '펌프 (양정을 직접 넣어서)', field
 
 TARGETS[0].name = '건축물 총합';
 TARGETS[0].desc = '옥내·옥외소화전, 스프링클러, 거실제연을 한 건물에서 한 번에';
-TARGETS.find((t) => t.id === 'tank').hidden = true;
+(() => { const T = TARGETS.find((t) => t.id === 'tank'); T.name = '옥외탱크저장소'; T.desc = '포소화설비, 방유제·보유공지 배치도를 한눈에'; })();
 TARGETS.find((t) => t.id === 'gas').hidden = true;
 
 // 포소화설비에 옥외탱크저장소(고정포·보조포)를 넣어요
@@ -1080,6 +1172,7 @@ function gasView(id, name, desc, agents) {
   };
 }
 
+const PT_ID = [[15, 16], [20, 22], [25, 27], [32, 36], [40, 42], [50, 53], [65, 69], [80, 81], [90, 93], [100, 105], [125, 130], [150, 155]];
 TARGETS.push(
   {
     id: 'indoor', name: '옥내소화전', desc: '수원, 펌프, 배관 수리계산', calc: calcIndoorView,
@@ -1092,7 +1185,10 @@ TARGETS.push(
       ]},
       RT_SEC(),
       pumpSec('in', { h1: 25, h2: 8, h3: STD.indoor.h3, h2label: '배관·호스 마찰손실' }),
-      kqSec('방수압·방수량 (노즐)', { kq_mode: 'd', kq_P: 0.17, kq_Q: 130, kq_d: 13 }),
+      (() => { const S = kqSec('방수압·방수량 (노즐)', { kq_mode: 'd', kq_P: 0.17, kq_Q: 130, kq_d: 13 });
+        S.fields = S.fields.map((f) => (f.id === 'kq_mode' ? { ...f, opts: [['d', 'Q = 0.653 × d² × √(10P) — 노즐 구경 d'], ['K', 'Q = K√(10P) — 방출계수 K']] } : f));
+        S.fields.push({ id: 'kq_653', type: 'fixed', label: '', def: true, show: () => false });
+        return S; })(),
       NET_SEC(false),
     ],
   },
@@ -1111,28 +1207,53 @@ TARGETS.push(
     ],
   },
   {
-    id: 'tanklay', name: '옥외탱크저장소', desc: '방유제·보유공지 배치도', calc: (v) => ({ cards: [tankLayoutCard(v)] }),
-    sections: [
-      { title: '1번 탱크', fields: [
-        { id: 'D', label: '지름 D', type: 'num', unit: 'm', def: 30 }, { id: 'TH', label: '높이 H', type: 'num', unit: 'm', def: 15 },
-        { id: 'TX', label: '지정수량의 배수', type: 'num', unit: '배', def: 1500, wide: true },
-      ]},
-      { title: '같은 방유제 안 2번 탱크', toggle: 'two', toggleDef: true, fields: [
-        { id: 'D2', label: '지름', type: 'num', unit: 'm', def: 20 }, { id: 'H2', label: '높이', type: 'num', unit: 'm', def: 12 },
-        { id: 'X2', label: '지정수량의 배수', type: 'num', unit: '배', def: 800, wide: true },
-      ]},
-      { title: '위험물', fields: [{ id: 'hiFlash', label: '인화점 200℃ 이상 위험물 (방유제 거리 기준 제외)', type: 'chk', def: false }] },
-    ],
-  },
-  {
-    id: 'sprinkler', name: '스프링클러', desc: '헤드 배치, 수원, 펌프, 배관 수리계산', calc: calcSprinklerView,
+    id: 'sprinkler', name: '스프링클러설비', desc: '헤드 개수·배치 도면, 수원, 펌프', calc: calcSprinklerView,
     sections: [
       { title: '건물', fields: [BF('use'), BF('fa'), BF('fb'), BF('L'), BF('W'), BF('fireproof'), BF('highMount')] },
       { title: '스프링클러', fields: TARGETS[0].sections.find((s) => s.toggle === 'sp_use').fields.filter((f) => !/^sp_(h1|h2|h3|conv|eta|k|share)$/.test(f.id)) },
       RT_SEC((v) => v.sp_type !== 'simple'),
       pumpSec('sp', { h1: 25, h2: 10, h3: STD.sp.h3 }),
       kqSec('방수압·방수량 (헤드)', { kq_mode: 'K', kq_P: 0.1, kq_Q: 80, kq_K: 80 }),
-      NET_SEC(true),
+    ],
+  },
+  {
+    id: 'sppoint', name: '스프링클러설비 일정지점 유량 및 압력', desc: '배관 도면으로 헤드별 방수압·방수량, 마찰손실, 낙차', calc: (v) => ({ cards: netCardPT(v) }),
+    sections: [
+      { title: '배관 모양', note: '가지배관 수와 헤드 수를 넣으면 시험 도면처럼 그려져요. 배관 하나하나의 길이·구경·관부속은 도면에서 눌러 고쳐요.', fields: [
+        { id: 'pt_btn', type: 'btn', act: 'net', label: '도면 열어서 배관·헤드 고치기' },
+        { id: 'pt_lines', label: '가지배관 수', type: 'num', unit: '줄', def: 2, min: 1 },
+        { id: 'pt_heads', label: '가지배관 1줄 헤드 수', type: 'num', unit: '개', def: 5, min: 1 },
+        { id: 'pt_S', label: '헤드 사이 거리', type: 'num', unit: 'm', def: 3.4 },
+        { id: 'pt_first', label: '교차배관 → 첫 헤드', type: 'num', unit: 'm', def: 1.7 },
+        { id: 'pt_Sb', label: '가지배관 사이 거리', type: 'num', unit: 'm', def: 3.4 },
+        { id: 'pt_c0', label: '수직배관 → 첫 가지배관', type: 'num', unit: 'm', def: 0 },
+        { id: 'pt_feed', label: '가지배관에 물이 들어가는 곳', type: 'sel', chips: true, wide: true, def: 'end', opts: [['end', '한쪽 끝'], ['center', '가운데 (양쪽으로)']] },
+      ]},
+      { title: '높이', fields: [
+        { id: 'pt_rH', label: '시작점 → 교차배관 높이', type: 'num', unit: 'm', def: 3, hint: '수직배관 길이예요. 시작점이 교차배관과 같은 높이면 0' },
+        { id: 'pt_rL', label: '시작점 → 수직배관 수평 길이', type: 'num', unit: 'm', def: 0 },
+        { id: 'pt_drop', label: '회향식 (가지배관에서 위로 올라갔다가 헤드로 내려옴)', type: 'chk', def: false },
+        { id: 'pt_rise', label: '위로', type: 'num', unit: 'm', def: 0.1, show: (v) => v.pt_drop },
+        { id: 'pt_fall', label: '아래로', type: 'num', unit: 'm', def: 0.3, show: (v) => v.pt_drop },
+        { id: 'pt_over', label: '옆으로', type: 'num', unit: 'm', def: 0.1, show: (v) => v.pt_drop },
+        { id: 'pt_dsz', label: '회향식 배관 구경', type: 'sel', def: '25', opts: [['20', '20A'], ['25', '25A'], ['32', '32A']], show: (v) => v.pt_drop },
+      ]},
+      { title: '계산 기준', fields: [
+        { id: 'pt_basis', label: '무엇을 기준으로 계산할까요', type: 'sel', chips: true, wide: true, def: 'min', opts: [['min', '최말단 헤드 방수압'], ['start', '시작점 압력']] },
+        { id: 'pt_P', label: '헤드 기준 방수압', type: 'num', unit: 'MPa', def: 0.1, dep: (v) => v.pt_basis, hint: () => (cur().pt_basis === 'start' ? 'K를 구할 때만 써요.' : '방수압이 가장 낮은 헤드가 이 압력이 돼요.') },
+        { id: 'pt_Ps', label: '시작점 압력', type: 'num', unit: 'MPa', def: 0.15, show: (v) => v.pt_basis === 'start' },
+        { id: 'pt_mode', label: '헤드 방수량', type: 'sel', chips: true, wide: true, def: 'precise', opts: [['precise', '정밀: Q = K√(10P)'], ['simple', '간단: 모두 같은 방수량']] },
+        { id: 'pt_kMode', label: '방출계수 K 정하는 방법', type: 'sel', wide: true, def: 'qp', show: (v) => v.pt_mode !== 'simple', opts: [['qp', '기준 방수량·방수압으로 (K = Q ÷ √(10P))'], ['k', 'K 직접 넣기']] },
+        { id: 'pt_q', label: '헤드 기준 방수량', type: 'num', unit: 'L/min', def: 80, show: (v) => v.pt_mode === 'simple' || v.pt_kMode !== 'k' },
+        { id: 'pt_K', label: '방출계수 K', type: 'num', def: 80, show: (v) => v.pt_mode !== 'simple' && v.pt_kMode === 'k' },
+        { id: 'pt_conv', label: '압력 ↔ 수두', type: 'sel', wide: true, def: 'std', opts: [['std', '1 MPa = 101.97 m (표준대기압 기준)'], ['simple', '1 MPa = 100 m (간략)']] },
+      ]},
+      { title: '마찰손실', note: '관부속 상당길이는 도면 화면의 마찰손실 설정에서 고쳐요.', fields: [
+        { id: 'pt_f', label: '마찰손실 식', type: 'sel', chips: true, wide: true, def: 'hw', opts: [['hw', '하젠-윌리엄스'], ['sq', '6 × 10⁴ × Q² ÷ (120² × d⁵)']] },
+        { id: 'pt_C', label: '조도계수 C', type: 'num', def: 100, show: (v) => v.pt_f !== 'sq' },
+        { id: 'pt_dia', label: '배관 안지름', type: 'sel', chips: true, wide: true, def: 'nom', opts: [['nom', '호칭경 그대로'], ['table', '안지름 표 (문제 값)']] },
+        ...PT_ID.map(([z, d]) => ({ id: 'pt_id' + z, label: `${z}A 안지름`, type: 'num', unit: 'mm', def: d, show: (v) => v.pt_dia === 'table' })),
+      ]},
     ],
   },
   gasView('co2', '이산화탄소', '전역·국소방출, 저장용기', [['co2', '이산화탄소']]),
@@ -1150,6 +1271,31 @@ TARGETS.push(
       { title: '배출기', fields: [BF('sm_pt'), BF('sm_eta'), BF('sm_k')] },
     ],
   },
+  {
+    id: 'press', name: '특별피난계단의 계단실 및 부속실 제연설비', desc: '누설틈새면적(직렬·병렬 도면), 누설량, 보충량, 급기량, 개방력', calc: calcPress,
+    sections: [
+      { title: '누설틈새면적', note: '제연구역·복도·거실 같은 실을 놓고, 실 사이에 틈새(문·창문)를 이어서 그려요. 같은 두 실 사이 틈새는 병렬, 실을 거쳐 가면 직렬로 합쳐요.', fields: [
+        { id: 'ps_btn', type: 'btn', act: 'lk', label: '틈새 도면 열기 (직렬·병렬)', hint: () => lkHint() },
+      ]},
+      { title: '차압·누설량', fields: [
+        { id: 'ps_dP', label: '차압 P', type: 'num', unit: 'Pa', def: 40, hint: '기준: 40 Pa 이상 (옥내에 스프링클러설비가 있으면 12.5 Pa 이상)' },
+        { id: 'ps_N', label: '제연구역 수 N', type: 'num', unit: '개 층', def: 1 },
+        { id: 'ps_alpha', label: '누설량 여유율', type: 'num', def: 1, wide: true, hint: '문제에서 누설량에 1.25를 곱하라고 하면 1.25를 넣으세요.' },
+      ]},
+      { title: '보충량', toggle: 'ps_sup', toggleDef: true, kw: '방연풍속 보충량', fields: [
+        { id: 'ps_zone', label: '제연 방식 (방연풍속)', type: 'sel', wide: true, def: 'room', opts: () => Object.entries(STD.press.vel).map(([k, [l, V]]) => [k, `${l}: ${V} m/s 이상`]) },
+        { id: 'ps_V', label: '방연풍속 직접 입력', type: 'num', unit: 'm/s', def: null, ph: '비우면 기준값' },
+        { id: 'ps_S', label: '출입문 1개 면적 S', type: 'num', unit: '㎡', def: 1.89, hint: '문 폭 × 높이 (예: 0.9 × 2.1)' },
+        { id: 'ps_cnt', label: '부속실(제연구역) 수', type: 'num', unit: '개', def: 20, wide: true, hint: () => `${STD.press.zoneMax}개 이하면 1개 층, 넘으면 2개 층의 보충량을 넣어요.` },
+      ]},
+      { title: '출입문 개방력', toggle: 'ps_force', toggleDef: false, kw: '개방력 도어클로저 110N', fields: [
+        { id: 'ps_Fdc', label: '도어클로저 힘 F<sub>dc</sub>', type: 'num', unit: 'N', def: 40 },
+        { id: 'ps_W', label: '문 폭 W', type: 'num', unit: 'm', def: 0.9 },
+        { id: 'ps_H', label: '문 높이', type: 'num', unit: 'm', def: 2.1 },
+        { id: 'ps_d', label: '손잡이 → 문 끝 거리 d', type: 'num', unit: 'm', def: 0.1 },
+      ]},
+    ],
+  },
 );
 TARGETS.find((t) => t.id === 'hyd').name = '수리학';
 ['spray', 'foam'].forEach((id) => {
@@ -1159,17 +1305,18 @@ TARGETS.find((t) => t.id === 'hyd').name = '수리학';
 });
 
 const MENUS = [
-  { id: 'bld', name: '건축물기준', desc: '건축물 총합, 옥내·옥외소화전, 옥외탱크저장소', items: ['building', 'indoor', 'outdoor', 'tanklay'] },
-  { id: 'fire', name: '소화설비기준', desc: '스프링클러, 물분무, 포, 가스계', items: ['sprinkler', 'spray', 'foam', 'co2', 'halon', 'clean', 'powder'] },
-  { id: 'smk', name: '제연설비기준', desc: '거실제연', items: ['smoke'] },
+  { id: 'bld', name: '건축물기준', desc: '건축물·옥외탱크저장소를 한눈에', items: ['building', 'tank'] },
+  { id: 'fire', name: '소화설비기준', desc: '소화기구부터 옥외소화전까지', items: ['ext', 'indoor', 'sprinkler', 'sppoint', 'spray', 'foam', 'co2', 'halon', 'clean', 'powder', 'outdoor'] },
+  { id: 'smk', name: '제연설비기준', desc: '거실제연, 계단실·부속실 제연', items: ['smoke', 'press'] },
   { id: 'etc', name: '수리학 및 기계기타', desc: '수리학, 피난기구, 소화기구, 소화수조', items: ['hyd', 'evac', 'ext', 'cistern'] },
 ];
 const menuOf = (tid) => MENUS.find((m) => m.items.includes(tid)) || MENUS[0];
+let curMenu = 'bld', shownMenu = null;
 const lastIn = {};
 
 /* 설비별 화면 계산: 건축물 계산을 그 설비만 켜서 쓰고, 방수압·방수량과 도면 수리계산을 붙여요 */
 function viewBuilding(v, over) {
-  return calcBuilding({ ...v, in_use: false, out_use: false, sp_use: false, sm_use: false, in_share: false, out_share: false, sp_share: false, height: null, ...over });
+  return calcBuilding({ ...v, in_use: false, out_use: false, sp_use: false, sm_use: false, in_share: false, out_share: false, sp_share: false, height: null, _view: true, ...over });
 }
 function roofNotes(v, isIndoor) {
   const isHigh = v.fa >= 30, rt = roofTank(v, isHigh);
@@ -1212,7 +1359,6 @@ function calcSprinklerView(v) {
   const cards = r.cards.filter((c) => c.title !== '건물 개요');
   if (cards[0] && v.sp_type !== 'simple') cards[0].notes = [...roofNotes(v, false), ...(cards[0].notes || [])];
   cards.push(...kqCards(v));
-  if (v.net_use) cards.push(netCard(v, 'sp', { nx: ctx.nx, ny: ctx.ny, Sx: ctx.Sx, Sy: ctx.Sy, nBase: ctx.N, pre: 'sp' }));
   return { cards };
 }
 function calcSmokeView(v) {
@@ -1279,22 +1425,23 @@ function calcHyd(v) {
   }
   // 방수압·방수량·K
   const mode = v.kq_mode, find = v.kq_find === 'K' && mode === 'd' ? 'd' : v.kq_find === 'd' && mode === 'K' ? 'K' : v.kq_find;
-  const Q = n0(v.kq_Q), P = toMPa(n0(v.kq_P), v.kq_P_u), K = n0(v.kq_K), d = n0(v.kq_d), C = n0(v.kq_C);
+  const fix = !!v.kq_653;   // 옥내소화전 노즐: Q = 0.653 × d² × √(10P)
+  const Q = n0(v.kq_Q), P = toMPa(n0(v.kq_P), v.kq_P_u), K = n0(v.kq_K), d = n0(v.kq_d), C = fix ? 1 : n0(v.kq_C);
+  const kc = fix ? 0.653 : k0 * C, kt = fix ? '0.653' : `${k0} × C`, ks = fix ? '0.653' : `${k0} × ${fx(C)}`;
   const need = { Q: [P, mode === 'K' ? K : d], P: [Q, mode === 'K' ? K : d], K: [Q, P], d: [Q, P] }[find];
   if (mode === 'd' && !(C > 0)) return err('유량계수에 0보다 큰 값을 넣어 주세요.');
   if (need.some((x) => !(x > 0))) return err('구할 값 말고 나머지 칸에 0보다 큰 값을 넣어 주세요.');
-  const a = mode === 'K' ? null : k0 * C * d * d;
   let ans, unit, lab, f, sub;
   const symK = [['Q', '방수량 (L/min)'], ['K', '방출계수'], ['P', '방수압 (MPa)']];
-  const symD = [['Q', '방수량 (L/min)'], ['C', '유량계수'], ['d', '노즐 구경 (mm)'], ['P', '방수압 (MPa)']];
+  const symD = [['Q', '방수량 (L/min)'], ...(fix ? [['0.653', '0.6597 × 유량계수 0.99']] : [['C', '유량계수']]), ['d', '노즐 구경 (mm)'], ['P', '방수압 (MPa)']];
   if (mode === 'K') {
     if (find === 'Q') { ans = K * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = 'Q = K × √(10P)'; sub = `Q = ${fx(K)} × √(10 × ${fx(P, 4)})`; }
     if (find === 'P') { ans = (Q / K) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = 'P = (Q ÷ K)² ÷ 10'; sub = `P = (${fx(Q)} ÷ ${fx(K)})² ÷ 10`; }
     if (find === 'K') { ans = Q / Math.sqrt(10 * P); unit = ''; lab = '방출계수 K'; f = 'K = Q ÷ √(10P)'; sub = `K = ${fx(Q)} ÷ √(10 × ${fx(P, 4)})`; }
   } else {
-    if (find === 'Q') { ans = k0 * C * d * d * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = `Q = ${k0} × C × d² × √(10P)`; sub = `Q = ${k0} × ${fx(C)} × ${fx(d)}² × √(10 × ${fx(P, 4)})`; }
-    if (find === 'P') { ans = (Q / (k0 * C * d * d)) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = `P = (Q ÷ (${k0} × C × d²))² ÷ 10`; sub = `P = (${fx(Q)} ÷ (${k0} × ${fx(C)} × ${fx(d)}²))² ÷ 10`; }
-    if (find === 'd') { ans = Math.sqrt(Q / (k0 * C * Math.sqrt(10 * P))); unit = 'mm'; lab = '노즐 구경 d'; f = `d = √(Q ÷ (${k0} × C × √(10P)))`; sub = `d = √(${fx(Q)} ÷ (${k0} × ${fx(C)} × √(10 × ${fx(P, 4)})))`; }
+    if (find === 'Q') { ans = kc * d * d * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = `Q = ${kt} × d² × √(10P)`; sub = `Q = ${ks} × ${fx(d)}² × √(10 × ${fx(P, 4)})`; }
+    if (find === 'P') { ans = (Q / (kc * d * d)) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = `P = (Q ÷ (${kt} × d²))² ÷ 10`; sub = `P = (${fx(Q)} ÷ (${ks} × ${fx(d)}²))² ÷ 10`; }
+    if (find === 'd') { ans = Math.sqrt(Q / (kc * Math.sqrt(10 * P))); unit = 'mm'; lab = '노즐 구경 d'; f = `d = √(Q ÷ (${kt} × √(10P)))`; sub = `d = √(${fx(Q)} ÷ (${ks} × √(10 × ${fx(P, 4)})))`; }
   }
   const steps = [];
   if (find !== 'P' && v.kq_P_u === 'kPa') steps.push(step({ t: '압력 단위 환산', sub: `P = ${fx(v.kq_P)} kPa ÷ 1000`, ans: `${fx(P, 4)} MPa` }));
@@ -1304,12 +1451,12 @@ function calcHyd(v) {
     find !== 'P' && { l: '방수압 P', v: fx(P, 4), u: 'MPa' },
     mode === 'K' && find !== 'K' && { l: '방출계수 K', v: fx(K), u: '' },
     mode === 'd' && find !== 'd' && { l: '노즐 구경 d', v: fx(d), u: 'mm' },
-    mode === 'd' && { l: '유량계수 C', v: fx(C), u: '' },
+    mode === 'd' && !fix && { l: '유량계수 C', v: fx(C), u: '' },
   ].filter(Boolean);
   return { cards: [{
     title: '방수압·방수량·K', badge: mode === 'K' ? 'Q = K√(10P)' : '노즐',
     tiles: [{ l: lab, v: fx(ans, find === 'P' ? 4 : 2), u: unit, tone: 'key' }, ...given],
-    notes: [mode === 'K' ? 'Q는 L/min, P는 MPa예요. 방수압이 4배가 되면 방수량은 2배가 돼요.' : `Q는 L/min, d는 mm, P는 MPa예요. ${k0} × C 에서 C = 0.99면 약 0.653이에요.`],
+    notes: [mode === 'K' ? 'Q는 L/min, P는 MPa예요. 방수압이 4배가 되면 방수량은 2배가 돼요.' : fix ? 'Q는 L/min, d는 mm, P는 MPa예요. 옥내소화전 노즐은 0.653 (0.6597 × 유량계수 0.99)을 써요.' : 'Q는 L/min, d는 mm, P는 MPa예요.'],
     steps,
   }] };
 }
@@ -1591,6 +1738,19 @@ function calcBuilding(v) {
     });
   }
 
+  // 건축물 총합 화면: 켠 설비를 한 표로
+  if (!v._view) {
+    const val = (c, ls) => { for (const l of ls) { const x = (c.tiles || []).find((y) => y.l === l); if (x) return `${x.v}${x.u ? ' ' + x.u : ''}`; } return '-'; };
+    const rows = cards.filter((c) => c.tiles && !c.flat && !/도면/.test(c.title)).map((c) => [
+      c.kind === 'total' ? `<b>${c.title}</b>` : c.title,
+      val(c, ['층당 설치개수', '설치개수', '층당 헤드']),
+      val(c, ['수원 합계', '수원']),
+      val(c, ['펌프 토출량', '배출량']),
+      val(c, ['전양정']),
+      val(c, ['전동기 동력', '배출기 동력']),
+    ]);
+    if (rows.length) cards[0].extra = `<div><h4 class="sub-h">한눈에 보기</h4>${table(['설비', '개수', '수원', '토출량·배출량', '전양정', '동력'], rows)}</div>`;
+  }
   return { cards };
 }
 
@@ -2379,7 +2539,11 @@ function fieldHTML(f, val) {
   const hint = hintText ? `<span class="hint">${hintText}</span>` : '';
   if (f.type === 'btn') return `<div class="fld wide"><button type="button" class="btn-act" data-act="${f.act}">${f.label}</button>${hint}</div>`;
   if (f.type === 'chk') return `<label class="chk wide" for="${id}"><input type="checkbox" id="${id}" data-k="${f.id}" ${val ? 'checked' : ''}><span>${f.label}${hintText ? `<br><span class="hint">${hintText}</span>` : ''}</span></label>`;
-  if (f.type === 'sel') return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><select id="${id}" data-k="${f.id}">${optsOf(f).map(([k, l]) => `<option value="${k}"${String(val) === String(k) ? ' selected' : ''}>${l}</option>`).join('')}</select>${hint}</label>`;
+  if (f.type === 'sel') {
+    const opts = optsOf(f), on = opts.find(([k]) => String(k) === String(val)) || opts[0];
+    if (f.chips) return `<div class="fld${f.wide ? ' wide' : ''}"><span class="fl" id="${id}_l">${f.label}</span><div class="chips" role="radiogroup" aria-labelledby="${id}_l" id="${id}">${opts.map(([k, l]) => `<button type="button" role="radio" class="chip" data-chip="${f.id}" data-v="${esc(k)}" aria-checked="${on && String(on[0]) === String(k)}">${l}</button>`).join('')}</div>${hint}</div>`;
+    return `<div class="fld${f.wide ? ' wide' : ''}"><span class="fl" id="${id}_l">${f.label}</span><button type="button" class="cs-btn" id="${id}" data-cs="${f.id}" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}_l ${id}"><span class="cs-v">${on ? on[1] : ''}</span><svg class="cs-ar" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></button>${hint}</div>`;
+  }
   const val_ = (x) => (typeof x === 'function' ? x() : x);
   const lim = `${f.min != null ? ` min="${val_(f.min)}"` : ''}${f.max != null ? ` max="${val_(f.max)}"` : ''} step="${f.step || 'any'}"`;
   const list = f.list ? `<datalist id="dl_${f.id}">${val_(f.list).map((o) => `<option value="${o}"></option>`).join('')}</datalist>` : '';
@@ -2390,10 +2554,19 @@ function fieldHTML(f, val) {
   return `<label class="fld${f.wide ? ' wide' : ''}" for="${id}"><span class="fl">${f.label}</span><span class="iw"><input type="number"${lim} inputmode="decimal" id="${id}" data-k="${f.id}" value="${val ?? ''}" placeholder="${f.ph || ''}"${f.list ? ` list="dl_${f.id}"` : ''}>${unit}</span>${list}${hint}</label>`;
 }
 
+const MENU_ICON = {
+  bld: '<svg viewBox="0 0 24 24"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-5h6v5"/><path d="M8 10h2M14 10h2M8 13.5h2M14 13.5h2"/></svg>',
+  fire: '<svg viewBox="0 0 24 24"><path d="M12 3c1.5 3 5 5.2 5 9.3A5 5 0 0 1 7 12.5c0-2 1-3.4 2.2-4.6.2 1.6 1 2.6 2.1 3.1C11 8 11.4 5.4 12 3Z"/><path d="M12 21v-4"/></svg>',
+  smk: '<svg viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/></svg>',
+  etc: '<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="7"/><path d="M12 13l3.5-3.5"/><path d="M9 3h6"/></svg>',
+};
 function renderTargets() {
-  const mm = menuOf(current);
-  $('#targets').innerHTML = `<div class="menu-main" role="group" aria-label="대메뉴">${MENUS.map((m) => `<button type="button" data-m="${m.id}" aria-pressed="${m === mm}"><b>${m.name}</b><small>${m.desc}</small></button>`).join('')}</div>
-    <div class="menu-sub" role="group" aria-label="${mm.name}">${mm.items.map((id) => { const t = TARGETS.find((x) => x.id === id); return `<button type="button" data-t="${id}" aria-pressed="${id === current}" title="${t.desc}">${t.name}</button>`; }).join('')}</div>`;
+  if (!(MENUS.find((m) => m.id === curMenu) || {}).items?.includes(current)) curMenu = menuOf(current).id;
+  const mm = MENUS.find((m) => m.id === curMenu), anim = shownMenu !== mm.id;
+  shownMenu = mm.id;
+  lastIn[mm.id] = current;
+  $('#targets').innerHTML = `<div class="menu-main" role="group" aria-label="대메뉴">${MENUS.map((m) => `<button type="button" data-m="${m.id}" aria-pressed="${m === mm}"><span class="mm-ic" aria-hidden="true">${MENU_ICON[m.id]}</span><span class="mm-t"><b>${m.name}</b><small>${m.desc}</small></span></button>`).join('')}</div>
+    <div class="menu-sub${anim ? ' enter' : ''}" role="group" aria-label="${mm.name}">${mm.items.map((id, i) => { const t = TARGETS.find((x) => x.id === id); return `<button type="button" data-t="${id}" aria-pressed="${id === current}" title="${t.desc}" style="--i:${i}">${t.name}</button>`; }).join('')}</div>`;
 }
 
 // 지금 화면에 보이는 입력칸 목록 (바뀌었는지 비교용)
@@ -2408,6 +2581,7 @@ function layoutKey() {
 
 let lastLK = '';
 function renderInputs() {
+  if (CS.btn) csClose(false);
   const t = target(), v = state[t.id];
   $('#form').innerHTML = t.sections.map((s, si) => {
     if (s.show && !s.show(v)) return '';
@@ -2431,6 +2605,11 @@ const GROUPS = [
   { g: '배출', main: ['배출량'], sub: ['배출량 (분당)'] },
   { g: '펌프', main: ['펌프 토출량', '가압송수장치 양수량'], sub: ['전양정', '펌프 토출압력'] },
   { g: '양정 구성', main: [], sub: ['실양정 h₁', '마찰손실 h₂', '방사압 환산수두 h₃'] },
+  { g: '압력', main: ['시작점 압력'], sub: ['최말단 방수압', '최말단 방수압 (기준)', '총 마찰손실압력', '낙차'] },
+  { g: '방수량', main: ['전체 방수량'], sub: ['최말단 방수량'] },
+  { g: '급기', main: ['급기량'], sub: ['누설량', '보충량', '급기량 (분당)', '급기량 (시간당)'] },
+  { g: '틈새', main: ['합성 누설틈새면적'], sub: ['틈새 수'] },
+  { g: '개방력', main: ['개방력'], sub: ['차압으로 생기는 힘', '도어클로저 힘'] },
   { g: '동력', main: ['전동기 동력', '배출기 동력'], sub: ['축동력', '수동력'] },
   { g: '배치', main: ['탱크 사이'], sub: ['방유제 최소 크기'] },
   { g: '관경', main: ['선정 관경'], sub: ['계산 관경', '유속 기준 호칭', '최소 구경'] },
@@ -2444,8 +2623,16 @@ const CHAIN = {
   '유효수량': [/설치개수$|^기준개수$|^동시 개방/, /^수원 \(유효수량\)$|^수원$/],
   '옥상수조': [/^옥상수조 수원$/],
   '수원': [/^유효 수평거리$|^설치개수$|^바닥을 뺀|^펌프 토출량$/, /^수원$/],
-  '펌프 토출량': [/설치개수$|^기준개수$|^동시 개방|^헤드 방수량$/, /^펌프 토출량/],
+  '펌프 토출량': [/설치개수$|^기준개수$|^동시 개방|^방출계수 K$|^헤드 방수량$/, /^펌프 토출량/],
   '마찰손실 h₂': ['하젠-윌리엄스 식', '마찰손실 h₂'],
+  '시작점 압력': [/^마찰손실 식$|^총 마찰손실압력$|^낙차$/, /^시작점 압력$/],
+  '최말단 방수압': [/^마찰손실 식$|^총 마찰손실압력$|^낙차$/, /^최말단 방수압$/],
+  '총 마찰손실압력': [/^마찰손실 식$/, /^총 마찰손실압력$/],
+  '전체 방수량': [/^방출계수 K$|^헤드 방수량$/, /^전체 방수량$/],
+  '최말단 방수량': [/^방출계수 K$/, /^헤드 방수량$/],
+  '급기량': [/^누설량$|^보충량$/, /^급기량$/],
+  '합성 누설틈새면적': [/틈새면적 \(|병렬|직렬|남은 연결/, /^합성 누설틈새면적$/],
+  '개방력': ['차압으로 생기는 힘', '개방력'],
   '개방 헤드': [/^동시 개방/], '개방 노즐': [/^동시 개방/],
   '축동력': ['수동력', '축동력'],
   '전동기 동력': ['수동력', '축동력', '전동기 동력'],
@@ -2517,13 +2704,14 @@ function groupTiles(c) {
   if (i >= 0) rows.push(rows.splice(i, 1)[0]);
   return rows;
 }
+const ck = (t) => current + '|' + t;   // 화면마다 따로 기억
 const openVal = new Map();   // 카드 제목 → 펼친 값 이름
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 function valHTML(c, x, cls) {
   const inner = `<span class="vl">${x.dl || x.l}</span><span class="vv">${x.v}${x.u ? `<small>${x.u}</small>` : ''}</span>`;
   const tone = x.tone === 'key' ? ' key' : '';
   if (!stepIdx(c, x.l).length) return `<div class="val ${cls}${tone}">${inner}</div>`;
-  const on = openVal.get(c.title) === x.l;
+  const on = openVal.get(ck(c.title)) === x.l;
   return `<button type="button" class="val ${cls}${tone} has${on ? ' on' : ''}" data-card="${esc(c.title)}" data-l="${esc(x.l)}" aria-expanded="${on}">${inner}</button>`;
 }
 function explainHTML(c, label) {
@@ -2533,7 +2721,7 @@ function explainHTML(c, label) {
   return `<div class="explain"><div class="ex-h"><span><b>${name}</b> 계산 과정${idx.length > 1 ? ` · ${idx.length}단계` : ''}</span><button type="button" class="ex-x" data-card="${esc(c.title)}" aria-label="계산 과정 닫기">닫기</button></div><div class="step-list chain">${idx.map((i) => c.steps[i]).join('')}</div></div>`;
 }
 function rowsHTML(c) {
-  const open = openVal.get(c.title);
+  const open = openVal.get(ck(c.title));
   return `<div class="rows${c.flat ? ' flat' : ''}">${groupTiles(c).map((r) => {
     const items = [r.main, ...r.items].filter(Boolean);
     const isOpen = open && items.some((x) => x.l === open);
@@ -2554,7 +2742,7 @@ function cardHTML(c) {
     ${c.warns && c.warns.length ? `<ul class="warns">${c.warns.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
     ${c.extraTop || ''}
     ${c.notes && c.notes.length ? `<ul class="notes">${c.notes.map((w) => `<li>${w}</li>`).join('')}</ul>` : ''}
-    ${c.steps && c.steps.length ? `<details class="steps" data-card="${esc(c.title)}"${openSteps.has(c.title) ? ' open' : ''}><summary>전체 계산 과정 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
+    ${c.steps && c.steps.length ? `<details class="steps" data-card="${esc(c.title)}"${openSteps.has(ck(c.title)) ? ' open' : ''}><summary>전체 계산 과정 (${c.steps.length}단계)</summary><div class="step-list">${c.steps.join('')}</div></details>` : ''}
     ${c.extra || ''}
   </article>`;
 }
@@ -2702,7 +2890,7 @@ let SIDX = [];
 function buildIndex() {
   // 검색 목록은 '선택'만: 선택란의 항목과, 체크해서 켜는 설비(옥외소화전·거실제연 등)
   const out = [];
-  MENUS.flatMap((m) => m.items).filter((id) => id !== 'building').map((id) => TARGETS.find((t) => t.id === id)).forEach((T) => {
+  [...new Set(MENUS.flatMap((m) => m.items))].filter((id) => id !== 'building' && id !== 'tank').map((id) => TARGETS.find((t) => t.id === id)).forEach((T) => {
     T.sections.forEach((s, si) => {
       if (s.toggle) out.push({ k: 'opt', t: T.id, si, label: s.title, path: `${T.name} › 설비 켜기`, more: s.kw || '' });
       s.fields.forEach((f) => {
@@ -2803,7 +2991,7 @@ function goEntry(e) {
       if (s) v[s.toggle] = true;
       if (!cardOn()) T.sections.forEach((S) => { if (S.toggle && !cardOn()) v[S.toggle] = true; });
     }
-    openVal.set(e.card, e.l);
+    openVal.set(ck(e.card), e.l);
     renderTargets(); renderInputs(); renderResults();
     const btn = [...document.querySelectorAll('#results .val')].find((b) => (b.dataset.card === e.card && b.dataset.l === e.l) || (!b.dataset.l && b.querySelector('.vl') && b.querySelector('.vl').textContent === e.label && b.closest('.card').querySelector('h3').textContent === e.card));
     const el = btn || document.querySelector('#results');
@@ -3271,13 +3459,13 @@ const range = (a, b) => Array.from({ length: Math.max(0, b - a) }, (_, i) => a +
 function netDefaults(kind) {
   const common = {
     kind, mode: 'precise', C: FR.C, dia: 'nom', conv: 'std', follow: true,
-    fitOn: Object.fromEntries(Object.keys(FR.types).map((k) => [k, true])),
+    fitOn: Object.fromEntries(Object.keys(FR.types).map((k) => [k, FR.defOn.includes(k)])),
     fitLe: Object.fromEntries(Object.entries(FR.types).map(([k, [, a]]) => [k, a.slice()])),
     tankOn: false, tankPos: 'below', tankH: 3, sucLoss: 0, pumpL: 0,
-    openMode: 'base', openSet: {}, ov: {},
+    openMode: 'base', openSet: {}, ov: {}, kMode: 'qp',
   };
-  if (kind === 'sp') return { ...common, nx: 4, ny: 2, Sx: 3.2, Sy: 3.2, feed: 'center', hB: 3, floorsOn: false, nf: 5, FH: 3.5, dropOn: true, rise: 0.3, fall: 0.5, dropSize: 25, K: 80, Pmin: 0.1, qS: 80 };
-  return { ...common, nf: 5, FH: 3.5, outH: 1.5, perFloor: 1, out2L: 20, outL: 1, pumpZ: 0, K: 99.71, Pmin: 0.17, qS: 130, hoseOn: true, hoseType: 'r40', hoseLen: 15, hoseRate: 12 };
+  if (kind === 'pt') return { ...common, openMode: 'all' };
+  return { ...common, nf: 5, FH: 3.5, outH: 1.5, perFloor: 1, out2L: 20, outL: 1, pumpZ: 0, K: 99.71, nozD: 13, Pmin: 0.17, qS: 130, hoseOn: false, hoseType: 'r40', hoseLen: 15, hoseRate: 12 };
 }
 
 function netModel(kind) { return { kind, nodes: new Map(), segs: [], segById: new Map(), leaves: [], root: 'P' }; }
@@ -3294,44 +3482,170 @@ function sAdd(M, net, id, a, b, o) {
   return s;
 }
 
-/* 스프링클러: 펌프 → 수직배관 → 교차배관 → 가지배관 → (회향식 연결배관) → 헤드, 한 개 층 평면 */
-function netBuildSP(n, ctx) {
-  const M = netModel('sp');
-  const f = n.follow && ctx && ctx.nx > 0;
-  const nx = Math.max(1, Math.min(40, Math.round(f ? ctx.nx : n.nx) || 1));
-  const ny = Math.max(1, Math.min(30, Math.round(f ? ctx.ny : n.ny) || 1));
-  const Sx = f ? ctx.Sx : (n.Sx > 0 ? n.Sx : 3), Sy = f ? ctx.Sy : (n.Sy > 0 ? n.Sy : 3);
-  const xs = range(0, nx).map((i) => (i + 0.5) * Sx), ys = range(0, ny).map((j) => (j + 0.5) * Sy);
-  const center = n.feed === 'center' && nx >= 2, nl = center ? Math.floor(nx / 2) : 0;
-  const xc = center ? (xs[nl - 1] + xs[nl]) / 2 : 0;
-  const zB = (n.floorsOn ? (Math.max(1, Math.round(n.nf) || 1) - 1) * n0(n.FH) : 0) + n0(n.hB);
-  M.geo = { W: nx * Sx, H: ny * Sy, xs, ys, xc, nx, ny, Sx, Sy, nl, center, zB };
-  const cmin = STD.sp.crossMin, riserSize = Math.max(pipeSize(nx * ny), cmin);
-  nAdd(M, 'P', { x: xc, y: 0, z: 0, label: '펌프' });
-  nAdd(M, 'R', { x: xc, y: 0, z: zB });
-  sAdd(M, n, 'riser', 'P', 'R', { L: r2(n0(n.pumpL) + zB), size: riserSize, fit: { elbow: n0(n.pumpL) > 0 ? 2 : 1 }, role: 'riser', label: '수직배관 (펌프 → 교차배관)' });
-  let prev = 'R', prevSize = riserSize, py = 0;
-  ys.forEach((y, j) => {
-    const size = Math.max(pipeSize(nx * (ny - j)), cmin), J = `J${j}`;
-    nAdd(M, J, { x: xc, y, z: zB });
-    sAdd(M, n, `c${j}`, prev, J, { L: r2(y - py), size, fit: { teeR: j > 0 ? 1 : 0, red: size !== prevSize ? 1 : 0 }, role: 'cross', label: `교차배관 ${j === 0 ? '시작 → 1행' : `${j}행 → ${j + 1}행`}` });
-    prev = J; prevSize = size; py = y;
-    const sides = center ? [['오른쪽', range(nl, nx)], ['왼쪽', range(0, nl).reverse()]] : [['', range(0, nx)]];
-    sides.forEach(([side, idx]) => {
-      let bp = J, bx = xc, bs = size;
-      idx.forEach((i, k) => {
-        const s = pipeSize(idx.length - k), T = `T${j}_${i}`, H = `H${j}_${i}`, D = `d${j}_${i}`, last = k === idx.length - 1;
-        nAdd(M, T, { x: xs[i], y, z: zB });
-        sAdd(M, n, `b${j}_${i}`, bp, T, { L: r2(Math.abs(xs[i] - bx)), size: s, fit: k === 0 ? { teeB: 1 } : { teeR: 1, red: s !== bs ? 1 : 0 }, role: 'branch', label: `가지배관 ${j + 1}행${side ? ' ' + side : ''} ${k + 1}번째 구간` });
+/* 스프링클러 일정지점: 시작점 → 수직배관 → 교차배관 → 가지배관 → (회향식) → 헤드. 시험 문제처럼 작은 배관망 */
+const circ = (i) => (i >= 1 && i <= 20 ? String.fromCharCode(0x245f + i) : `(${i})`);
+const clampI = (x, a, b, d) => Math.max(a, Math.min(b, Math.round(x) || d));
+function netBuildPT(n) {
+  const M = netModel('pt');
+  const L = clampI(n.lines, 1, 8, 2), H = clampI(n.heads, 1, 12, 5);
+  const S = n.S > 0 ? n.S : 3, first = n0(n.first), Sb = n.Sb > 0 ? n.Sb : 3, c0 = n0(n.c0);
+  const center = n.feed === 'center' && H >= 2;
+  const zB = n0(n.rH), rL = n0(n.rL);
+  const cmin = STD.sp.crossMin, rsz = Math.max(pipeSize(L * H), cmin);
+  M.geo = { L, H, S, first, Sb, c0, zB, rL, center };
+  nAdd(M, 'P', { x: 0, y: -rL, z: 0, label: '시작점' });
+  let top = 'P';
+  if (rL > 0) { nAdd(M, 'B', { x: 0, y: 0, z: 0 }); sAdd(M, n, 'rh', 'P', 'B', { L: r2(rL), size: rsz, fit: { elbow: zB > 0 ? 1 : 0 }, role: 'riser', label: '시작점 → 수직배관' }); top = 'B'; }
+  if (zB > 0) { nAdd(M, 'R', { x: 0, y: 0, z: zB }); sAdd(M, n, 'riser', top, 'R', { L: r2(zB), size: rsz, fit: { elbow: 1 }, role: 'riser', label: '수직배관' }); top = 'R'; }
+  let prev = top, prevSize = rsz, px = 0;
+  const lines = [];
+  for (let i = 0; i < L; i++) {
+    const x = c0 + i * Sb, size = Math.max(pipeSize((L - i) * H), cmin), J = `J${i}`;
+    if (x - px > 1e-9 || i > 0) {
+      nAdd(M, J, { x, y: 0, z: zB });
+      sAdd(M, n, `c${i}`, prev, J, { L: r2(x - px), size, fit: { teeR: i > 0 ? 1 : 0, red: size !== prevSize ? 1 : 0 }, role: 'cross', label: `교차배관 ${i === 0 ? '→ 1번 가지배관' : `${i}번 → ${i + 1}번 가지배관`}` });
+      prev = J;
+    } else M.nodes.get(prev).x = x;
+    prevSize = size; px = x;
+    const jn = prev, sides = center ? [[1, range(0, Math.ceil(H / 2))], [-1, range(0, Math.floor(H / 2))]] : [[1, range(0, H)]];
+    sides.forEach(([dir, ks]) => {
+      let bp = jn, by = 0, bs = size;
+      ks.forEach((k) => {
+        const y = dir * (first + k * S), nD = ks.length - k, s = pipeSize(nD), T = `T${i}_${dir}_${k}`, Hd = `H${i}_${dir}_${k}`, D = `d${i}_${dir}_${k}`, last = k === ks.length - 1;
+        nAdd(M, T, { x, y, z: zB });
+        sAdd(M, n, `b${i}_${dir}_${k}`, bp, T, { L: r2(Math.abs(y - by)), size: s, fit: k === 0 ? { teeB: 1 } : { teeR: 1, red: s !== bs ? 1 : 0 }, role: 'branch', label: '' });
         const o = n.ov[D] || {};
-        const ri = n.dropOn ? (o.rise != null ? o.rise : n0(n.rise)) : 0, fa = n.dropOn ? (o.fall != null ? o.fall : n0(n.fall)) : 0;
-        nAdd(M, H, { x: xs[i], y, z: r2(zB + ri - fa), leaf: true, label: `${j + 1}-${i + 1}` });
-        sAdd(M, n, D, T, H, { L: r2(ri + fa), size: n.dropOn ? n.dropSize : s, fit: n.dropOn ? (last ? { elbow: 3, red: 1 } : { teeB: 1, elbow: 2, red: 1 }) : {}, role: 'drop', label: `헤드 ${j + 1}-${i + 1} 연결 배관`, rise: ri, fall: fa });
-        bp = T; bx = xs[i]; bs = s;
+        const ri = n.dropOn ? (o.rise != null ? o.rise : n0(n.rise)) : 0, fa = n.dropOn ? (o.fall != null ? o.fall : n0(n.fall)) : 0, ov = n.dropOn ? n0(n.over) : 0;
+        nAdd(M, Hd, { x, y: y + dir * ov, z: r2(zB + ri - fa), leaf: true, line: i, dir, k, tee: T });
+        sAdd(M, n, D, T, Hd, { L: r2(ri + ov + fa), size: n.dropOn ? n.dropSize : s, fit: n.dropOn ? (last ? { elbow: 3, red: 1 } : { teeB: 1, elbow: 2, red: 1 }) : {}, role: 'drop', label: '', rise: ri, fall: fa });
+        bp = T; by = y; bs = s;
       });
     });
+    lines.push(jn);
+  }
+  // 헤드 번호: 가장 먼 가지배관의 끝에서부터 ①, ②, … (시험 도면처럼)
+  const order = M.leaves.slice().sort((a, b) => { const A = M.nodes.get(a), B = M.nodes.get(b); return B.line - A.line || B.dir - A.dir || B.k - A.k; });
+  order.forEach((id, r) => { const h = M.nodes.get(id); h.rank = r + 1; h.label = circ(r + 1); });
+  M.segs.forEach((sg) => {
+    if (sg.role === 'branch') { const t = M.nodes.get(sg.b), up = M.nodes.get(sg.a), hb = M.nodes.get(`H${t.id.slice(1)}`), ha = up.id[0] === 'T' ? M.nodes.get(`H${up.id.slice(1)}`) : null; sg.label = `${ha ? ha.label : '교차배관'} → ${hb.label}`; }
+    if (sg.role === 'drop') sg.label = `헤드 ${M.nodes.get(sg.b).label} 연결${n.dropOn ? ' (회향식)' : ''}`;
   });
   return M;
+}
+
+/* 45° 정도에서 본 입체 도면: 가지배관은 오른쪽(살짝 아래), 교차배관은 오른쪽 위(안쪽), 높이는 위 */
+function netSvgPT(M, R, n, open, o) {
+  const g = M.geo, sel = o.sel || {}, op = new Set(open);
+  const AX = [0.64, -0.46], AY = [1, 0.17];   // x(교차배관) 1 m, y(가지배관) 1 m의 화면 방향
+  const raw = (x, y, z) => [x * AX[0] + y * AY[0], x * AX[1] + y * AY[1] - z];
+  const pts = [...M.nodes.values()].map((q) => raw(q.x, q.y, q.z));
+  const minX = Math.min(...pts.map((p) => p[0])), maxX = Math.max(...pts.map((p) => p[0]));
+  const minY = Math.min(...pts.map((p) => p[1])), maxY = Math.max(...pts.map((p) => p[1]));
+  const s = Math.max(14, Math.min(64, 720 / Math.max(1, maxX - minX), 380 / Math.max(1, maxY - minY)));
+  const pad = { l: 64, r: 70, t: 46, b: 70 };
+  const VW = +((maxX - minX) * s + pad.l + pad.r).toFixed(1), VH = +((maxY - minY) * s + pad.t + pad.b).toFixed(1);
+  const P = (x, y, z) => { const [a, b] = raw(x, y, z); return [+(pad.l + (a - minX) * s).toFixed(1), +(pad.t + (b - minY) * s).toFixed(1)]; };
+  const at = (id) => { const q = M.nodes.get(id); return P(q.x, q.y, q.z); };
+  const cls = (sg) => `nt-p r-${sg.role}${R && R.Q.get(sg.id) > 0 ? '' : ' dry'}${sg.edited ? ' ed' : ''}${sel.t === 'seg' && sel.id === sg.id ? ' sel' : ''}`;
+  let pipes = '', drops = '', labels = '', hits = '';
+  const lab = (sg, a, b) => {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len < 40 || sg.role === 'drop') return;
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, vert = Math.abs(b[0] - a[0]) < 2;
+    const t = `${sg.size}A (${fx(sg.L)}m)`;
+    if (vert) labels += `<text class="nt-lb" x="${mx - 8}" y="${my + 4}" text-anchor="end">${t}</text>`;
+    else {
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, a2 = ang > 90 || ang < -90 ? ang + 180 : ang;
+      labels += `<text class="nt-lb" transform="translate(${mx},${my}) rotate(${a2.toFixed(1)})" y="-6" text-anchor="middle">${t}</text>`;
+    }
+  };
+  // 먼 가지배관부터 그려서 가까운 배관이 위에 오게
+  const segs = M.segs.slice().sort((a, b) => (M.nodes.get(b.b).x - M.nodes.get(a.b).x));
+  segs.forEach((sg) => {
+    const a = at(sg.a), b = at(sg.b);
+    if (sg.role === 'drop') {
+      const h = M.nodes.get(sg.b), t = at(sg.a), on = op.has(sg.b);
+      const dr = n.dropOn, up = dr ? Math.max(10, n0(sg.rise) * s) : 0, dn = dr ? Math.max(20, n0(sg.fall) * s + 8) : 16, ov = dr ? Math.max(10, n0(n.over) * s) * h.dir : 0;
+      const p1 = [t[0], t[1] - up], p2 = [t[0] + ov, t[1] - up], p3 = [t[0] + ov, t[1] - up + dn];
+      const path = dr ? `${t.join(',')} ${p1.join(',')} ${p2.join(',')} ${p3.join(',')}` : `${t.join(',')} ${p3.join(',')}`;
+      drops += `<polyline class="${cls(sg)} r-drop" points="${path}"/>`;
+      const gov = R && R.gov === sg.b, hs = sel.t === 'head' && sel.id === sg.b;
+      drops += `<path class="nt-hd${on ? ' on' : ''}${hs ? ' sel' : ''}" d="M${p3[0] - 6},${p3[1]} h12 l-6,9 z"/><line class="nt-hdl" x1="${p3[0] - 6}" y1="${p3[1] + 10}" x2="${p3[0] + 6}" y2="${p3[1] + 10}"/>`;
+      if (gov) drops += `<circle class="nt-gov" cx="${p3[0]}" cy="${p3[1] + 4}" r="11"/>`;
+      labels += `<text class="nt-hn${on ? ' on' : ''}" x="${p3[0] + 9}" y="${p3[1] - 2}">${h.label}</text>`;
+      if (o.edit) hits += `<circle class="nt-hhit" data-head="${sg.b}" cx="${p3[0]}" cy="${p3[1] + 4}" r="13"><title>헤드 ${h.label}${on && R ? ` · ${fx(R.P.get(sg.b), 4)} MPa · ${fx(R.q.get(sg.b))} L/min` : ' · 닫힘'}</title></circle>`;
+      if (o.edit && dr) hits += `<polyline class="nt-hit" data-seg="${sg.id}" points="${path}"><title>${sg.label}</title></polyline>`;
+      return;
+    }
+    pipes += `<line class="${cls(sg)}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+    if (o.edit) hits += `<line class="nt-hit" data-seg="${sg.id}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>${sg.label} · ${sg.size}A · ${fx(sg.L)} m</title></line>`;
+    lab(sg, a, b);
+  });
+  const p0 = at('P');
+  labels += `<circle class="nt-start" cx="${p0[0]}" cy="${p0[1]}" r="5"/><text class="nt-lb nt-sl" x="${p0[0]}" y="${p0[1] + 22}" text-anchor="middle">시작점${n.basis === 'start' ? ` ${fx(n.Pstart)} MPa` : ''}</text>`;
+  return `<svg class="net-svg nt-iso" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="스프링클러 배관 입체 도면">${pipes}${drops}${labels}${hits}</svg>`;
+}
+
+/* 일정지점 결과 카드 */
+function netCardPT(v) {
+  const X = netRun(v, 'pt', {}), { n, M, open, R } = X;
+  const title = '헤드별 방수압·방수량', btn = `<p class="net-open"><button type="button" class="btn-act" data-act="net">도면 열어서 배관·헤드 고치기</button></p>`;
+  const fig = `<div class="drawing net-fig">${netSVG(M, R, n, open, { edit: true })}</div>`;
+  if (X.err) return [{ title, error: X.err, extraTop: fig + btn }];
+  const k = R.k, simple = n.mode === 'simple', start = n.basis === 'start', K = netK(n);
+  const no = (id) => M.nodes.get(id).label, sq = n.formula === 'sq';
+  const opn = open.slice().sort((a, b) => M.nodes.get(a).rank - M.nodes.get(b).rank);
+  const zS = M.nodes.get(M.root).z, zg = M.nodes.get(R.gov).z - zS, fric = R.path.reduce((a, s) => a + R.loss.get(s.id).hf, 0);
+  const steps = [];
+  if (!simple && n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', '기준 방수량 (L/min)'], ['P', '기준 방수압 (MPa)']], sub: `K = ${fx(n.qS)} ÷ √(10 × ${fx(n.Pmin)})`, ans: fx(K) }));
+  const ex = R.path.filter((s) => R.loss.get(s.id).hf > 0).pop();
+  const fForm = sq ? 'ΔP = 6 × 10⁴ × Q² ÷ (120² × d⁵) × (L + L<sub>e</sub>)' : 'ΔP = 6.053 × 10⁴ × Q<sup>1.85</sup> ÷ (C<sup>1.85</sup> × d<sup>4.87</sup>) × (L + L<sub>e</sub>)';
+  const fSym = [['ΔP', '구간 마찰손실압력 (MPa)'], ['Q', '그 구간에 흐르는 유량 (L/min)'], ...(sq ? [] : [['C', '조도계수']]), ['d', '배관 안지름 (mm)'], ['L', '직관 길이 (m)'], ['L<sub>e</sub>', '관부속 상당길이 합 (m)']];
+  if (ex) {
+    const L = R.loss.get(ex.id), Qe = R.Q.get(ex.id);
+    steps.push(step({ t: '마찰손실 식', f: fForm, sym: fSym, sub: `예) ${ex.label}<br>ΔP = ${sq ? `6 × 10⁴ × ${fx(Qe)}² ÷ (120² × ${fx(L.d)}⁵)` : `6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fx(n.C)}<sup>1.85</sup> × ${fx(L.d)}<sup>4.87</sup>)`} × (${fx(ex.L)} + ${fx(L.Le)})`, ans: `${fx(L.hf, 5)} MPa`, note: '구간마다 흐르는 유량이 달라서 구간별로 따로 계산했어요. 아래 표에 구간별 값이 있어요.' }));
+  }
+  const pl = R.path.filter((s) => R.loss.get(s.id).hf > 0);
+  steps.push(step({ t: '총 마찰손실압력', f: 'ΔP<sub>T</sub> = ΣΔP', sym: [['ΔP<sub>T</sub>', `시작점에서 헤드 ${no(R.gov)}까지 마찰손실압력 합 (MPa)`], ['ΔP', '구간별 마찰손실압력 (MPa)']], sub: `ΔP<sub>T</sub> = ${pl.length && pl.length <= 10 ? pl.map((s) => fx(R.loss.get(s.id).hf, 4)).join(' + ') : `${pl.length}개 구간의 합`}`, ans: `${fx(fric, 4)} MPa` }));
+  steps.push(step({ t: '낙차', f: 'h = z<sub>헤드</sub> − z<sub>시작점</sub>', sym: [['h', '낙차 (m, 헤드가 높으면 +)'], ['z', '높이 (m)']], sub: `h = ${fx(zg)} m → 압력으로 ${fx(zg)} ÷ ${fx(k)}`, ans: `${fx(zg / k, 4)} MPa` }));
+  if (!start) steps.push(step({ t: '시작점 압력', f: 'P<sub>s</sub> = P<sub>h</sub> + ΔP<sub>T</sub> + h ÷ k', sym: [['P<sub>s</sub>', '시작점에서 필요한 압력 (MPa)'], ['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', `낙차를 압력으로 (1 MPa = ${fx(k)} m)`]], sub: `P<sub>s</sub> = ${fx(n.Pmin)} + ${fx(fric, 4)} + (${fx(zg / k, 4)})`, ans: `${fx(R.Proot, 4)} MPa` }));
+  else steps.push(step({ t: '최말단 방수압', f: 'P<sub>h</sub> = P<sub>s</sub> − ΔP<sub>T</sub> − h ÷ k', sym: [['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['P<sub>s</sub>', '시작점 압력 (MPa)'], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', '낙차를 압력으로 (MPa)']], sub: `P<sub>h</sub> = ${fx(n.Pstart)} − ${fx(fric, 4)} − (${fx(zg / k, 4)})`, ans: `${fx(R.P.get(R.gov), 4)} MPa` }));
+  if (simple) steps.push(step({ t: '헤드 방수량', sub: `열린 헤드 모두 ${fx(n.qS)} L/min으로 봤어요 (간단 계산)`, ans: `${fx(n.qS)} L/min` }));
+  else steps.push(step({ t: '헤드 방수량', f: 'Q = K × √(10P)', sym: [['Q', '헤드 방수량 (L/min)'], ['K', `방출계수 (${fx(K)})`], ['P', '그 헤드 방수압 (MPa)']], sub: opn.slice(0, 8).map((id) => `${no(id)}: Q = ${fx(K)} × √(10 × ${fx(R.P.get(id), 4)}) = ${fx(R.q.get(id))}`).join('<br>') + (opn.length > 8 ? `<br>나머지 ${opn.length - 8}개는 아래 표에 있어요` : ''), note: start ? '시작점 압력에서 배관을 따라 걸리는 압력을 빼서 헤드마다 방수압을 구했어요.' : `헤드 ${no(R.gov)}가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 헤드는 배관을 따라 걸리는 압력으로 구했어요.` }));
+  steps.push(step({ t: '전체 방수량', f: 'Q<sub>T</sub> = ΣQ', sym: [['Q<sub>T</sub>', '열린 헤드 방수량 합 = 시작점 유량 (L/min)']], sub: `Q<sub>T</sub> = ${opn.length <= 10 ? opn.map((id) => fx(R.q.get(id))).join(' + ') : `${opn.length}개 합`}`, ans: `${fx(R.flow)} L/min` }));
+  const fitTxt = (s) => R.loss.get(s.id).parts.map(([t, c]) => `${FR.types[t][0]} ${c}`).join(', ');
+  const segRow = (s) => { const L = R.loss.get(s.id); return [s.label, `${s.size}A${L.d !== s.size ? ` (${fx(L.d)})` : ''}`, fx(R.Q.get(s.id)), fx(s.L), L.Le ? `${fx(L.Le)}<br><small class="muted">${fitTxt(s)}</small>` : '0', fx(L.hf, 4)]; };
+  const head = ['구간', '구경 (안지름)', '유량 (L/min)', '직관 (m)', '상당길이 (m)', '마찰손실 (MPa)'];
+  const onPath = new Set(R.path.map((s) => s.id)), others = M.segs.filter((s) => !onPath.has(s.id) && R.Q.get(s.id) > 0 && (s.L > 0 || R.loss.get(s.id).Le > 0));
+  const neg = opn.filter((id) => R.P.get(id) <= 0);
+  const off = Object.keys(FR.types).filter((t) => !n.fitOn[t]).map((t) => FR.types[t][0]);
+  const tiles = start
+    ? [{ l: '시작점 압력', v: fx(n.Pstart, 4), u: 'MPa' }, { l: '최말단 방수압', v: fx(R.P.get(R.gov), 4), u: 'MPa', tone: 'key' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }]
+    : [{ l: '시작점 압력', v: fx(R.Proot, 4), u: 'MPa', tone: 'key' }, { l: '최말단 방수압 (기준)', v: fx(n.Pmin, 4), u: 'MPa' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }];
+  tiles.push({ l: '총 마찰손실압력', v: fx(fric, 4), u: 'MPa' }, { l: '낙차', v: fx(zg), u: 'm' }, { l: '전체 방수량', v: fx(R.flow), u: 'L/min', tone: 'key' }, { l: '개방 헤드', v: fx(open.length), u: '개' });
+  return [{
+    title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(K)}`,
+    tiles,
+    warns: [!R.ok ? '방수량 계산이 끝까지 맞춰지지 않았어요. 배관 구경이나 길이를 확인해 주세요.' : '', neg.length ? `방수압이 0 이하인 헤드가 있어요 (${neg.map(no).join(', ')}). 시작점 압력이 모자라요.` : ''].filter(Boolean),
+    extraTop: fig + `<div class="legend"><span><i class="lg-riser"></i>수직배관·교차배관</span><span><i class="lg-branch"></i>가지배관</span><span><i class="lg-open"></i>열린 헤드</span><span><i class="lg-head"></i>닫힌 헤드</span><span><i class="lg-gov"></i>방수압이 가장 낮은 헤드</span></div>` + btn,
+    notes: [
+      `마찰손실 식: ${sq ? '6 × 10⁴ × Q² ÷ (120² × d⁵)' : `하젠-윌리엄스 (C = ${fx(n.C)})`}, 안지름: ${n.dia === 'table' ? '안지름 표' : '호칭경 그대로'}, 1 MPa = ${fx(k)} m${off.length ? `, 계산에서 뺀 관부속: ${off.join('·')}` : ''}`,
+      '도면에서 배관이나 헤드를 누르면 길이·구경·관부속과 열린 헤드를 고칠 수 있어요.',
+    ],
+    steps,
+    extra: `<div><h4 class="sub-h">헤드별 방수압·방수량 (①이 가장 먼 헤드)</h4>${table(['헤드', '방수압 (MPa)', '방수량 (L/min)'], opn.map((id) => [no(id) + (id === R.gov ? ' · 방수압 최저' : ''), fx(R.P.get(id), 4), fx(R.q.get(id))]))}</div>
+      <div><h4 class="sub-h">시작점 → 헤드 ${no(R.gov)} 구간</h4>${table(head, [...R.path.filter((s) => s.L > 0 || R.loss.get(s.id).Le > 0).map(segRow), ['합계', '', '', '', '', `<b>${fx(fric, 4)}</b>`]])}</div>
+      ${others.length ? `<details class="more"><summary>나머지 구간 ${others.length}개</summary>${table(head, others.map(segRow))}</details>` : ''}`,
+  }];
+}
+function ptSync(v) {
+  if (!v.net || v.net.kind !== 'pt') v.net = netDefaults('pt');
+  Object.assign(v.net, {
+    lines: v.pt_lines, heads: v.pt_heads, S: v.pt_S, first: v.pt_first, Sb: v.pt_Sb, c0: v.pt_c0, feed: v.pt_feed, rH: v.pt_rH, rL: v.pt_rL,
+    dropOn: !!v.pt_drop, rise: v.pt_rise, over: v.pt_over, fall: v.pt_fall, dropSize: Number(v.pt_dsz) || 25,
+    mode: v.pt_mode, basis: v.pt_basis, Pmin: v.pt_P, kMode: v.pt_kMode, qS: v.pt_q, K: v.pt_K, Pstart: v.pt_Ps,
+    formula: v.pt_f, C: v.pt_C, dia: v.pt_dia, conv: v.pt_conv, idT: Object.fromEntries(PT_ID.map(([z]) => [z, v['pt_id' + z]])),
+  });
 }
 
 /* 옥내소화전: 펌프 → 수직배관(층마다) → 방수구(앵글밸브) → 호스 → 노즐, 입면 */
@@ -3363,14 +3677,14 @@ function netBuildIN(n, ctx) {
       }
       const O = `O${k}_${i}`, Z = `Z${k}_${i}`, nm = `${k}층${m > 1 ? ' ' + i + '번' : ''}`;
       nAdd(M, O, { x: i - 1, z, floor: k });
-      sAdd(M, n, `o${k}_${i}`, hp, O, { L: r2(n0(n.outL)), size: bsz, fit: { ...(top && i === m ? { elbow: 1 } : { teeB: 1 }), angle: 1 }, role: 'outlet', col: i, label: `${nm} 방수구 연결 배관 (앵글밸브 포함)` });
+      sAdd(M, n, `o${k}_${i}`, hp, O, { L: r2(n0(n.outL)), size: bsz, fit: { ...(top && i === m ? { elbow: 1 } : { teeB: 1 }), angle: 1 }, role: 'outlet', col: i, label: `${nm} 방수구 연결 배관` });
       nAdd(M, Z, { x: i - 1, z, floor: k, leaf: true, label: nm });
       sAdd(M, n, `z${k}_${i}`, O, Z, { L: n0(n.hoseLen), size: bsz, fit: {}, role: 'hose', hose: true, col: i, label: `${nm} 호스` });
     }
   }
   return M;
 }
-const netBuild = (n, ctx) => (n.kind === 'sp' ? netBuildSP(n, ctx) : netBuildIN(n, ctx));
+const netBuild = (n, ctx) => (n.kind === 'pt' ? netBuildPT(n) : netBuildIN(n, ctx));
 
 // 펌프에서 먼 순서 (옥내소화전은 높은 층 먼저)
 function netRemote(M) {
@@ -3381,7 +3695,8 @@ function netRemote(M) {
 }
 function netOpen(M, n, nBase) {
   const far = netRemote(M);
-  const order = M.leaves.slice().sort((a, b) => far.get(b) - far.get(a));
+  const order = M.kind === 'pt' ? M.leaves.slice().sort((a, b) => M.nodes.get(a).rank - M.nodes.get(b).rank) : M.leaves.slice().sort((a, b) => far.get(b) - far.get(a));
+  if (n.openMode === 'line') { const L = Math.max(...order.map((id) => M.nodes.get(id).line)); return order.filter((id) => M.nodes.get(id).line === L); }
   if (n.openMode === 'custom') return order.filter((id) => n.openSet[id]);
   if (n.openMode === 'all') return order;
   if (n.openMode === 'last') return order.slice(0, 1);
@@ -3393,17 +3708,19 @@ function netLoss(s, Q, n, k) {
     const hm = n.hoseOn && Q > 0 ? n0(n.hoseLen) * n0(n.hoseRate) / 100 * Math.pow(Q / 130, 1.85) : 0;
     return { hm, hf: hm / k, Le: 0, d: NaN, vel: NaN, parts: [] };
   }
-  const d = n.dia === 'spp' ? (FR.idSPP[s.size] || s.size) : s.size, ix = fIdx(s.size);
+  const d = n.dia === 'spp' ? (FR.idSPP[s.size] || s.size) : n.dia === 'table' ? (n0(n.idT && n.idT[s.size]) || s.size) : s.size, ix = fIdx(s.size);
   const parts = Object.keys(FR.types).filter((t) => n.fitOn[t] && s.fit[t] > 0).map((t) => [t, s.fit[t], ix >= 0 ? n0(n.fitLe[t][ix]) : 0]);
   const Le = parts.reduce((a, [, c, le]) => a + c * le, 0);
-  const perM = Q > 0 ? 6.053e4 * Math.pow(Q, 1.85) / (Math.pow(n0(n.C), 1.85) * Math.pow(d, 4.87)) : 0;
+  const perM = !(Q > 0) ? 0 : n.formula === 'sq' ? 6e4 * Q * Q / (120 * 120 * Math.pow(d, 5)) : 6.053e4 * Math.pow(Q, 1.85) / (Math.pow(n0(n.C), 1.85) * Math.pow(d, 4.87));
   const hf = perM * (n0(s.L) + Le);
   return { hf, hm: hf * k, Le, d, perM, vel: Q / 60000 / (Math.PI / 4 * (d / 1000) ** 2), parts };
 }
 
+// 방출계수 K: 기준 방수량·방수압으로 구하거나, 직접 넣거나, 노즐 구경으로
+const netK = (n) => (n.kMode === 'k' ? n0(n.K) : n.kMode === 'd' ? 0.653 * n0(n.nozD) ** 2 : n0(n.qS) / Math.sqrt(10 * n0(n.Pmin)));
 function netSolve(M, n, open) {
-  const k = STD.headPerMPa[n.conv] || STD.headPerMPa.std, simple = n.mode === 'simple';
-  const K = n0(n.K), Pmin = n0(n.Pmin);
+  const k = STD.headPerMPa[n.conv] || STD.headPerMPa.std, simple = n.mode === 'simple', fixed = n.basis === 'start';
+  const K = netK(n), Pmin = n0(n.Pmin);
   const q = new Map(open.map((id) => [id, simple ? n0(n.qS) : K * Math.sqrt(10 * Pmin)]));
   const Q = new Map(), loss = new Map(), rel = new Map();
   let Proot = NaN, gov = open[0], ok = true, it = 0;
@@ -3418,8 +3735,8 @@ function netSolve(M, n, open) {
       loss.set(s.id, L);
       rel.set(s.b, rel.get(s.a) - L.hf - (M.nodes.get(s.b).z - M.nodes.get(s.a).z) / k);
     });
-    Proot = -Infinity;
-    open.forEach((id) => { const need = Pmin - rel.get(id); if (need > Proot) { Proot = need; gov = id; } });
+    if (fixed) { Proot = n0(n.Pstart); gov = open.reduce((a, id) => (rel.get(id) < rel.get(a) ? id : a), open[0]); }
+    else { Proot = -Infinity; open.forEach((id) => { const need = Pmin - rel.get(id); if (need > Proot) { Proot = need; gov = id; } }); }
   };
   pass();
   if (!simple) {
@@ -3446,17 +3763,21 @@ function netSolve(M, n, open) {
 }
 
 function netRun(v, kind, ctx) {
-  if (!v.net || v.net.kind !== kind) v.net = netDefaults(kind);
+  if (kind === 'pt') ptSync(v);
+  else if (!v.net || v.net.kind !== kind) v.net = netDefaults(kind);
   v._netctx = ctx;
   const n = v.net, M = netBuild(n, ctx);
   const nBase = ctx.nBase > 0 ? ctx.nBase : (kind === 'sp' ? 10 : 2);
   const open = netOpen(M, n, nBase);
-  const u = kind === 'sp' ? '헤드' : '노즐';
+  const u = kind === 'in' ? '노즐' : '헤드';
   let err = '';
   if (!open.length) err = `열린 ${u}가 없어요. 도면에서 ${u}를 골라 열어 주세요.`;
-  else if (n.mode === 'simple' ? !(n.qS > 0) : !(n.K > 0)) err = n.mode === 'simple' ? `${u} 1개 방수량에 0보다 큰 값을 넣어 주세요.` : '방출계수 K에 0보다 큰 값을 넣어 주세요.';
-  else if (!(n.Pmin > 0)) err = '최소 방수압에 0보다 큰 값을 넣어 주세요.';
-  else if (!(n.C > 0)) err = '조도계수 C에 0보다 큰 값을 넣어 주세요.';
+  else if (n.basis === 'start' && !(n.Pstart > 0)) err = '시작점 압력에 0보다 큰 값을 넣어 주세요.';
+  else if (!(n.Pmin > 0) && !(n.basis === 'start' && n.mode === 'simple')) err = '헤드 기준 방수압에 0보다 큰 값을 넣어 주세요.';
+  else if ((n.mode === 'simple' || n.kMode === 'qp') && !(n.qS > 0)) err = `기준 방수량에 0보다 큰 값을 넣어 주세요.`;
+  else if (n.mode !== 'simple' && n.kMode === 'k' && !(n.K > 0)) err = '방출계수 K에 0보다 큰 값을 넣어 주세요.';
+  else if (n.mode !== 'simple' && n.kMode === 'd' && !(n.nozD > 0)) err = '노즐 구경에 0보다 큰 값을 넣어 주세요.';
+  else if (n.formula !== 'sq' && !(n.C > 0)) err = '조도계수 C에 0보다 큰 값을 넣어 주세요.';
   return { n, M, open, nBase, err, R: err ? null : netSolve(M, n, open) };
 }
 
@@ -3475,11 +3796,14 @@ function netCard(v, kind, ctx) {
   steps.push(step({ t: kind === 'sp' ? '동시 개방 헤드' : '동시 개방 노즐', sub: presetTxt, ans: `${open.length}개` }));
   if (simple) steps.push(step({ t: '헤드 방수량', sub: `열린 ${u} 모두 같은 방수량으로 봤어요 (간단 계산)`, ans: `${fx(n.qS)} L/min` }));
   else {
-    const show = open.slice(0, 6);
+    const show = open.slice(0, 6), K = netK(n);
+    if (n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', `기준 방수량 (L/min)`], ['P', '최소 방수압 (MPa)']], sub: `K = ${fx(n.qS)} ÷ √(10 × ${fx(n.Pmin)})`, ans: fx(K) }));
+    else if (n.kMode === 'd') steps.push(step({ t: '방출계수 K', f: 'K = 0.653 × d²', sym: [['K', '방출계수'], ['0.653', '0.6597 × 유량계수 0.99'], ['d', '노즐 구경 (mm)']], sub: `K = 0.653 × ${fx(n.nozD)}²`, ans: fx(K) }));
+    else steps.push(step({ t: '방출계수 K', sub: '직접 넣은 값', ans: fx(K) }));
     steps.push(step({
       t: '헤드 방수량', f: 'Q = K × √(10P)',
-      sym: [['Q', `${u} 방수량 (L/min)`], ['K', `방출계수 (${fx(n.K)})`], ['P', `${u} 방수압 (MPa)`]],
-      sub: show.map((id) => `${no.get(id)}번 (${name(id)}): Q = ${fx(n.K)} × √(10 × ${fx(R.P.get(id), 4)}) = ${fx(R.q.get(id))}`).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
+      sym: [['Q', `${u} 방수량 (L/min)`], ['K', `방출계수 (${fx(K)})`], ['P', `${u} 방수압 (MPa)`]],
+      sub: show.map((id) => `${no.get(id)}번 (${name(id)}): Q = ${fx(K)} × √(10 × ${fx(R.P.get(id), 4)}) = ${fx(R.q.get(id))}`).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
       note: `압력이 가장 낮은 ${u}(${name(R.gov)})가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 ${u}는 배관을 따라 걸리는 압력으로 방수량을 구했어요.`,
     }));
   }
@@ -3514,18 +3838,21 @@ function netCard(v, kind, ctx) {
   };
   const head = ['구간', '구경', '유량 (L/min)', '유속 (m/s)', '직관 (m)', '상당길이 (m)', '마찰손실 (m)'];
   const onPath = new Set(R.path.map((s) => s.id));
-  const others = M.segs.filter((s) => !onPath.has(s.id) && R.Q.get(s.id) > 0);
+  const shown = (s) => !s.hose || n.hoseOn;
+  const big = M.segs.filter((s) => !s.hose && R.Q.get(s.id) > 0 && fIdx(s.size) < 0 && Object.keys(FR.types).some((t) => n.fitOn[t] && s.fit[t] > 0));
+  const others = M.segs.filter((s) => !onPath.has(s.id) && R.Q.get(s.id) > 0 && shown(s));
   const vlim = (s) => (kind === 'sp' ? (s.role === 'branch' ? 6 : s.role === 'drop' ? 0 : 10) : (s.role === 'riser' || s.role === 'floor' ? 4 : 0));
   const fast = M.segs.filter((s) => !s.hose && vlim(s) && R.loss.get(s.id).vel > vlim(s));
   const off = Object.keys(FR.types).filter((t) => !n.fitOn[t]).map((t) => FR.types[t][0]);
   const warns = [pw.warn];
+  if (big.length) warns.push(`관부속 상당길이 표에 없는 구경 구간 ${big.length}개는 관부속을 빼고 직관 길이만 계산했어요.`);
   if (!R.ok) warns.push('방수량 계산이 끝까지 맞춰지지 않았어요. 배관 구경이나 길이를 확인해 주세요.');
   if (fast.length) warns.push(`유속이 기준(${kind === 'sp' ? '가지배관 6 m/s 이하, 그 밖 10 m/s 이하' : '펌프 토출측 주배관 4 m/s 이하'})보다 빠른 구간: ${fast.slice(0, 3).map((s) => `${s.label} ${fx(R.loss.get(s.id).vel)} m/s`).join(', ')}${fast.length > 3 ? ` 외 ${fast.length - 3}개` : ''}. 구경을 키워 보세요.`);
   const legend = kind === 'sp'
     ? '<div class="legend"><span><i class="lg-riser"></i>수직배관</span><span><i class="lg-cross"></i>교차배관</span><span><i class="lg-branch"></i>가지배관</span><span><i class="lg-open"></i>열린 헤드 (번호: 펌프에서 먼 순서)</span><span><i class="lg-head"></i>닫힌 헤드</span><span><i class="lg-gov"></i>압력이 가장 낮은 헤드</span></div>'
     : '<div class="legend"><span><i class="lg-riser"></i>수직배관</span><span><i class="lg-branch"></i>방수구 배관</span><span><i class="lg-open"></i>열린 노즐</span><span><i class="lg-head"></i>닫힌 노즐</span><span><i class="lg-gov"></i>압력이 가장 낮은 노즐</span></div>';
   return {
-    title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : '정밀: Q = K√(10P)',
+    title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(netK(n))}`,
     tiles: [
       ...pumpTiles(R.flow, { H: R.H, ...pw }),
       { l: '펌프 토출압력', v: fx(R.Proot, 3), u: 'MPa' },
@@ -3535,82 +3862,18 @@ function netCard(v, kind, ctx) {
     warns: warns.filter(Boolean),
     extraTop: `<div class="drawing net-fig">${netSVG(M, R, n, open, {})}</div>${legend}${btn}`,
     notes: [
-      `조도계수 C = ${fx(n.C)}, 안지름은 ${n.dia === 'spp' ? '배관용 탄소강관(SPP) 안지름' : '호칭경 그대로'}, 1 MPa = ${fx(k)} m${off.length ? `, 계산에서 뺀 관부속: ${off.join('·')}` : ''}${kind === 'in' ? (n.hoseOn ? `, 호스 ${fx(n.hoseLen)} m × 100 m당 ${fx(n.hoseRate)} m (130 L/min 기준, 유량의 1.85제곱에 비례)` : ', 호스 마찰손실 뺌') : ''}`,
+      `조도계수 C = ${fx(n.C)}, 안지름은 ${n.dia === 'spp' ? '배관용 탄소강관(SPP) 안지름' : '호칭경 그대로'}, 1 MPa = ${fx(k)} m${off.length ? `, 계산에서 뺀 관부속: ${off.join('·')}` : ''}${kind === 'in' ? (n.hoseOn ? `, 호스 ${fx(n.hoseLen)} m × 100 m당 ${fx(n.hoseRate)} m (130 L/min 기준, 유량의 1.85제곱에 비례)` : ', 호스 마찰손실은 넣지 않았어요 (도면 화면에서 체크하면 넣어요)') : ''}`,
       '관부속 상당길이는 흔히 쓰는 표 값을 기본으로 넣었어요. 문제에 값이 주어지면 도면 화면의 마찰손실 설정에서 고쳐 쓰세요.',
     ],
     steps,
     extra: `<div><h4 class="sub-h">열린 ${u} (1번이 펌프에서 가장 먼 ${u}${kind === 'sp' ? ', 이름은 행-열' : ''})</h4>${table(['번호', u, '방수압 (MPa)', '방수량 (L/min)'], open.map((id) => [no.get(id), name(id) + (id === R.gov ? ' · 압력 최저' : ''), fx(R.P.get(id), 4), fx(R.q.get(id))]))}</div>
-      <div><h4 class="sub-h">펌프 → 압력이 가장 낮은 ${u}까지 구간</h4>${table(head, [...R.path.map(segRow), ['합계', '', '', '', '', '', `<b>${fx(R.h2pipe, 3)}</b>`]])}</div>
+      <div><h4 class="sub-h">펌프 → 압력이 가장 낮은 ${u}까지 구간</h4>${table(head, [...R.path.filter(shown).map(segRow), ['합계', '', '', '', '', '', `<b>${fx(R.h2pipe, 3)}</b>`]])}</div>
       ${others.length ? `<details class="more"><summary>나머지 구간 ${others.length}개</summary>${table(head, others.map(segRow))}</details>` : ''}`,
   };
 }
 
 /* 도면 SVG */
-const netSVG = (M, R, n, open, o) => (M.kind === 'sp' ? netSvgSP(M, R, n, open, o) : netSvgIN(M, R, n, open, o));
-function netSvgSP(M, R, n, open, o) {
-  const g = M.geo, Wm = g.W, Hm = g.H, sel = o.sel || {};
-  const s = Math.min(720 / Wm, 400 / Hm, 70);
-  const pad = { l: 30, r: 30, t: 26, b: 106 };
-  const VW = +(Wm * s + pad.l + pad.r).toFixed(1), VH = +(Hm * s + pad.t + pad.b).toFixed(1);
-  const X = (x) => +(pad.l + x * s).toFixed(1), Y = (y) => +(pad.t + (Hm - y) * s).toFixed(1);
-  const no = new Map(open.map((id, i) => [id, i + 1])), op = new Set(open);
-  const r = Math.max(3.5, Math.min(7, s * 0.14));
-  const px = X(g.xc), py = Y(0) + 50;
-  let lines = '', hits = '', labels = '', heads = '';
-  M.segs.forEach((sg) => {
-    if (sg.role === 'drop') return;
-    const a = M.nodes.get(sg.a), b = M.nodes.get(sg.b);
-    const x1 = sg.role === 'riser' ? px : X(a.x), y1 = sg.role === 'riser' ? py - 12 : Y(a.y), x2 = X(b.x), y2 = Y(b.y);
-    const cls = `nt-p r-${sg.role}${R && R.Q.get(sg.id) > 0 ? '' : ' dry'}${sg.edited ? ' ed' : ''}${sel.t === 'seg' && sel.id === sg.id ? ' sel' : ''}`;
-    lines += `<line class="${cls}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-    if (o.edit) hits += `<line class="nt-hit" data-seg="${sg.id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><title>${sg.label} · φ${sg.size} · ${fx(sg.L)} m</title></line>`;
-    if (sg.role !== 'riser' && Math.hypot(x2 - x1, y2 - y1) >= 30) {
-      const hz = Math.abs(y2 - y1) < 1, mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-      labels += `<text class="nt-lb" x="${hz ? mx : mx + 6}" y="${hz ? my - 5 : my + 3}" text-anchor="${hz ? 'middle' : 'start'}">φ${sg.size}</text>`;
-    }
-  });
-  const rs = M.segById.get('riser');
-  labels += `<text class="nt-lb" x="${px + 10}" y="${py - 22}">수직배관 φ${rs.size} · 펌프보다 ${fx(g.zB)} m 위</text>`;
-  M.leaves.forEach((id) => {
-    const h = M.nodes.get(id), cx = X(h.x), cy = Y(h.y), on = op.has(id), gov = R && R.gov === id;
-    heads += `<circle class="nt-h${on ? ' on' : ''}${sel.t === 'head' && sel.id === id ? ' sel' : ''}" cx="${cx}" cy="${cy}" r="${r}"/>`;
-    if (gov) heads += `<circle class="nt-gov" cx="${cx}" cy="${cy}" r="${r + 4}"/>`;
-    if (on && (o.edit || open.length <= 40)) labels += `<text class="nt-no" x="${cx + r + 1}" y="${cy - r - 1}">${no.get(id)}</text>`;
-    if (o.edit) hits += `<circle class="nt-hhit" data-head="${id}" cx="${cx}" cy="${cy}" r="${Math.max(r + 5, 11)}"><title>헤드 ${h.label}${on && R ? ` · ${fx(R.P.get(id), 3)} MPa · ${fx(R.q.get(id))} L/min` : ' · 닫힘'}</title></circle>`;
-  });
-  let pump = `<circle class="nt-pump" cx="${px}" cy="${py}" r="12"/><text class="nt-pt" x="${px}" y="${py + 4}" text-anchor="middle">P</text><text class="nt-lb" x="${px}" y="${py + 27}" text-anchor="middle">펌프</text>`;
-  let inset = '', IW = 0;
-  if (n.floorsOn || n.tankOn) {
-    IW = 190;
-    const ix = VW + 24, iw = 150, top = pad.t + 14, bot = py + 18, rx = ix + 42;
-    const zw = n.tankOn ? (n.tankPos === 'above' ? n0(n.tankH) : -n0(n.tankH)) : 0;
-    const nf = n.floorsOn ? Math.max(1, Math.round(n.nf) || 1) : 1, FH = n.floorsOn ? n0(n.FH) : 0;
-    const z0 = Math.min(0, zw) - 0.6, z1 = Math.max(g.zB, zw) + 1;
-    const Z = (z) => +(bot - (z - z0) / (z1 - z0) * (bot - top)).toFixed(1);
-    const gap = FH * (bot - top) / (z1 - z0), every = gap >= 14 ? 1 : Math.ceil(14 / Math.max(gap, 0.1));
-    inset += `<text class="nt-lb" x="${ix}" y="${top - 10}">입면 (높이)</text>`;
-    for (let k = 1; k <= nf; k++) {
-      const y = Z((k - 1) * FH);
-      inset += `<line class="nt-fl" x1="${ix}" y1="${y}" x2="${ix + iw}" y2="${y}"/>`;
-      if (k === 1 || k === nf || k % every === 0) inset += `<text class="nt-fn" x="${ix + iw}" y="${y - 3}" text-anchor="end">${k}층</text>`;
-    }
-    const hz = g.zB + (n.dropOn ? n0(n.rise) - n0(n.fall) : 0);
-    inset += `<line class="nt-p r-riser" x1="${rx}" y1="${Z(0)}" x2="${rx}" y2="${Z(g.zB)}"/><line class="nt-p r-branch" x1="${rx}" y1="${Z(g.zB)}" x2="${ix + iw - 16}" y2="${Z(g.zB)}"/>`;
-    inset += `<circle class="nt-h on" cx="${ix + iw - 16}" cy="${Z(hz)}" r="4"/><circle class="nt-pump" cx="${rx}" cy="${Z(0)}" r="8"/>`;
-    inset += `<text class="nt-lb" x="${rx + 6}" y="${(Z(0) + Z(g.zB)) / 2}">${fx(g.zB)} m</text>`;
-    if (n.tankOn) {
-      const ty = Z(zw);
-      inset += `<text class="nt-lb" x="${ix}" y="${ty + 28}">수조 (펌프보다 ${n.tankPos === 'above' ? '위' : '아래'} ${fx(n.tankH)} m)</text>`;
-      inset += `<rect class="nt-tank" x="${ix}" y="${ty - 4}" width="26" height="18" rx="2"/><line class="nt-wl" x1="${ix}" y1="${ty}" x2="${ix + 26}" y2="${ty}"/><polyline class="nt-p r-suc" points="${ix + 13},${ty + 14} ${ix + 13},${Z(0)} ${rx - 8},${Z(0)}"/>`;
-    }
-  }
-  const cap = `헤드 연결 배관: ${n.dropOn ? `위로 ${fx(n.rise)} m → 아래로 ${fx(n.fall)} m (회향식)` : '없음 (가지배관에 바로)'}${n.floorsOn ? ` · ${Math.round(n.nf)}층 건물의 맨 위층` : ''}`;
-  return `<svg class="net-svg" viewBox="0 0 ${VW + IW} ${VH}" role="img" aria-label="스프링클러 배관 도면">${inset}
-    <rect class="nt-room" x="${X(0)}" y="${Y(Hm)}" width="${+(Wm * s).toFixed(1)}" height="${+(Hm * s).toFixed(1)}"/>
-    ${lines}${pump}${heads}${labels}
-    <text class="nt-lb" x="${pad.l}" y="${VH - 8}">${cap}</text>
-    ${hits}</svg>`;
-}
+const netSVG = (M, R, n, open, o) => (M.kind === 'pt' ? netSvgPT(M, R, n, open, o) : netSvgIN(M, R, n, open, o));
 function netSvgIN(M, R, n, open, o) {
   const g = M.geo, sel = o.sel || {}, op = new Set(open), no = new Map(open.map((id, i) => [id, i + 1]));
   const zw = n.tankOn ? g.pz + (n.tankPos === 'above' ? n0(n.tankH) : -n0(n.tankH)) : g.pz;
@@ -3662,7 +3925,7 @@ function netSvgIN(M, R, n, open, o) {
 
 /* 도면 고치기 화면 */
 const NET = { sel: null, tool: 'pick', last: null, open: new Set(['뼈대', '높이']) };
-const netKind = () => (current === 'sprinkler' ? 'sp' : 'in');
+const netKind = () => (current === 'sppoint' ? 'pt' : 'in');
 const NET_HTML = `<div class="plan-modal" id="net" hidden role="dialog" aria-modal="true" aria-labelledby="nt-title">
   <div class="plan-box">
     <header class="plan-h"><h2 id="nt-title">배관 도면으로 마찰손실·전양정 구하기</h2><button type="button" class="plan-x" data-na="close">닫기</button></header>
@@ -3675,7 +3938,10 @@ const NET_HTML = `<div class="plan-modal" id="net" hidden role="dialog" aria-mod
 </div>`;
 function openNet() {
   const v = cur();
-  if (!v.net || v.net.kind !== netKind()) v.net = netDefaults(netKind());
+  if (netKind() === 'pt') { ptSync(v); NET.open.add('마찰손실'); }
+  else if (!v.net || v.net.kind !== netKind()) v.net = netDefaults(netKind());
+  if (!$('#net')) document.body.insertAdjacentHTML('beforeend', NET_HTML);
+  $('#nt-title').textContent = netKind() === 'pt' ? '배관 도면 고치기 (헤드별 방수압·방수량)' : '배관 도면으로 마찰손실·전양정 구하기';
   NET.sel = null;
   if (!$('#net')) document.body.insertAdjacentHTML('beforeend', NET_HTML);
   $('#net').hidden = false;
@@ -3695,7 +3961,7 @@ function ntEditSeg(X) {
   const h = X.M.nodes.get(sl.id);
   if (!h) return null;
   const up = X.M.segById.get(h.up);
-  if (X.M.kind === 'sp') return up;
+  if (X.M.kind !== 'in') return X.n.dropOn ? up : X.M.segById.get(X.M.nodes.get(up.a).up);   // 회향식이 없으면 헤드로 가는 가지배관
   return X.M.segById.get(X.M.nodes.get(up.a).up);   // 옥내: 노즐 → 호스 → 방수구 연결 배관
 }
 function ntDraw(full) {
@@ -3706,18 +3972,32 @@ function ntDraw(full) {
   $('#nt-canvas').innerHTML = netSVG(X.M, X.R, X.n, X.open, { edit: true, sel: NET.sel || {} });
   $('#nt-sum').innerHTML = ntSum(X);
   if (full) {
+    NET.bigKey = ntBig(X.M);
     $('#nt-tools').innerHTML = ntTools(X);
     $('#nt-selbox').innerHTML = ntSelBox(X);
     $('#nt-forms').innerHTML = ntForms(X);
     $('#nt-tip').textContent = NET.tool === 'toggle'
-      ? `${X.M.kind === 'sp' ? '헤드' : '노즐'}를 누르면 열림·닫힘이 바뀌어요. 배관을 누르면 길이·구경·관부속을 고칠 수 있어요.`
-      : `배관이나 ${X.M.kind === 'sp' ? '헤드' : '노즐'}를 누르면 오른쪽에서 고칠 수 있어요. 고친 배관은 점선으로 보여요.`;
+      ? `${X.M.kind === 'in' ? '노즐' : '헤드'}를 누르면 열림·닫힘이 바뀌어요. 배관을 누르면 길이·구경·관부속을 고칠 수 있어요.`
+      : `배관이나 ${X.M.kind === 'in' ? '노즐' : '헤드'}를 누르면 오른쪽에서 고칠 수 있어요. 고친 배관은 점선으로 보여요.`;
   }
   const st = $('#nt-stat');
   if (st) st.innerHTML = ntStat(X);
+  const ft = $('#nt-fittbl'), bk = ntBig(X.M);
+  if (ft && NET.bigKey !== bk) ft.innerHTML = ntFitTable(X.n, X.M);
+  NET.bigKey = bk;
+  const kn = $('#nt-knote');
+  if (kn) { const K = netK(X.n), u = X.M.kind === 'in' ? '노즐' : '헤드'; kn.textContent = `지금 K = ${fx(K)} → 최소 방수압 ${fx(X.n.Pmin)} MPa에서 ${fx(K * Math.sqrt(10 * n0(X.n.Pmin)))} L/min. 간단 계산은 열린 ${u} 모두 기준 방수량으로 봐요.`; }
 }
 function ntSum(X) {
   if (X.err) return `<p class="err">${X.err}</p>`;
+  if (X.M.kind === 'pt') {
+    const R = X.R, start = X.n.basis === 'start', fr = R.path.reduce((a, s) => a + R.loss.get(s.id).hf, 0);
+    return `<div class="pl-sum">
+    <div class="pl-tot"><span>${start ? '최말단 방수압' : '시작점 압력'}</span><b>${fx(start ? R.P.get(R.gov) : R.Proot, 4)}<small>MPa</small></b></div>
+    <div class="pl-tot"><span>전체 방수량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
+    <p class="pl-note">총 마찰손실압력 ${fx(fr, 4)} MPa · 낙차 ${fx(X.M.nodes.get(R.gov).z - X.M.nodes.get(X.M.root).z)} m · 열린 헤드 ${X.open.length}개 · 방수압이 가장 낮은 헤드: ${X.M.nodes.get(R.gov).label}</p>
+  </div>`;
+  }
   const R = X.R, u = X.M.kind === 'sp' ? '헤드' : '노즐';
   return `<div class="pl-sum">
     <div class="pl-tot"><span>펌프 토출량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
@@ -3726,9 +4006,13 @@ function ntSum(X) {
   </div>`;
 }
 function ntTools(X) {
-  const n = X.n, u = X.M.kind === 'sp' ? '헤드' : '노즐';
+  const n = X.n, u = X.M.kind === 'in' ? '노즐' : '헤드';
   const pb = (m, t) => `<button type="button" data-na="open:${m}" aria-pressed="${n.openMode === m}">${t}</button>`;
   const tb = (m, t) => `<button type="button" data-na="tool:${m}" aria-pressed="${NET.tool === m}">${t}</button>`;
+  if (X.M.kind === 'pt') return `<div class="pl-seg" role="group" aria-label="열린 헤드">${pb('all', '모두')}${pb('last', '① 1개만')}${pb('line', '끝 가지배관 1줄')}${n.openMode === 'custom' ? '<button type="button" aria-pressed="true" disabled>직접 고름</button>' : ''}</div>
+    <div class="pl-seg" role="group" aria-label="누르면">${tb('pick', '고르기')}${tb('toggle', '헤드 열기·닫기')}</div>
+    <span class="pl-sp"></span>
+    <button type="button" class="pl-btn" data-na="reset">처음 뼈대로</button>`;
   return `<div class="pl-seg" role="group" aria-label="열린 ${u}">${pb('base', `기준개수 ${Math.round(X.nBase)}개`)}${pb('last', '최말단 1개')}${pb('all', '모두')}${n.openMode === 'custom' ? '<button type="button" aria-pressed="true" disabled>직접 고름</button>' : ''}</div>
     <div class="pl-seg" role="group" aria-label="누르면">${tb('pick', '고르기')}${tb('toggle', `${u} 열기·닫기`)}</div>
     <label class="pl-tl">방수량 <select data-n="mode"><option value="precise"${n.mode === 'precise' ? ' selected' : ''}>정밀: Q = K√(10P)</option><option value="simple"${n.mode === 'simple' ? ' selected' : ''}>간단: 모두 ${fx(n.qS)} L/min</option></select></label>
@@ -3739,17 +4023,17 @@ const ntNum = (key, label, val, o = {}) => `<label class="pl-f${o.wide ? ' nt-wi
 const ntChk = (key, label, on, attr = 'n') => `<label class="nt-c"><input type="checkbox" data-${attr}="${key}"${on ? ' checked' : ''}> <span>${label}</span></label>`;
 const ntSel = (key, label, val, opts, o = {}) => `<label class="pl-f${o.wide ? ' nt-wide' : ''}">${label}<select data-${o.attr || 'n'}="${key}">${opts.map(([k, l]) => `<option value="${k}"${String(k) === String(val) ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
 function ntSelBox(X) {
-  const u = X.M.kind === 'sp' ? '헤드' : '노즐', sl = NET.sel;
+  const u = X.M.kind === 'in' ? '노즐' : '헤드', sl = NET.sel;
   if (!sl) return `<p class="pl-empty">배관이나 ${u}를 누르면 여기서 고칠 수 있어요.</p>`;
   const s = ntEditSeg(X), n = X.n;
   let top = '';
   if (sl.t === 'head') {
     const on = X.open.includes(sl.id);
     top = `<div class="nt-eh"><b>${u} ${X.M.nodes.get(sl.id).label}</b><button type="button" class="pl-btn" data-na="headtoggle">${on ? `${u} 닫기` : `${u} 열기`}</button></div>`;
-    if (X.M.kind === 'sp' && n.dropOn) top += `<div class="pl-grid4">${ntNum('rise', '위로 올라가는 높이 (m)', s.rise, { attr: 'hz', min: 0 })}${ntNum('fall', '아래로 내려오는 높이 (m)', s.fall, { attr: 'hz', min: 0 })}</div>`;
+    if (X.M.kind !== 'in' && n.dropOn) top += `<div class="pl-grid4">${ntNum('rise', '위로 올라가는 높이 (m)', s.rise, { attr: 'hz', min: 0 })}${ntNum('fall', '아래로 내려오는 높이 (m)', s.fall, { attr: 'hz', min: 0 })}</div>`;
   }
   const segForm = s.hose ? '<p class="pl-note">호스 길이와 마찰손실은 아래 \'호스\'에서 바꿔요.</p>'
-    : `<div class="pl-grid4">${ntNum('L', '직관 길이 (m)', s.L, { attr: 'sg', min: 0 })}${ntSel('size', '구경', s.size, FR.sizes.map((z) => [z, `${z}A`]), { attr: 'sg' })}</div>
+    : `<div class="pl-grid4">${ntNum('L', '직관 길이 (m)', s.L, { attr: 'sg', min: 0 })}${ntSel('size', '구경', s.size, FR.pipeSizes.map((z) => [z, `${z}A`]), { attr: 'sg' })}</div>
       <div class="nt-fit">${Object.entries(FR.types).map(([t, [nm]]) => `<label class="pl-f${n.fitOn[t] ? '' : ' off'}">${nm}<input type="number" min="0" step="1" inputmode="numeric" data-sg="fit:${t}" value="${s.fit[t] || 0}"></label>`).join('')}</div>`;
   return `<div class="pl-edit">${top}
     <div class="nt-eh"><span>${sl.t === 'head' ? `<small class="muted">${s.label}</small>` : `<b>${s.label}</b>`}</span>${s.edited ? '<button type="button" class="pl-mini" data-na="segreset">원래대로</button>' : ''}</div>
@@ -3768,12 +4052,16 @@ function ntStat(X) {
   }
   return t;
 }
-function ntFitTable(n) {
-  return `<div class="tbl-wrap nt-le"><table class="t"><thead><tr><th>관부속</th>${FR.sizes.map((z) => `<th>${z}A</th>`).join('')}</tr></thead><tbody>${Object.entries(FR.types).map(([t, [nm]]) => `<tr class="${n.fitOn[t] ? '' : 'off'}"><th>${ntChk(t, nm, n.fitOn[t], 'fon')}</th>${FR.sizes.map((z, i) => `<td><input type="number" step="any" min="0" inputmode="decimal" data-le="${t}:${i}" value="${n.fitLe[t][i]}" aria-label="${nm} ${z}A 상당길이"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+const ntBig = (M) => [...new Set(M.segs.filter((s) => !s.hose && s.size > 50).map((s) => s.size))].sort((a, b) => a - b).join(',');
+function ntFitTable(n, M) {
+  const big = new Set(ntBig(M).split(',').filter(Boolean).map(Number));
+  const cols = FR.sizes.map((z, i) => [z, i]).filter(([z]) => z <= 50 || big.has(z));
+  return `<div class="tbl-wrap nt-le"><table class="t"><thead><tr><th>관부속</th>${cols.map(([z]) => `<th>${z}A</th>`).join('')}</tr></thead><tbody>${Object.entries(FR.types).map(([t, [nm]]) => `<tr class="${n.fitOn[t] ? '' : 'off'}"><th>${ntChk(t, nm, n.fitOn[t], 'fon')}</th>${cols.map(([z, i]) => `<td><input type="number" step="any" min="0" inputmode="decimal" data-le="${t}:${i}" value="${n.fitLe[t][i]}" aria-label="${nm} ${z}A 상당길이"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function ntForms(X) {
-  const n = X.n, g = X.M.geo, sp = X.M.kind === 'sp', fol = n.follow && Object.keys(v_ctx()).length > 0;
+  const n = X.n, g = X.M.geo, sp = false, fol = n.follow && Object.keys(v_ctx()).length > 0;
   const D = (t, body) => { const key = t.split(' ')[0]; return `<details class="nt-d" data-key="${key}"${NET.open.has(key) ? ' open' : ''}><summary>${t}</summary><div class="nt-g">${body}</div></details>`; };
+  if (X.M.kind === 'pt') return `<p class="pl-note">가지배관 수·헤드 수·거리, 높이, 계산 기준, 마찰손실 식은 왼쪽 조건 칸에서 바꿔요.</p>` + D('마찰손실 설정 (관부속)', `<div class="nt-wide"><p class="pl-note">관부속 상당길이 (m). 체크한 관부속만 계산에 들어가요. 문제에서 관부속을 무시하라고 하면 체크를 모두 빼세요.</p><div id="nt-fittbl">${ntFitTable(n, X.M)}</div><button type="button" class="pl-mini" data-na="fitreset">표 값 처음대로</button></div>`);
   const tank = ntChk('tankOn', '수조 위치 넣기 (펌프보다 아래·위)', n.tankOn) + (n.tankOn
     ? ntSel('tankPos', '수조', n.tankPos, [['below', '펌프보다 아래 (흡입)'], ['above', '펌프보다 위 (압입)']]) + ntNum('tankH', '펌프와 수면 높이 차 (m)', n.tankH, { min: 0 }) + ntNum('sucLoss', '흡입측 마찰손실 (m)', n.sucLoss, { min: 0 })
     : '');
@@ -3790,20 +4078,22 @@ function ntForms(X) {
     ? ntNum('hB', n.floorsOn ? '층 바닥 → 가지배관 높이 (m)' : '펌프 → 가지배관 높이 (m)', n.hB, { min: 0 }) + ntNum('pumpL', '펌프 → 수직배관 수평 길이 (m)', n.pumpL, { min: 0 })
       + ntChk('floorsOn', '여러 층 건물 (펌프는 1층 바닥, 맨 위층을 계산)', n.floorsOn)
       + (n.floorsOn ? ntNum('nf', '층수', n.nf, { min: 1 }) + ntNum('FH', '층고 (m)', n.FH, { min: 0 }) : '')
-      + ntChk('dropOn', '헤드 연결 배관 넣기 (위로 올라갔다가 내려오는 회향식)', n.dropOn)
+      + ntChk('dropOn', '회향식 넣기 (가지배관에서 위로 올라갔다가 헤드로 내려오는 배관)', n.dropOn)
       + (n.dropOn ? ntNum('rise', '위로 (m)', n.rise, { min: 0 }) + ntNum('fall', '아래로 (m)', n.fall, { min: 0 }) + ntSel('dropSize', '연결 배관 구경', n.dropSize, [[20, '20A'], [25, '25A'], [32, '32A']]) + `<p class="pl-note">모든 헤드에 같이 적용돼요. 헤드 하나만 바꾸려면 그 헤드를 눌러서 고치세요.</p>` : '')
       + tank
     : ntNum('pumpZ', '펌프 높이 (1층 바닥 기준, 지하는 −, m)', n.pumpZ) + ntNum('pumpL', '펌프 → 수직배관 수평 길이 (m)', n.pumpL, { min: 0 }) + tank;
   const u = sp ? '헤드' : '노즐';
-  const hd = ntNum('Pmin', `최말단 최소 방수압 (MPa)`, n.Pmin, { min: 0 })
-    + ntNum('K', '방출계수 K (정밀)', n.K, { min: 0 }) + ntNum('qS', `${u} 1개 방수량 (간단, L/min)`, n.qS, { min: 0 })
-    + ntSel('conv', '압력 ↔ 수두', n.conv, [['std', '1 MPa = 101.97 m (표준대기압)'], ['simple', '1 MPa = 100 m (간략)']], { wide: true })
-    + `<p class="pl-note">${sp ? 'K = 80이면 0.1 MPa에서 80 L/min이에요.' : `K = 130 ÷ √(10 × 0.17) ≈ 99.71이면 0.17 MPa에서 130 L/min이에요. 노즐 구경으로 하려면 K = 0.653 × d² (13 mm면 ${fx(0.653 * 169)})를 넣으세요.`}</p>`;
-  const hose = sp ? '' : D('호스', ntChk('hoseOn', '호스 마찰손실 넣기', n.hoseOn) + (n.hoseOn
-    ? ntSel('hoseType', '호스', n.hoseType, Object.entries(FR.hose).map(([k, [l, r]]) => [k, `${l} (${r} m)`]), { wide: true }) + ntNum('hoseLen', '호스 길이 (m)', n.hoseLen, { min: 0 }) + ntNum('hoseRate', '100 m당 마찰손실 (m)', n.hoseRate, { min: 0 })
-      + '<p class="pl-note">괄호 값은 130 L/min일 때 100 m당 마찰손실수두예요. 유량이 다르면 1.85제곱에 비례해서 바꿔 계산해요.</p>' : ''));
+  const hd = ntSel('kMode', '방출계수 K 정하는 방법', n.kMode, [['qp', '기준 방수량·방수압으로 (K = Q ÷ √(10P))'], ['k', 'K 직접 넣기'], ...(sp ? [] : [['d', '노즐 구경으로 (K = 0.653 × d²)']])], { wide: true })
+    + ntNum('qS', `기준 방수량 (L/min)`, n.qS, { min: 0 }) + ntNum('Pmin', '최말단 최소 방수압 (MPa)', n.Pmin, { min: 0 })
+    + (n.kMode === 'k' ? ntNum('K', '방출계수 K', n.K, { min: 0 }) : n.kMode === 'd' ? ntNum('nozD', '노즐 구경 d (mm)', n.nozD, { min: 0 }) : '')
+    + `<p class="pl-note" id="nt-knote"></p>`
+    + ntSel('conv', '압력 ↔ 수두', n.conv, [['std', '1 MPa = 101.97 m (표준대기압)'], ['simple', '1 MPa = 100 m (간략)']], { wide: true });
+  const hoseRef = `기준값 (130 L/min, 100 m당 마찰손실수두): ${Object.values(FR.hose).map(([l, r]) => `${l} ${r} m`).join(' · ')}`;
+  const hose = sp ? '' : D('호스', ntChk('hoseOn', '호스 마찰손실 넣기 (문제에 주어지면 체크하고 값을 넣으세요)', n.hoseOn) + (n.hoseOn
+    ? ntSel('hoseType', '기준값 불러오기', n.hoseType, Object.entries(FR.hose).map(([k, [l, r]]) => [k, `${l} (${r} m)`]), { wide: true }) + ntNum('hoseLen', '호스 길이 (m)', n.hoseLen, { min: 0 }) + ntNum('hoseRate', '100 m당 마찰손실 (m)', n.hoseRate, { min: 0 })
+      + '<p class="pl-note">100 m당 마찰손실은 130 L/min 기준이에요. 유량이 다르면 1.85제곱에 비례해서 바꿔 계산해요.</p>' : `<p class="pl-note">${hoseRef}</p>`));
   const fr = ntNum('C', '조도계수 C', n.C, { min: 0 }) + ntSel('dia', '안지름', n.dia, [['nom', '호칭경 그대로 (25A → 25 mm)'], ['spp', '배관용 탄소강관(SPP) 안지름']], { wide: true })
-    + `<div class="nt-wide"><p class="pl-note">관부속 상당길이 (m). 체크를 빼면 그 관부속은 계산에서 빠져요. 표 값은 흔히 쓰는 값이라 문제에 값이 주어지면 고쳐 쓰세요.</p>${ntFitTable(n)}<button type="button" class="pl-mini" data-na="fitreset">표 값 처음대로</button></div>`;
+    + `<div class="nt-wide"><p class="pl-note">관부속 상당길이 (m). 체크한 관부속만 계산에 들어가요. 게이트밸브·앵글밸브·체크밸브는 문제에 있을 때 체크하세요. 65A 이상 칸은 도면에 그 구경 배관이 있을 때만 보여요. 표 값은 흔히 쓰는 값이라 문제에 값이 주어지면 고쳐 쓰세요.</p><div id="nt-fittbl">${ntFitTable(n, X.M)}</div><button type="button" class="pl-mini" data-na="fitreset">표 값 처음대로</button></div>`;
   return D(sp ? '뼈대 (헤드 배치)' : '뼈대 (층·방수구)', sk) + D('높이', hi) + D(`${u} 방수 조건`, hd) + hose + D('마찰손실 설정', fr);
 }
 const v_ctx = () => cur()._netctx || {};
@@ -3848,7 +4138,7 @@ document.addEventListener('click', (e) => {
     if (act === 'close') { closeNet(); return; }
     if (act === 'open') { n.openMode = arg; n.openSet = {}; }
     if (act === 'tool') NET.tool = arg;
-    if (act === 'reset') { n.ov = {}; n.openMode = 'base'; n.openSet = {}; NET.sel = null; }
+    if (act === 'reset') { n.ov = {}; n.openMode = n.kind === 'pt' ? 'all' : 'base'; n.openSet = {}; NET.sel = null; }
     if (act === 'segreset') { const s = ntEditSeg(NET.last); if (s) delete n.ov[s.id]; }
     if (act === 'headtoggle' && NET.sel) ntToggle(NET.sel.id);
     if (act === 'fitreset') n.fitLe = Object.fromEntries(Object.entries(FR.types).map(([k, [, arr]]) => [k, arr.slice()]));
@@ -3880,13 +4170,402 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { e.preventDefault(); if (e.target.closest('input, select')) e.target.blur(); else if (NET.sel) { NET.sel = null; ntDraw(true); } else closeNet(); }
 });
 
+/* =========================================================
+   ⑫ 특별피난계단의 계단실 및 부속실 제연설비: 누설틈새 도면 (직렬·병렬)
+   실(방)을 놓고, 실과 실 사이에 틈새(문·창문)를 이어요. 같은 두 실 사이 틈새는 병렬, 실을 거쳐 가면 직렬.
+   ========================================================= */
+const LKU = 40, LKW = 24, LKH = 13;   // 도면 한 칸 40 px, 24 × 13칸
+const lkR = (id, name, kind, x, y, w = 5, h = 3) => ({ id, name, kind, x, y, w, h });
+const lkD = (id, a, b, label, A) => ({ id, a, b, label, how: 'A', A, dtype: 'in', wtype: 'np', L: 5.6, n: 1 });
+function lkTemplate(kind) {
+  // 넓은 화면은 가로로, 폰은 세로로 늘어놓아요
+  const V = typeof window !== 'undefined' && window.innerWidth < 860;
+  const at = (i, n) => (V ? [1, n === 2 ? 1 + i * 7 : 0.5 + i * 4.25] : [n === 2 ? 2 + i * 14 : 1 + i * 8.5, 5]);
+  const room = (id, name, kind2, i, n) => lkR(id, name, kind2, ...at(i, n));
+  if (kind === 'series') return { seq: 4, rooms: [room('r1', '부속실', 'src', 0, 3), room('r2', '복도', 'room', 1, 3), room('r3', '거실', 'sink', 2, 3)], doors: [lkD('d1', 'r1', 'r2', 'A1', 0.02), lkD('d2', 'r2', 'r3', 'A2', 0.01)] };
+  if (kind === 'parallel') return { seq: 3, rooms: [room('r1', '부속실', 'src', 0, 2), room('r2', '거실', 'sink', 1, 2)], doors: [lkD('d1', 'r1', 'r2', 'A1', 0.01), lkD('d2', 'r1', 'r2', 'A2', 0.02)] };
+  if (kind === 'blank') return { seq: 3, rooms: [room('r1', '부속실', 'src', 0, 2), room('r2', '거실', 'sink', 1, 2)], doors: [] };
+  return { seq: 4, rooms: [room('r1', '부속실', 'src', 0, 3), room('r2', '복도', 'room', 1, 3), room('r3', '거실', 'sink', 2, 3)], doors: [lkD('d1', 'r1', 'r2', 'A1', 0.02), lkD('d2', 'r2', 'r3', 'A2', 0.01), lkD('d3', 'r2', 'r3', 'A3', 0.01)] };
+}
+function lkArea(d) {
+  const c = STD.press;
+  let a;
+  if (d.how === 'door') { const [, l, ad] = c.door[d.dtype] || c.door.in; a = Math.max(n0(d.L), l) / l * ad; }
+  else if (d.how === 'win') a = (c.win[d.wtype] || c.win.np)[1] * n0(d.L);
+  else a = n0(d.A);
+  return a * Math.max(1, Math.round(n0(d.n)) || 1);
+}
+const fa = (a) => fx(a, 5);
+// 합성 누설틈새면적: 병렬은 더하고, 직렬은 1 ÷ √(1/A₁² + 1/A₂²). 직렬·병렬로 안 풀리면 압력 균형으로 풀어요
+function lkSolve(lk) {
+  const src = lk.rooms.find((r) => r.kind === 'src'), snk = lk.rooms.find((r) => r.kind === 'sink');
+  if (!src || !snk) return { err: '제연구역(가압하는 실)과 기준 실(옥내)을 하나씩 정해 주세요.' };
+  const nm = Object.fromEntries(lk.rooms.map((r) => [r.id, r.name]));
+  let E = lk.doors.filter((d) => d.a !== d.b && nm[d.a] && nm[d.b] && lkArea(d) > 0).map((d) => ({ a: d.a, b: d.b, A: lkArea(d), name: d.label }));
+  // 제연구역과 이어진 것만
+  const reach = (from) => { const seen = new Set([from]), st = [from]; while (st.length) { const u = st.pop(); E.forEach((e) => { const w = e.a === u ? e.b : e.b === u ? e.a : null; if (w && !seen.has(w)) { seen.add(w); st.push(w); } }); } return seen; };
+  const rs = reach(src.id);
+  if (!rs.has(snk.id)) return { err: `${src.name}에서 ${snk.name}까지 이어진 틈새가 없어요. 틈새 잇기로 연결해 주세요.` };
+  const rt = reach(snk.id);
+  E = E.filter((e) => rs.has(e.a) && rt.has(e.a));
+  const steps = [], notes = [];
+  let cn = 0;
+  const pair = (e) => [e.a, e.b].sort().join('|');
+  for (let guard = 0; guard < 400; guard++) {
+    if (E.length === 1 && pair(E[0]) === [src.id, snk.id].sort().join('|')) return { A: E[0].A, steps, notes, method: 'sp', src, snk };
+    // 막다른 실 (틈새가 1개뿐인 중간 실)은 공기가 지나가지 않아서 빼요
+    const deg = {};
+    E.forEach((e) => { deg[e.a] = (deg[e.a] || 0) + 1; deg[e.b] = (deg[e.b] || 0) + 1; });
+    const dead = Object.keys(deg).find((u) => deg[u] === 1 && u !== src.id && u !== snk.id);
+    if (dead) { const e = E.find((x) => x.a === dead || x.b === dead); notes.push(`${nm[dead]}은(는) 틈새가 ${e.name} 하나뿐이라 공기가 지나가지 않아서 뺐어요.`); E = E.filter((x) => x !== e); continue; }
+    // 병렬: 같은 두 실 사이 틈새
+    const groups = {};
+    E.forEach((e) => { (groups[pair(e)] = groups[pair(e)] || []).push(e); });
+    const g = Object.values(groups).find((x) => x.length >= 2);
+    if (g) {
+      const A = g.reduce((s2, e) => s2 + e.A, 0), name = `합성 ${++cn}`;
+      steps.push({ t: `${g.map((e) => e.name).join(', ')} 병렬 (${nm[g[0].a]} ↔ ${nm[g[0].b]})`, f: 'A = A₁ + A₂ + …', sub: `${name} = ${g.map((e) => fa(e.A)).join(' + ')}`, ans: `${fa(A)} ㎡` });
+      E = E.filter((e) => !g.includes(e)); E.push({ a: g[0].a, b: g[0].b, A, name });
+      continue;
+    }
+    // 직렬: 틈새가 2개인 중간 실을 거쳐 감
+    const mid = Object.keys(deg).find((u) => deg[u] === 2 && u !== src.id && u !== snk.id);
+    if (mid) {
+      const [e1, e2] = E.filter((e) => e.a === mid || e.b === mid);
+      const o1 = e1.a === mid ? e1.b : e1.a, o2 = e2.a === mid ? e2.b : e2.a;
+      const A = 1 / Math.sqrt(1 / e1.A ** 2 + 1 / e2.A ** 2), name = `합성 ${++cn}`;
+      steps.push({ t: `${e1.name}, ${e2.name} 직렬 (${nm[mid]}을 거쳐서)`, f: 'A = 1 ÷ √(1/A₁² + 1/A₂²)', sub: `${name} = 1 ÷ √(1/${fa(e1.A)}² + 1/${fa(e2.A)}²)`, ans: `${fa(A)} ㎡` });
+      E = E.filter((e) => e !== e1 && e !== e2);
+      if (o1 !== o2) E.push({ a: o1, b: o2, A, name });
+      continue;
+    }
+    break;
+  }
+  // 직렬·병렬로 안 풀리는 연결: 실마다 들어오고 나가는 공기량이 같아지는 압력을 찾아요 (Q = A√ΔP)
+  const ids = [...new Set(E.flatMap((e) => [e.a, e.b]))], p = Object.fromEntries(ids.map((u) => [u, 0.5]));
+  p[src.id] = 1; p[snk.id] = 0;
+  for (let it = 0; it < 3000; it++) {
+    let dmax = 0;
+    ids.forEach((u) => {
+      if (u === src.id || u === snk.id) return;
+      let gs = 0, gp = 0;
+      E.forEach((e) => { const w = e.a === u ? e.b : e.b === u ? e.a : null; if (!w) return; const gg = e.A / Math.sqrt(Math.abs(p[u] - p[w]) + 1e-12); gs += gg; gp += gg * p[w]; });
+      const np = gs > 0 ? gp / gs : p[u]; dmax = Math.max(dmax, Math.abs(np - p[u])); p[u] = 0.5 * p[u] + 0.5 * np;
+    });
+    if (dmax < 1e-12) break;
+  }
+  const A = E.filter((e) => e.a === src.id || e.b === src.id).reduce((s2, e) => s2 + e.A * Math.sqrt(Math.max(0, p[src.id] - p[e.a === src.id ? e.b : e.a])), 0);
+  steps.push({ t: '남은 연결 (직렬·병렬로 안 나뉨)', sub: '실마다 들어오고 나가는 공기량이 같아지는 압력을 찾아서, 제연구역에서 나가는 공기량으로 구했어요 (Q = 0.827 × A × √ΔP)', ans: `${fa(A)} ㎡` });
+  return { A, steps, notes, method: 'net', src, snk };
+}
+
+/* 틈새 도면 그림 */
+function lkClip(r, dx, dy) {
+  const cx = (r.x + r.w / 2) * LKU, cy = (r.y + r.h / 2) * LKU, hw = r.w * LKU / 2, hh = r.h * LKU / 2;
+  const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity);
+  return [cx + dx * t, cy + dy * t];
+}
+function lkSVG(lk, o = {}) {
+  const sel = o.sel || {}, R = Object.fromEntries(lk.rooms.map((r) => [r.id, r]));
+  let g = '';
+  if (o.edit) for (let x = 0; x <= LKW; x++) g += `<line class="lk-grid" x1="${x * LKU}" y1="0" x2="${x * LKU}" y2="${LKH * LKU}"/>`;
+  if (o.edit) for (let y = 0; y <= LKH; y++) g += `<line class="lk-grid" x1="0" y1="${y * LKU}" x2="${LKW * LKU}" y2="${y * LKU}"/>`;
+  const KN = { src: '제연구역 (가압)', sink: '기준 실 (옥내)', room: '' };
+  lk.rooms.forEach((r) => {
+    g += `<g class="lk-r ${r.kind}${sel.t === 'room' && sel.id === r.id ? ' sel' : ''}${o.pend === r.id ? ' pend' : ''}" data-room="${r.id}"><rect x="${r.x * LKU}" y="${r.y * LKU}" width="${r.w * LKU}" height="${r.h * LKU}" rx="12"/>
+      <text class="lk-rn" x="${(r.x + r.w / 2) * LKU}" y="${(r.y + r.h / 2) * LKU + (KN[r.kind] ? -2 : 5)}" text-anchor="middle">${esc(r.name)}</text>${KN[r.kind] ? `<text class="lk-rk" x="${(r.x + r.w / 2) * LKU}" y="${(r.y + r.h / 2) * LKU + 16}" text-anchor="middle">${KN[r.kind]}</text>` : ''}</g>`;
+  });
+  const groups = {};
+  lk.doors.forEach((d) => { if (R[d.a] && R[d.b] && d.a !== d.b) (groups[[d.a, d.b].sort().join('|')] = groups[[d.a, d.b].sort().join('|')] || []).push(d); });
+  Object.values(groups).forEach((ds) => ds.forEach((d, k) => {
+    const a = R[d.a], b = R[d.b], ax = (a.x + a.w / 2) * LKU, ay = (a.y + a.h / 2) * LKU, bx = (b.x + b.w / 2) * LKU, by = (b.y + b.h / 2) * LKU;
+    const L = Math.hypot(bx - ax, by - ay) || 1, dx = (bx - ax) / L, dy = (by - ay) / L, nx = -dy, ny = dx, off = (k - (ds.length - 1) / 2) * 30;
+    const p1 = lkClip(a, dx, dy), p2 = lkClip(b, -dx, -dy);
+    const q1 = [p1[0] + nx * off, p1[1] + ny * off], q2 = [p2[0] + nx * off, p2[1] + ny * off], m = [(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2];
+    const ang = Math.atan2(dy, dx) * 180 / Math.PI, on = sel.t === 'door' && sel.id === d.id;
+    g += `<g class="lk-d${on ? ' sel' : ''}" data-door="${d.id}"><line class="lk-dl" x1="${q1[0].toFixed(1)}" y1="${q1[1].toFixed(1)}" x2="${q2[0].toFixed(1)}" y2="${q2[1].toFixed(1)}"/>
+      <rect class="lk-ds" x="-9" y="-5" width="18" height="10" rx="2" transform="translate(${m[0].toFixed(1)},${m[1].toFixed(1)}) rotate(${ang.toFixed(1)})"/>
+      ${Math.abs(dx) >= Math.abs(dy) ? `<text class="lk-dt" x="${m[0].toFixed(1)}" y="${(m[1] - 10).toFixed(1)}" text-anchor="middle">` : `<text class="lk-dt" x="${(m[0] - nx * off + Math.abs(nx) * ((ds.length - 1) / 2) * 30 + 14).toFixed(1)}" y="${(m[1] - ny * off + 4 + (k - (ds.length - 1) / 2) * 16).toFixed(1)}">`}${esc(d.label)} ${fx(lkArea(d), 4)}㎡</text>
+      ${o.edit ? `<line class="lk-hit" x1="${q1[0].toFixed(1)}" y1="${q1[1].toFixed(1)}" x2="${q2[0].toFixed(1)}" y2="${q2[1].toFixed(1)}"/>` : ''}</g>`;
+  }));
+  return g;
+}
+function lkSvgFull(lk, o) {
+  let vb = `0 0 ${LKW * LKU} ${LKH * LKU}`;
+  if (!o.edit && lk.rooms.length) {
+    const x0 = Math.min(...lk.rooms.map((r) => r.x)), y0 = Math.min(...lk.rooms.map((r) => r.y)), x1 = Math.max(...lk.rooms.map((r) => r.x + r.w)), y1 = Math.max(...lk.rooms.map((r) => r.y + r.h));
+    const tall = y1 - y0 > x1 - x0;
+    vb = `${(x0 - 0.8) * LKU} ${(y0 - 1.2) * LKU} ${(x1 - x0 + (tall ? 5 : 1.6)) * LKU} ${(y1 - y0 + 2) * LKU}`;
+  }
+  return `<svg class="lk-svg" viewBox="${vb}" role="img" aria-label="누설틈새 도면"><g${o.edit ? ' id="lk-g"' : ''}>${lkSVG(lk, o)}</g></svg>`;
+}
+
+/* 결과 */
+function lkHint() {
+  const v = cur();
+  if (!v.lk) return '실을 놓고 실 사이에 틈새를 이으면 직렬·병렬로 합성 누설틈새면적을 구해요.';
+  const r = lkSolve(v.lk);
+  return r.err ? r.err : `지금 도면: 실 ${v.lk.rooms.length}개, 틈새 ${v.lk.doors.length}개 → 합성 누설틈새면적 ${fa(r.A)} ㎡`;
+}
+function calcPress(v) {
+  if (!v.lk) v.lk = lkTemplate('mixed');
+  const c = STD.press, r = lkSolve(v.lk), cards = [];
+  const nm = Object.fromEntries(v.lk.rooms.map((x) => [x.id, x.name]));
+  const fig = `<div class="drawing lk-fig">${lkSvgFull(v.lk, {})}</div><p class="net-open"><button type="button" class="btn-act" data-act="lk">틈새 도면 열어서 고치기</button></p>`;
+  const rows = v.lk.doors.map((d) => [esc(d.label), `${esc(nm[d.a] || '?')} ↔ ${esc(nm[d.b] || '?')}`, d.how === 'door' ? c.door[d.dtype][0] : d.how === 'win' ? c.win[d.wtype][0] : '면적 직접', (Math.round(n0(d.n)) || 1) > 1 ? `${Math.round(d.n)}개` : '1개', fa(lkArea(d))]);
+  const aSteps = [];
+  v.lk.doors.filter((d) => d.how !== 'A').forEach((d) => {
+    const cnt = Math.max(1, Math.round(n0(d.n)) || 1);
+    if (d.how === 'door') {
+      const [lab, l, ad] = c.door[d.dtype], Lx = Math.max(n0(d.L), l);
+      aSteps.push(step({ t: `${esc(d.label)} 틈새면적 (출입문)`, f: 'A = (L ÷ ℓ) × A<sub>d</sub>', sym: [['A', '출입문 틈새면적 (㎡)'], ['L', `출입문 틈새 길이 (m, ℓ 이하면 ℓ로)`], ['ℓ', `${lab}: ${l} m`], ['A<sub>d</sub>', `${lab}: ${ad} ㎡`]], sub: `A = (${fx(Lx)} ÷ ${l}) × ${ad}${cnt > 1 ? ` × ${cnt}개` : ''}`, ans: `${fa(lkArea(d))} ㎡` }));
+    } else {
+      const [lab, k] = c.win[d.wtype];
+      aSteps.push(step({ t: `${esc(d.label)} 틈새면적 (창문)`, f: 'A = k × L', sym: [['A', '창문 틈새면적 (㎡)'], ['k', `${lab}: ${k.toExponential(2).replace('e-', ' × 10⁻').replace(/⁻(\d)/, (m0, x) => '⁻' + '⁰¹²³⁴⁵⁶⁷⁸⁹'[x])} ㎡/m`], ['L', '틈새 길이 (m)']], sub: `A = ${k} × ${fx(n0(d.L))}${cnt > 1 ? ` × ${cnt}개` : ''}`, ans: `${fa(lkArea(d))} ㎡` }));
+    }
+  });
+  if (r.err) { cards.push({ title: '누설틈새면적', error: r.err, extraTop: fig }); return { cards }; }
+  const rSteps = r.steps.map((x) => step(x));
+  rSteps.push(step({ t: '합성 누설틈새면적', sub: `${esc(r.src.name)} → ${esc(r.snk.name)}`, ans: `${fa(r.A)} ㎡` }));
+  cards.push({
+    title: '누설틈새면적', badge: r.method === 'sp' ? '직렬·병렬' : '압력 균형',
+    tiles: [{ l: '합성 누설틈새면적', v: fa(r.A), u: '㎡', tone: 'key' }, { l: '틈새 수', v: fx(v.lk.doors.length), u: '개' }],
+    extraTop: fig, notes: [...r.notes, '병렬(같은 두 실 사이 틈새)은 더하고, 직렬(실을 거쳐 가는 틈새)은 A = 1 ÷ √(1/A₁² + 1/A₂² + …)로 합쳐요.'],
+    steps: [...aSteps, ...rSteps],
+    extra: `<div><h4 class="sub-h">틈새 목록</h4>${table(['틈새', '사이', '종류', '개수', '면적 (㎡)'], rows)}</div>`,
+  });
+  // 급기량
+  const dP = n0(v.ps_dP), N = Math.max(1, Math.round(n0(v.ps_N)) || 1), al = n0(v.ps_alpha) || 1;
+  const q1 = c.c * r.A * Math.sqrt(dP) * N * al;
+  const steps = [step({ t: '누설량', f: `Q₁ = 0.827 × A × √P × N${al !== 1 ? ' × α' : ''}`, sym: [['Q₁', '누설량 (㎥/s)'], ['0.827', '유량계수 0.64 × √(2 ÷ 공기 밀도 1.2)'], ['A', '합성 누설틈새면적 (㎡)'], ['P', '차압 (Pa)'], ['N', '제연구역 수 (층)'], ...(al !== 1 ? [['α', '여유율']] : [])], sub: `Q₁ = 0.827 × ${fa(r.A)} × √${fx(dP)} × ${N}${al !== 1 ? ` × ${fx(al)}` : ''}`, ans: `${fx(q1, 4)} ㎥/s` })];
+  const tiles = [{ l: '누설량', v: fx(q1, 4), u: '㎥/s' }];
+  const warns = [];
+  if (dP < c.dP) warns.push(`차압 ${fx(dP)} Pa는 기준(${c.dP} Pa 이상, 옥내에 스프링클러설비가 있으면 ${c.dPsp} Pa 이상)보다 작아요. 스프링클러설비가 있는 경우인지 확인해 주세요.`);
+  let q2 = 0;
+  if (v.ps_sup) {
+    const [zl, V0] = c.vel[v.ps_zone] || c.vel.room, V = v.ps_V > 0 ? v.ps_V : V0, S = n0(v.ps_S), K = n0(v.ps_cnt) > c.zoneMax ? 2 : 1;
+    q2 = K * S * V;
+    steps.push(step({ t: '보충량', f: 'q = K × S × V', sym: [['q', '보충량 (㎥/s)'], ['K', `부속실 수 ${c.zoneMax}개 이하 1, 초과 2 (보충량을 넣는 층 수)`], ['S', '제연구역 출입문 1개 면적 (㎡)'], ['V', `방연풍속 (m/s)${v.ps_V > 0 ? '' : `: ${zl} ${V0} m/s 이상`}`]], sub: `q = ${K} × ${fx(S)} × ${fx(V)}`, ans: `${fx(q2, 4)} ㎥/s` }));
+    tiles.push({ l: '보충량', v: fx(q2, 4), u: '㎥/s' });
+  }
+  const Q = q1 + q2;
+  steps.push(step({ t: '급기량', f: v.ps_sup ? 'Q = Q₁ + q' : 'Q = Q₁', sym: [['Q', '급기량 (㎥/s)'], ['Q₁', '누설량 (㎥/s)'], ...(v.ps_sup ? [['q', '보충량 (㎥/s)']] : [])], sub: v.ps_sup ? `Q = ${fx(q1, 4)} + ${fx(q2, 4)}` : `Q = ${fx(q1, 4)}`, ans: `${fx(Q, 4)} ㎥/s` }));
+  steps.push(step({ t: '급기량 (분당)', sub: `${fx(Q, 4)} × 60`, ans: `${fx(Q * 60)} ㎥/min` }), step({ t: '급기량 (시간당)', sub: `${fx(Q, 4)} × 3600`, ans: `${fx(Q * 3600)} ㎥/h` }));
+  tiles.unshift({ l: '급기량', v: fx(Q, 4), u: '㎥/s', tone: 'key' });
+  tiles.push({ l: '급기량 (분당)', v: fx(Q * 60), u: '㎥/min' }, { l: '급기량 (시간당)', v: fx(Q * 3600), u: '㎥/h' });
+  cards.push({ title: '급기량', tiles, warns, steps, notes: ['급기량은 차압을 지키는 누설량과 방연풍속을 지키는 보충량을 합한 양이에요.'] });
+  if (v.ps_force) {
+    const W = n0(v.ps_W), Ad = W * n0(v.ps_H), d = n0(v.ps_d), Fdc = n0(v.ps_Fdc);
+    if (!(W > d)) cards.push({ title: '출입문 개방력', error: '문 폭은 손잡이에서 문 끝까지 거리보다 커야 해요.' });
+    else {
+      const Fp = W * Ad * dP / (2 * (W - d)), F = Fdc + Fp;
+      cards.push({
+        title: '출입문 개방력', badge: F <= c.force ? `${c.force} N 이하` : `${c.force} N 초과`, badgeOn: F > c.force,
+        tiles: [{ l: '개방력', v: fx(F), u: 'N', tone: 'key' }, { l: '차압으로 생기는 힘', v: fx(Fp), u: 'N' }, { l: '도어클로저 힘', v: fx(Fdc), u: 'N' }],
+        warns: F > c.force ? [`개방력이 ${c.force} N을 넘어요. 차압이나 도어클로저 힘을 줄여야 해요.`] : [],
+        steps: [
+          step({ t: '차압으로 생기는 힘', f: 'F<sub>p</sub> = K<sub>d</sub> × W × A × ΔP ÷ (2 × (W − d))', sym: [['F<sub>p</sub>', '차압 때문에 문을 열 때 더 드는 힘 (N)'], ['K<sub>d</sub>', '상수 1.0 (SI 단위)'], ['W', '문 폭 (m)'], ['A', '문 면적 (㎡)'], ['ΔP', '차압 (Pa)'], ['d', '손잡이에서 문 끝까지 거리 (m)']], sub: `F<sub>p</sub> = 1.0 × ${fx(W)} × ${fx(Ad)} × ${fx(dP)} ÷ (2 × (${fx(W)} − ${fx(d)}))`, ans: `${fx(Fp)} N` }),
+          step({ t: '개방력', f: 'F = F<sub>dc</sub> + F<sub>p</sub>', sym: [['F', '문을 여는 데 필요한 힘 (N)'], ['F<sub>dc</sub>', '도어클로저 힘 (N)'], ['F<sub>p</sub>', '차압으로 생기는 힘 (N)']], sub: `F = ${fx(Fdc)} + ${fx(Fp)}`, ans: `${fx(F)} N`, note: `기준: 제연설비가 작동할 때 출입문 개방에 필요한 힘은 ${c.force} N 이하` }),
+        ],
+      });
+    }
+  }
+  return { cards };
+}
+
+/* 틈새 도면 고치기 화면 */
+const LK = { tool: 'pick', sel: null, pend: null, drag: null, hist: [] };
+const LK_HTML = `<div class="plan-modal" id="lk" hidden role="dialog" aria-modal="true" aria-labelledby="lk-title">
+  <div class="plan-box">
+    <header class="plan-h"><h2 id="lk-title">누설틈새 도면 (직렬·병렬)</h2><button type="button" class="plan-x" data-lk="close">닫기</button></header>
+    <div class="plan-tools">
+      <div class="pl-seg" role="group" aria-label="도구"><button type="button" data-lktool="pick">고르기·옮기기</button><button type="button" data-lktool="room">실 추가</button><button type="button" data-lktool="link">틈새 잇기</button></div>
+      <label class="pl-tl">예시 <select id="lk-tpl"><option value="">불러오기…</option><option value="series">직렬 (실 → 복도 → 거실)</option><option value="parallel">병렬 (같은 두 실 사이 틈새 2개)</option><option value="mixed">직렬 + 병렬</option><option value="blank">비우기</option></select></label>
+      <span class="pl-sp"></span>
+      <button type="button" class="pl-btn" data-lk="undo">되돌리기</button>
+    </div>
+    <div class="plan-main nt-main">
+      <div class="plan-left"><div id="lk-canvas" class="pl-canvas lk-canvas"></div><p id="lk-tip" class="pl-tip"></p></div>
+      <aside class="plan-side"><div id="lk-sum"></div><div id="lk-edit"></div><h3 class="pl-h3">틈새 목록</h3><div id="lk-list"></div></aside>
+    </div>
+  </div>
+</div>`;
+const LK_TIPS = {
+  pick: '실을 끌어서 옮기고, 실이나 틈새를 누르면 오른쪽에서 고쳐요. Delete로 지워요.',
+  room: '빈 곳을 누르면 그 자리에 실이 생겨요.',
+  link: '실 두 개를 차례로 누르면 그 사이에 틈새(문·창문)가 생겨요. 같은 두 실을 또 이으면 병렬이에요.',
+};
+function lkPush() { const v = cur(); LK.hist.push(JSON.stringify(v.lk)); if (LK.hist.length > 80) LK.hist.shift(); }
+function openLk() {
+  const v = cur();
+  if (!v.lk) v.lk = lkTemplate('mixed');
+  LK.sel = null; LK.pend = null; LK.drag = null; LK.hist = [];
+  if (!$('#lk')) document.body.insertAdjacentHTML('beforeend', LK_HTML);
+  $('#lk').hidden = false; document.body.style.overflow = 'hidden';
+  $('#lk-canvas').innerHTML = lkSvgFull(v.lk, { edit: true });
+  lkDraw(true);
+  $('#lk .plan-x').focus();
+}
+function closeLk() { $('#lk').hidden = true; document.body.style.overflow = ''; LK.pend = null; renderInputs(); renderResults(); }
+// 폰처럼 좁은 화면에서는 실이 있는 곳 둘레만 보여줘서 크게 보이게 해요
+function lkView(lk) {
+  if (window.innerWidth >= 860 || !lk.rooms.length) return [0, 0, LKW, LKH];
+  const x0 = Math.max(0, Math.min(...lk.rooms.map((r) => r.x)) - 1), y0 = Math.max(0, Math.min(...lk.rooms.map((r) => r.y)) - 1);
+  const x1 = Math.min(LKW, Math.max(...lk.rooms.map((r) => r.x + r.w)) + 4.5), y1 = Math.min(LKH, Math.max(...lk.rooms.map((r) => r.y + r.h)) + 1);
+  if (y0 > 0) return [x0, Math.max(0, y0), Math.max(6, x1 - x0), Math.max(5, y1 - Math.max(0, y0))];
+  return [x0, y0, Math.max(6, x1 - x0), Math.max(5, y1 - y0)];
+}
+function lkDraw(all) {
+  const v = cur(), lk = v.lk;
+  if (!LK.drag) { const [x, y, w, h] = lkView(lk); $('#lk-canvas svg').setAttribute('viewBox', `${x * LKU} ${y * LKU} ${w * LKU} ${h * LKU}`); }
+  $('#lk-g').innerHTML = lkSVG(lk, { edit: true, sel: LK.sel || {}, pend: LK.pend });
+  document.querySelectorAll('#lk [data-lktool]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lktool === LK.tool)));
+  $('#lk-canvas svg').classList.toggle('mode-room', LK.tool === 'room');
+  $('#lk-tip').textContent = LK.pend ? `${(lk.rooms.find((r) => r.id === LK.pend) || {}).name}에서 이을 실을 누르세요. (Esc: 취소)` : LK_TIPS[LK.tool];
+  const r = lkSolve(lk);
+  $('#lk-sum').innerHTML = r.err ? `<p class="err">${r.err}</p>` : `<div class="pl-sum"><div class="pl-tot" style="grid-column:1/-1"><span>합성 누설틈새면적</span><b>${fa(r.A)}<small>㎡</small></b></div><p class="pl-note">${r.method === 'sp' ? '직렬·병렬로 합쳤어요.' : '직렬·병렬로 안 나뉘는 연결이 있어서 압력 균형으로 풀었어요.'} ${r.steps.length ? r.steps.map((x) => x.t).join(' → ') : ''}</p></div>`;
+  $('#lk-list').innerHTML = lk.doors.length ? lk.doors.map((d) => { const a = lk.rooms.find((x) => x.id === d.a), b = lk.rooms.find((x) => x.id === d.b); return `<div class="pl-row${LK.sel && LK.sel.t === 'door' && LK.sel.id === d.id ? ' on' : ''}"><button type="button" class="pl-pick" data-lkpick="${d.id}"><span class="pl-chip"></span><b>${esc(d.label)}</b><span>${esc(a ? a.name : '?')} ↔ ${esc(b ? b.name : '?')} · ${fx(lkArea(d), 4)}㎡</span></button></div>`; }).join('') : '<p class="pl-empty">아직 틈새가 없어요. 틈새 잇기로 실 두 개를 누르세요.</p>';
+  if (all) $('#lk-edit').innerHTML = lkEdit(lk);
+}
+function lkEdit(lk) {
+  const s = LK.sel, c = STD.press;
+  if (!s) return '<p class="pl-empty">실이나 틈새를 누르면 여기서 고칠 수 있어요.</p>';
+  if (s.t === 'room') {
+    const r = lk.rooms.find((x) => x.id === s.id);
+    if (!r) return '';
+    return `<div class="pl-edit"><div class="nt-eh"><b>실</b><button type="button" class="pl-mini" data-lk="del">지우기</button></div>
+      <label class="pl-f">이름<input type="text" data-lkr="name" value="${esc(r.name)}"></label>
+      <label class="pl-f">이 실은<select data-lkr="kind"><option value="src"${r.kind === 'src' ? ' selected' : ''}>제연구역 (가압하는 실)</option><option value="room"${r.kind === 'room' ? ' selected' : ''}>중간 실 (공기가 지나가는 실)</option><option value="sink"${r.kind === 'sink' ? ' selected' : ''}>기준 실 (차압을 재는 옥내)</option></select></label>
+      <div class="pl-grid4"><label class="pl-f">가로 (칸)<input type="number" min="2" step="0.5" data-lkr="w" value="${r.w}"></label><label class="pl-f">세로 (칸)<input type="number" min="1.5" step="0.5" data-lkr="h" value="${r.h}"></label></div></div>`;
+  }
+  const d = lk.doors.find((x) => x.id === s.id);
+  if (!d) return '';
+  const opt = (o, v0) => Object.entries(o).map(([k, [l]]) => `<option value="${k}"${k === v0 ? ' selected' : ''}>${l}</option>`).join('');
+  const rooms = lk.rooms.map((r) => [r.id, r.name]);
+  const rsel = (key, v0) => `<select data-lkd="${key}">${rooms.map(([k, l]) => `<option value="${k}"${k === v0 ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+  return `<div class="pl-edit"><div class="nt-eh"><b>틈새</b><button type="button" class="pl-mini" data-lk="del">지우기</button></div>
+    <div class="pl-grid4"><label class="pl-f">이름<input type="text" data-lkd="label" value="${esc(d.label)}"></label><label class="pl-f">같은 틈새 개수<input type="number" min="1" step="1" data-lkd="n" value="${d.n || 1}"></label></div>
+    <div class="pl-grid4"><label class="pl-f">이쪽 실${rsel('a', d.a)}</label><label class="pl-f">저쪽 실${rsel('b', d.b)}</label></div>
+    <label class="pl-f">면적 정하는 방법<select data-lkd="how"><option value="A"${d.how === 'A' ? ' selected' : ''}>면적 직접 넣기</option><option value="door"${d.how === 'door' ? ' selected' : ''}>출입문: A = (L ÷ ℓ) × Ad</option><option value="win"${d.how === 'win' ? ' selected' : ''}>창문: 틈새 길이로</option></select></label>
+    ${d.how === 'A' ? `<label class="pl-f">틈새면적 (㎡)<input type="number" min="0" step="any" data-lkd="A" value="${d.A ?? ''}"></label>`
+      : d.how === 'door' ? `<label class="pl-f">출입문 종류<select data-lkd="dtype">${opt(c.door, d.dtype)}</select></label><label class="pl-f">출입문 틈새 길이 L (m)<input type="number" min="0" step="any" data-lkd="L" value="${d.L ?? ''}"></label>`
+      : `<label class="pl-f">창문 종류<select data-lkd="wtype">${opt(c.win, d.wtype)}</select></label><label class="pl-f">틈새 길이 (m)<input type="number" min="0" step="any" data-lkd="L" value="${d.L ?? ''}"></label>`}
+    <p class="pl-note" id="lk-area">면적 ${fa(lkArea(d))} ㎡</p></div>`;
+}
+function lkPt(e) {
+  const svg = $('#lk-canvas svg'), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+  const sc = Math.min(r.width / vb.width, r.height / vb.height), ox = (r.width - vb.width * sc) / 2, oy = (r.height - vb.height * sc) / 2;
+  return [((e.clientX - r.left - ox) / sc + vb.x) / LKU, ((e.clientY - r.top - oy) / sc + vb.y) / LKU];
+}
+const lkSnap = (x) => Math.round(x * 2) / 2;
+document.addEventListener('pointerdown', (e) => {
+  const svg = e.target.closest && e.target.closest('#lk-canvas svg');
+  if (!svg) return;
+  const v = cur(), lk = v.lk, [px, py] = lkPt(e);
+  const rg = e.target.closest('[data-room]'), dg = e.target.closest('[data-door]');
+  if (LK.tool === 'room') {
+    if (rg) return;
+    lkPush();
+    const id = 'r' + lk.seq++, w = 5, h = 3;
+    lk.rooms.push(lkR(id, `실 ${lk.rooms.length + 1}`, 'room', Math.max(0, Math.min(LKW - w, lkSnap(px - w / 2))), Math.max(0, Math.min(LKH - h, lkSnap(py - h / 2))), w, h));
+    LK.sel = { t: 'room', id }; LK.tool = 'pick'; lkDraw(true); return;
+  }
+  if (LK.tool === 'link') {
+    if (!rg) { LK.pend = null; lkDraw(); return; }
+    const id = rg.dataset.room;
+    if (!LK.pend) { LK.pend = id; lkDraw(); return; }
+    if (LK.pend === id) { LK.pend = null; lkDraw(); return; }
+    lkPush();
+    const did = 'd' + lk.seq++, num = lk.doors.reduce((m, d) => { const k = /^A(\d+)$/.exec(d.label); return k ? Math.max(m, +k[1]) : m; }, 0) + 1;
+    lk.doors.push(lkD(did, LK.pend, id, `A${num}`, 0.01));
+    LK.pend = null; LK.sel = { t: 'door', id: did }; lkDraw(true); return;
+  }
+  if (dg) { LK.sel = { t: 'door', id: dg.dataset.door }; lkDraw(true); return; }
+  if (rg) {
+    const r = lk.rooms.find((x) => x.id === rg.dataset.room);
+    LK.sel = { t: 'room', id: r.id };
+    LK.drag = { id: r.id, dx: px - r.x, dy: py - r.y, snap: JSON.stringify(lk), moved: false };
+    svg.setPointerCapture(e.pointerId);
+    lkDraw(true); return;
+  }
+  LK.sel = null; lkDraw(true);
+});
+document.addEventListener('pointermove', (e) => {
+  if (!LK.drag || !$('#lk') || $('#lk').hidden) return;
+  const lk = cur().lk, r = lk.rooms.find((x) => x.id === LK.drag.id), [px, py] = lkPt(e);
+  if (!r) return;
+  const nx = Math.max(0, Math.min(LKW - r.w, lkSnap(px - LK.drag.dx))), ny = Math.max(0, Math.min(LKH - r.h, lkSnap(py - LK.drag.dy)));
+  if (nx !== r.x || ny !== r.y) { r.x = nx; r.y = ny; LK.drag.moved = true; lkDraw(); }
+});
+document.addEventListener('pointerup', () => { if (!LK.drag) return; if (LK.drag.moved) { LK.hist.push(LK.drag.snap); } LK.drag = null; });
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-act="lk"]')) { openLk(); return; }
+  if (!e.target.closest('#lk')) return;
+  const v = cur(), lk = v.lk;
+  const tb = e.target.closest('[data-lktool]');
+  if (tb) { LK.tool = tb.dataset.lktool; LK.pend = null; lkDraw(); return; }
+  const pk = e.target.closest('[data-lkpick]');
+  if (pk) { LK.sel = { t: 'door', id: pk.dataset.lkpick }; LK.tool = 'pick'; lkDraw(true); return; }
+  const b = e.target.closest('[data-lk]');
+  if (!b) return;
+  const a = b.dataset.lk;
+  if (a === 'close') { closeLk(); return; }
+  if (a === 'undo' && LK.hist.length) { v.lk = JSON.parse(LK.hist.pop()); LK.sel = null; lkDraw(true); }
+  if (a === 'del' && LK.sel) {
+    lkPush();
+    if (LK.sel.t === 'room') { lk.rooms = lk.rooms.filter((r) => r.id !== LK.sel.id); lk.doors = lk.doors.filter((d) => d.a !== LK.sel.id && d.b !== LK.sel.id); }
+    else lk.doors = lk.doors.filter((d) => d.id !== LK.sel.id);
+    LK.sel = null; lkDraw(true);
+  }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (!t.closest || !t.closest('#lk')) return;
+  const lk = cur().lk, s = LK.sel;
+  if (!s) return;
+  if (t.dataset.lkr) {
+    const r = lk.rooms.find((x) => x.id === s.id), k = t.dataset.lkr;
+    if (!r || k === 'kind') return;
+    if (k === 'name') r.name = t.value;
+    else { const n = Number(t.value); if (n > 0) { r[k] = Math.min(k === 'w' ? LKW : LKH, n); r.x = Math.min(r.x, LKW - r.w); r.y = Math.min(r.y, LKH - r.h); } }
+    lkDraw(); return;
+  }
+  if (t.dataset.lkd) {
+    const d = lk.doors.find((x) => x.id === s.id), k = t.dataset.lkd;
+    if (!d || t.tagName === 'SELECT') return;
+    d[k] = k === 'label' ? t.value : (t.value === '' ? null : Number(t.value));
+    lkDraw();
+    const ar = $('#lk-area'); if (ar) ar.textContent = `면적 ${fa(lkArea(d))} ㎡`;
+  }
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (!t.closest || !t.closest('#lk')) return;
+  const v = cur(), lk = v.lk, s = LK.sel;
+  if (t.id === 'lk-tpl') { if (t.value) { lkPush(); v.lk = lkTemplate(t.value); LK.sel = null; t.value = ''; lkDraw(true); } return; }
+  if (t.tagName !== 'SELECT' || !s) return;
+  lkPush();
+  if (t.dataset.lkr === 'kind') {
+    const r = lk.rooms.find((x) => x.id === s.id);
+    if (t.value !== 'room') lk.rooms.forEach((x) => { if (x.kind === t.value) x.kind = 'room'; });
+    r.kind = t.value;
+  }
+  if (t.dataset.lkd) { const d = lk.doors.find((x) => x.id === s.id); d[t.dataset.lkd] = t.value; if (t.dataset.lkd === 'dtype' && !(d.L > 0)) d.L = STD.press.door[t.value][1]; }
+  lkDraw(true);
+});
+document.addEventListener('keydown', (e) => {
+  if (!$('#lk') || $('#lk').hidden) return;
+  if (e.target.closest('input, select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (LK.pend) { LK.pend = null; lkDraw(); } else if (LK.sel) { LK.sel = null; lkDraw(true); } else closeLk(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && LK.sel) { e.preventDefault(); $('#lk [data-lk="del"]') && $('#lk [data-lk="del"]').click(); }
+});
+
 /* ⑩ 사용자가 무언가 하면 */
 $('#targets').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-t], button[data-m]');
   if (!b) return;
-  if (b.dataset.m) { const m = MENUS.find((x) => x.id === b.dataset.m); current = lastIn[m.id] || m.items[0]; }
+  if (b.dataset.m) { const m = MENUS.find((x) => x.id === b.dataset.m); curMenu = m.id; current = lastIn[m.id] || m.items[0]; }
   else current = b.dataset.t;
-  lastIn[menuOf(current).id] = current;
   showTab(false);
   renderTargets(); renderInputs(); renderResults();
 });
@@ -3897,35 +4576,142 @@ $('#form').addEventListener('input', (e) => {
   if (k === 'sm_A' || k === 'sm_D') cur().sm_fromPlan = false;
   renderResults();
 });
+function fixHalon(k) {
+  // 할론 종류를 바꿨는데 고른 방호대상에 그 약제 기준값이 없으면, 기준값이 있는 첫 방호대상으로 바꿔요
+  if (k === 'halonType' && cur().agent === 'halon') {
+    const g = cur(), K = STD.halon.kinds;
+    if (!K[g.halonKind][1][g.halonType]) g.halonKind = Object.keys(K).find((x) => K[x][1][g.halonType]);
+  }
+}
+// 선택란·칩에서 고른 값 넣기: 입력칸을 다시 그리고, 고른 칸에 포커스를 돌려줘요
+function setField(k, val) {
+  state[current][k] = val;
+  fixHalon(k);
+  renderInputs(); renderResults();
+  const el = document.getElementById('f_' + k);
+  const f = el && (el.dataset.cs ? el : el.querySelector(`[aria-checked="true"]`));
+  if (f) f.focus({ preventScroll: true });
+}
 $('#form').addEventListener('change', (e) => {
   const k = e.target.dataset.k;
   if (k && e.target.type === 'number') { if (layoutKey() !== lastLK) { renderInputs(); renderResults(); } return; }
   if (!k) return;
   const before = layoutKey();
   state[current][k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-  // 할론 종류를 바꿨는데 고른 방호대상에 그 약제 기준값이 없으면, 기준값이 있는 첫 방호대상으로 바꿔요
-  if (k === 'halonType' && cur().agent === 'halon') {
-    const g = cur(), K = STD.halon.kinds;
-    if (!K[g.halonKind][1][g.halonType]) g.halonKind = Object.keys(K).find((x) => K[x][1][g.halonType]);
-  }
-  // 보이는 입력칸이 바뀔 때만 다시 그려요. 고른 선택란을 다시 그리거나 포커스를 옮기면 모바일에서 목록이 한 번 더 떠요.
+  fixHalon(k);
   if (layoutKey() !== before) renderInputs();
   renderResults();
 });
+$('#form').addEventListener('click', (e) => {
+  const c = e.target.closest('.chip[data-chip]');
+  if (c) { if (c.getAttribute('aria-checked') !== 'true') setField(c.dataset.chip, c.dataset.v); return; }
+  const b = e.target.closest('.cs-btn');
+  if (b) { if (CS.btn === b) csClose(false); else csOpen(b); }
+});
+$('#form').addEventListener('keydown', (e) => {
+  const b = e.target.closest('.cs-btn');
+  if (b) {
+    const open = CS.btn === b;
+    if (!open && ['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) { e.preventDefault(); csOpen(b); return; }
+    if (open) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); CS.act = Math.max(0, Math.min(CS.opts.length - 1, CS.act + (e.key === 'ArrowDown' ? 1 : -1))); csHi(); }
+      else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); CS.act = e.key === 'Home' ? 0 : CS.opts.length - 1; csHi(); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); csPick(CS.act); }
+      else if (e.key === 'Escape') { e.preventDefault(); csClose(true); }
+      else if (e.key === 'Tab') csClose(false);
+    }
+    return;
+  }
+  const c = e.target.closest('.chip[data-chip]');
+  if (c && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    e.preventDefault();
+    const all = [...c.parentNode.querySelectorAll('.chip')], i = all.indexOf(c), n = all[(i + (e.key === 'ArrowRight' ? 1 : all.length - 1)) % all.length];
+    setField(n.dataset.chip, n.dataset.v);
+  }
+});
+/* 직접 만든 선택 목록 (기본 선택 목록 대신) */
+const CS = { btn: null, k: null, opts: [], act: -1 };
+const fieldOf = (k) => { for (const s of target().sections) { const f = s.fields.find((x) => x.id === k); if (f) return f; } return null; };
+function csOpen(btn) {
+  if (CS.btn) csClose(false);
+  const k = btn.dataset.cs, f = fieldOf(k);
+  if (!f) return;
+  let pop = $('#cs-pop');
+  if (!pop) { document.body.insertAdjacentHTML('beforeend', '<div class="cs-pop" id="cs-pop" role="listbox" hidden></div>'); pop = $('#cs-pop'); }
+  CS.opts = optsOf(f); CS.btn = btn; CS.k = k;
+  const v = String(state[current][k]);
+  CS.act = Math.max(0, CS.opts.findIndex(([x]) => String(x) === v));
+  pop.setAttribute('aria-label', plain(f.label));
+  pop.innerHTML = CS.opts.map(([x, l], i) => `<div class="cs-opt${String(x) === v ? ' sel' : ''}" role="option" id="cs-o${i}" data-i="${i}" aria-selected="${String(x) === v}"><span>${l}</span><svg class="cs-ck" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg></div>`).join('');
+  pop.hidden = false;
+  csPlace(btn, true);
+  pop.classList.remove('show'); void pop.offsetWidth; pop.classList.add('show');
+  btn.setAttribute('aria-expanded', 'true'); btn.setAttribute('aria-controls', 'cs-pop');
+  csHi();
+}
+// 목록 위치: 칸 바로 아래 (아래 자리가 모자라면 위)
+function csPlace(btn, first) {
+  const pop = $('#cs-pop'), r = btn.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+  if (r.bottom < 0 || r.top > vh) { csClose(false); return; }
+  const w = Math.min(Math.max(r.width, 240), vw - 16), left = Math.max(8, Math.min(r.left, vw - w - 8));
+  pop.style.width = w + 'px'; pop.style.left = left + 'px';
+  const below = vh - r.bottom - 12, above = r.top - 12;
+  if (first) CS.up = below < 220 && above > below;
+  pop.style.maxHeight = Math.max(160, Math.min(360, CS.up ? above : below)) + 'px';
+  pop.classList.toggle('up', CS.up);
+  pop.style.top = CS.up ? '' : (r.bottom + 6) + 'px';
+  pop.style.bottom = CS.up ? (vh - r.top + 6) + 'px' : '';
+}
+function csHi() {
+  const pop = $('#cs-pop');
+  pop.querySelectorAll('.cs-opt').forEach((o, i) => o.classList.toggle('act', i === CS.act));
+  const a = pop.querySelector('.cs-opt.act');
+  if (a) {
+    if (a.offsetTop < pop.scrollTop) pop.scrollTop = a.offsetTop - 6;
+    else if (a.offsetTop + a.offsetHeight > pop.scrollTop + pop.clientHeight) pop.scrollTop = a.offsetTop + a.offsetHeight - pop.clientHeight + 6;
+    CS.btn.setAttribute('aria-activedescendant', a.id);
+  }
+}
+function csClose(focus) {
+  const pop = $('#cs-pop');
+  if (pop) pop.hidden = true;
+  if (CS.btn) { CS.btn.setAttribute('aria-expanded', 'false'); CS.btn.removeAttribute('aria-activedescendant'); if (focus) CS.btn.focus(); }
+  CS.btn = null; CS.k = null;
+}
+function csPick(i) {
+  const k = CS.k, o = CS.opts[i];
+  csClose(true);
+  if (k && o && String(state[current][k]) !== String(o[0])) setField(k, typeof o[0] === 'number' ? o[0] : String(o[0]));
+}
+document.addEventListener('click', (e) => {
+  const o = e.target.closest('#cs-pop .cs-opt');
+  if (o) { csPick(+o.dataset.i); return; }
+  if (CS.btn && !e.target.closest('#cs-pop') && !e.target.closest('.cs-btn')) csClose(false);
+});
+document.addEventListener('mousemove', (e) => { const o = e.target.closest && e.target.closest('#cs-pop .cs-opt'); if (o && +o.dataset.i !== CS.act) { CS.act = +o.dataset.i; csHi(); } });
+window.addEventListener('resize', () => { if (CS.btn) csPlace(CS.btn); });
+document.addEventListener('scroll', (e) => { if (CS.btn && !(e.target.closest && e.target.closest('#cs-pop'))) csPlace(CS.btn); }, true);
 $('#results').addEventListener('click', (e) => {
   const b = e.target.closest('button.val.has, button.ex-x');
   if (!b) return;
   const card = b.dataset.card;
-  if (b.classList.contains('ex-x') || openVal.get(card) === b.dataset.l) openVal.delete(card);
-  else openVal.set(card, b.dataset.l);
+  if (b.classList.contains('ex-x') || openVal.get(ck(card)) === b.dataset.l) openVal.delete(ck(card));
+  else openVal.set(ck(card), b.dataset.l);
   renderResults();
   const again = [...document.querySelectorAll('#results button.val.has')].find((x) => x.dataset.card === card && x.dataset.l === b.dataset.l);
   if (again) again.focus({ preventScroll: true });
 });
+$('#results').addEventListener('click', (e) => {
+  const h = e.target.closest('.net-fig [data-head], .net-fig [data-seg]');
+  if (!h) return;
+  openNet();
+  NET.sel = h.dataset.head ? { t: 'head', id: h.dataset.head } : { t: 'seg', id: h.dataset.seg };
+  ntDraw(true);
+});
 $('#results').addEventListener('toggle', (e) => {
   const d = e.target;
   if (!d.matches || !d.matches('details.steps')) return;
-  if (d.open) openSteps.add(d.dataset.card); else openSteps.delete(d.dataset.card);
+  if (d.open) openSteps.add(ck(d.dataset.card)); else openSteps.delete(ck(d.dataset.card));
 }, true);
 function showTab(std) {
   $('#tab-calc').setAttribute('aria-selected', String(!std));
