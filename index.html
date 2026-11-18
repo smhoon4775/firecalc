@@ -612,7 +612,9 @@ const STD = {
   foam: {                                             // 포소화설비 (헤드식)
     rate: { protein: 6.5, synthetic: 8.0, afff: 3.7 }, rateSpecial: 6.5, // 1㎡당 방사량 L/min·㎡
     time: 10, zoneMax: 200,
-    perHead: 9, perHeadFW: 8, fwQ: 75, headR: 2.1,     // 헤드 간격 S = 2 × r × cos45° (정방형, r = 2.1m)
+    perHead: 9, perHeadFW: 8, fwQ: 75,
+    // 가로·세로가 주어지면 헤드 간격 S = 2 × r × cos45° (정방형)로 세요. r: 유효반경
+    headR: { '1.7': '특수가연물 저장·취급', '2.1': '기본', '2.3': '내화구조' },
     caf: { perTank: 13.9, perSpecial: 9.3, density: { general: 1.63, special: 2.3 } },
     sensorArea: 20, reelQ: 300, reelQsmall: 230, reelT: 20, reelMax: 5,
   },
@@ -726,6 +728,11 @@ const STD = {
 const $ = (s) => document.querySelector(s);
 const fx = (n, d = 2) => (typeof n === 'number' && Number.isFinite(n)) ? n.toLocaleString('ko-KR', { maximumFractionDigits: d }) : '-';
 const up = Math.ceil;
+// 계산 과정은 중간값을 반올림해서 넣지 않고, 처음 넣은 값부터 식을 이어서 보여줘요
+const fi = (n) => fx(n, 6);   // 넣은 값은 넣은 그대로
+const topOp = (s, ops) => { let d = 0; for (let i = 0; i < s.length - 2; i++) { const c = s[i]; if (c === '(' || c === '[' || c === '⌈') d++; else if (c === ')' || c === ']' || c === '⌉') d--; else if (!d && c === ' ' && ops.includes(s[i + 1]) && s[i + 2] === ' ') return true; } return false; };
+const pa = (s) => (topOp(String(s), '+−') ? `(${s})` : String(s));       // 곱하기·나누기 안에 넣을 때
+const pd = (s) => (topOp(String(s), '+−×÷') ? `(${s})` : String(s));     // 나누는 수, 거듭제곱 밑
 const n0 = (x) => (typeof x === 'number' && Number.isFinite(x)) ? x : 0;
 const bad = (x) => !(typeof x === 'number' && Number.isFinite(x) && x > 0);
 const pickLT = (tbl, x) => tbl.find((r) => x < r[0]);
@@ -777,14 +784,16 @@ function toHead(x, u, conv) {
   const k = STD.headPerMPa[conv || 'std'];
   return u === 'MPa' ? x * k : u === 'kPa' ? (x / 1000) * k : x;
 }
-function pump(prefix, v, Qlpm, h2label, h3label) {
+// 압력으로 넣은 양정을 수두(m)로 바꾸는 식
+const headX = (x, u, conv) => (!isPress(u) ? fi(x) : `${u === 'kPa' ? `${fi(x)} ÷ 1000` : fi(x)} × ${conv === 'std' ? '10.332 ÷ 0.101325' : '100'}`);
+function pump(prefix, v, Qlpm, h2label, h3label, qs) {
   if (v[prefix + '_Hd']) {
-    const x = v[prefix + '_H'], u = v[prefix + '_H_u'] || 'm', conv = v[prefix + '_conv'] || 'std', k = STD.headPerMPa[conv];
+    const x = v[prefix + '_H'], u = v[prefix + '_H_u'] || 'm', conv = v[prefix + '_conv'] || 'std';
     if (!(typeof x === 'number' && x > 0)) return { H: NaN, Pw: NaN, Ps: NaN, P: NaN, steps: [], warn: '전양정에 0보다 큰 값을 넣으면 동력이 나와요.' };
-    const H = toHead(x, u, conv);
-    const st = [step({ t: '전양정', sub: isPress(u) ? `직접 입력 ${fx(x, 4)} ${u}${u === 'kPa' ? ' = ' + fx(x / 1000, 4) + ' MPa' : ''} → ${fx(x / (u === 'kPa' ? 1000 : 1), 4)} × ${conv === 'std' ? fx(k) : 100}` : '직접 입력', ans: `${fx(H)} m` })];
-    const pw = power(Qlpm, H, v[prefix + '_eta'], v[prefix + '_k']);
-    return { H, ...pw, steps: [...st, ...pw.steps] };
+    const H = toHead(x, u, conv), Hs = headX(x, u, conv);
+    const st = [step({ t: '전양정', sub: isPress(u) ? `H = ${Hs}` : '직접 입력', ans: `${fx(H)} m` })];
+    const pw = power(Qlpm, H, v[prefix + '_eta'], v[prefix + '_k'], qs, Hs);
+    return { H, Hs, ...pw, steps: [...st, ...pw.steps] };
   }
   const raw = [v[prefix + '_h1'], v[prefix + '_h2'], v[prefix + '_h3']];
   if (raw.some((x) => !(typeof x === 'number' && Number.isFinite(x)))) {
@@ -799,46 +808,49 @@ function pump(prefix, v, Qlpm, h2label, h3label) {
     conSteps.push(step({
       t: '압력 → 수두 환산', f: conv === 'std' ? 'h = P × (10.332 ÷ 0.101325)' : 'h = P × 100',
       sym: [['h', '수두 (m)'], ['P', '압력 (MPa, kPa는 ÷ 1000)'], [conv === 'std' ? '10.332 ÷ 0.101325' : '100', conv === 'std' ? `표준대기압 0.101325 MPa = 10.332 m → 1 MPa = ${fx(k)} m` : '0.1 MPa = 10 m로 본 값']],
-      sub: us.map((u, i) => isPress(u) ? `${nm[i]} = ${fx(raw[i], 4)} ${u}${u === 'kPa' ? ' = ' + fx(raw[i] / 1000, 4) + ' MPa' : ''} → ${fx(raw[i] / (u === 'kPa' ? 1000 : 1), 4)} × ${conv === 'std' ? fx(k) : 100} = ${fx([h1, h2, h3][i])} m` : '').filter(Boolean).join('<br>'),
+      sub: us.map((u, i) => isPress(u) ? `${nm[i]} = ${headX(raw[i], u, conv)} = ${fx([h1, h2, h3][i])} m` : '').filter(Boolean).join('<br>'),
     }));
   }
+  const Hs = raw.map((x, i) => (isPress(us[i]) ? `(${headX(x, us[i], conv)})` : fi(x))).join(' + ');
   const steps = [...conSteps, step({
     t: '전양정', f: 'H = h₁ + h₂ + h₃',
     sym: [['H', '전양정 (m)'], ['h₁', '실양정 (m)'], ['h₂', (h2label || '마찰손실양정') + ' (m)'], ['h₃', (h3label || '방수압 환산수두') + ' (m)']],
-    sub: `H = ${fx(h1)} + ${fx(h2)} + ${fx(h3)}`, ans: `${fx(H)} m`,
+    sub: `H = ${Hs}`, ans: `${fx(H)} m`,
   })];
-  const pw = power(Qlpm, H, v[prefix + '_eta'], v[prefix + '_k']);
-  return { H, ...pw, steps: [...steps, ...pw.steps] };
+  const pw = power(Qlpm, H, v[prefix + '_eta'], v[prefix + '_k'], qs, Hs);
+  return { H, Hs, ...pw, steps: [...steps, ...pw.steps] };
 }
-function power(Qlpm, H, etaPct, K) {
+// qs·hs: 토출량(L/min)·전양정(m)을 처음 값부터 쓴 식
+function power(Qlpm, H, etaPct, K, qs, hs) {
   const Qm = Qlpm / 1000, e = n0(etaPct) / 100, k = n0(K);
+  const pwS = `0.163 × (${pa(qs ?? fx(Qlpm))} ÷ 1000) × ${pa(hs ?? fx(H))}`;
   const Pw = STD.pumpConst * Qm * H;
   const ok = e > 0 && k > 0;
   const Ps = ok ? Pw / e : NaN, P = ok ? Ps * k : NaN;
   const steps = [step({
     t: '수동력', f: 'P<sub>w</sub> = 0.163 × Q × H',
     sym: [['P<sub>w</sub>', '수동력 (kW)'], ['0.163', '물 1㎥/min을 1m 올리는 데 드는 동력 (kW)'], ['Q', '토출량 (㎥/min)'], ['H', '전양정 (m)']],
-    sub: `P<sub>w</sub> = 0.163 × ${fx(Qm, 3)} × ${fx(H)}`, ans: `${fx(Pw)} kW`,
+    sub: `P<sub>w</sub> = ${pwS}`, ans: `${fx(Pw)} kW`,
   })];
   if (ok) steps.push(
-    step({ t: '축동력', f: 'P<sub>s</sub> = P<sub>w</sub> ÷ η', sym: [['P<sub>s</sub>', '축동력 (kW)'], ['P<sub>w</sub>', '수동력 (kW)'], ['η', '펌프 효율']], sub: `P<sub>s</sub> = ${fx(Pw)} ÷ ${fx(e)}`, ans: `${fx(Ps)} kW` }),
-    step({ t: '전동기 동력', f: 'P = P<sub>s</sub> × K', sym: [['P', '전동기 동력 (kW)'], ['P<sub>s</sub>', '축동력 (kW)'], ['K', '전달계수']], sub: `P = ${fx(Ps)} × ${fx(k)}`, ans: `${fx(P)} kW` }),
+    step({ t: '축동력', f: 'P<sub>s</sub> = P<sub>w</sub> ÷ η', sym: [['P<sub>s</sub>', '축동력 (kW)'], ['P<sub>w</sub>', '수동력 (kW)'], ['η', '펌프 효율']], sub: `P<sub>s</sub> = ${pwS} ÷ ${fi(e)}`, ans: `${fx(Ps)} kW` }),
+    step({ t: '전동기 동력', f: 'P = P<sub>s</sub> × K', sym: [['P', '전동기 동력 (kW)'], ['P<sub>s</sub>', '축동력 (kW)'], ['K', '전달계수']], sub: `P = ${pwS} ÷ ${fi(e)} × ${fi(k)}`, ans: `${fx(P)} kW` }),
   );
   return { Pw, Ps, P, steps, warn: ok ? '' : '펌프 효율과 전달계수에 0보다 큰 값을 넣어야 축동력과 전동기 동력이 나와요.' };
 }
 const pumpTiles = (Q, p) => [
   { l: '펌프 토출량', v: fx(Q), u: 'L/min', tone: 'key' },
-  { l: '펌프 토출량 (㎥/min)', dl: '펌프 토출량', v: fx(Q / 1000, 4), u: '㎥/min' },
+  { l: '펌프 토출량 (㎥/min)', dl: '펌프 토출량', v: fx(Q / 1000), u: '㎥/min' },
   { l: '전양정', v: fx(p.H), u: 'm' },
   { l: '수동력', v: fx(p.Pw), u: 'kW' },
   { l: '축동력', v: fx(p.Ps), u: 'kW' },
   { l: '전동기 동력', v: fx(p.P), u: 'kW', tone: 'key' },
 ];
 
-function roofSteps(Q, roof) {
+function roofSteps(Q, roof, qs = fi(Q)) {
   return [
-    step({ t: '옥상수조 수원', f: "Q' = Q × 1/3", sym: [["Q'", '옥상수조에 둘 수원 (㎥)'], ['Q', '유효수량 (㎥)']], sub: `Q' = ${fx(Q)} × 1/3`, ans: `${fx(roof)} ㎥` }),
-    step({ t: '수원 합계', f: "Q<sub>T</sub> = Q + Q'", sym: [['Q<sub>T</sub>', '옥상수조를 포함한 수원 합계 (㎥)'], ['Q', '유효수량 (㎥)'], ["Q'", '옥상수조 수원 (㎥)']], sub: `Q<sub>T</sub> = ${fx(Q)} + ${fx(roof)}`, ans: `${fx(Q + roof)} ㎥` }),
+    step({ t: '옥상수조 수원', f: "Q' = Q × 1/3", sym: [["Q'", '옥상수조에 둘 수원 (㎥)'], ['Q', '유효수량 (㎥)']], sub: `Q' = ${pa(qs)} × 1/3`, ans: `${fx(roof)} ㎥` }),
+    step({ t: '수원 합계', f: "Q<sub>T</sub> = Q + Q'", sym: [['Q<sub>T</sub>', '옥상수조를 포함한 수원 합계 (㎥)'], ['Q', '유효수량 (㎥)'], ["Q'", '옥상수조 수원 (㎥)']], sub: `Q<sub>T</sub> = ${qs} + ${pa(qs)} × 1/3`, ans: `${fx(Q + roof)} ㎥` }),
   ];
 }
 
@@ -1031,6 +1043,8 @@ const TARGETS = [
         { id: 'fA', label: '바닥면적', type: 'num', unit: '㎡', def: 600, wide: true, show: (v) => !!v.fAd },
         { id: 'L', label: '가로', type: 'num', unit: 'm', def: 30, show: (v) => !v.fAd },
         { id: 'W', label: '세로', type: 'num', unit: 'm', def: 20, show: (v) => !v.fAd },
+        { id: 'fR', label: '유효반경 r (헤드 간격 S = 2r × cos45°)', type: 'sel', chips: true, wide: true, def: '2.1', show: (v) => !v.fAd, opts: [['1.7', '특수가연물 1.7 m'], ['2.1', '기본 2.1 m'], ['2.3', '내화구조 2.3 m'], ['c', '직접']] },
+        { id: 'fRc', label: '유효반경 r', type: 'num', unit: 'm', def: 2.1, show: (v) => !v.fAd && v.fR === 'c' },
       ]},
       { title: '설비', fields: [
         { id: 'sys', label: '종류', type: 'sel', wide: true, def: 'head', opts: [['head', '포헤드설비'], ['fw', '포워터스프링클러설비'], ['caf', '압축공기포소화설비']] },
@@ -1038,6 +1052,7 @@ const TARGETS = [
         { id: 'cafArea', label: '헤드 배치 기준', type: 'sel', wide: true, def: 'special', show: (v) => v.sys === 'caf', opts: () => [['tank', `유류탱크 주위: ${STD.foam.caf.perTank}㎡마다 1개`], ['special', `특수가연물 저장소: ${STD.foam.caf.perSpecial}㎡마다 1개`]] },
         { id: 'cafDensity', label: '설계방출밀도', type: 'sel', wide: true, def: 'general', show: (v) => v.sys === 'caf', opts: () => [['general', `일반가연물·탄화수소류 ${STD.foam.caf.density.general} L/min·㎡`], ['special', `특수가연물·알코올류·케톤류 ${STD.foam.caf.density.special} L/min·㎡`]] },
         { id: 'zone', label: '방호구역 면적', type: 'num', unit: '㎡', def: null, ph: '비우면 바닥면적 전체', wide: true, show: (v) => v.sys === 'caf' },
+        { id: 'fwN', label: '동시 방사 헤드 수', type: 'num', unit: '개', def: null, ph: '비우면 자동', wide: true, show: (v) => v.sys === 'fw', hint: '비우면 헤드 개수를 그대로 써요. 면적만 주어지면 200㎡를 넘을 때 200㎡로 나누고(최대 25개, 항공기 격납고는 제외), 가로·세로가 주어지면 가로 개수 × 세로 개수예요.' },
         { id: 'S', label: '포 약제 농도 S', type: 'sel', opts: [['3', '3%'], ['6', '6%']], def: '3' },
         { id: 'sensor', label: '자동기동용 감지 스프링클러헤드 사용', type: 'chk', def: false, show: (v) => v.sys !== 'caf' },
         { id: 'reelN', label: '호스릴포·포소화전 방수구 수', type: 'num', unit: '개', def: 0, wide: true, show: (v) => v.place !== 'special', hint: '없으면 0' },
@@ -1170,7 +1185,8 @@ TARGETS.find((t) => t.id === 'gas').hidden = true;
   const place = F.sections[0].fields.find((f) => f.id === 'place');
   place.opts = [...place.opts, ['tank', '옥외탱크저장소 (고정포방출구·보조포소화전)']];
   F.sections[0].fields.forEach((f) => {
-    if (f.id === 'L' || f.id === 'W') f.show = (v) => notTank(v) && !v.fAd;
+    if (f.id === 'L' || f.id === 'W' || f.id === 'fR') f.show = (v) => notTank(v) && !v.fAd;
+    if (f.id === 'fRc') f.show = (v) => notTank(v) && !v.fAd && v.fR === 'c';
     if (f.id === 'fAd') f.show = notTank;
     if (f.id === 'fA') f.show = (v) => notTank(v) && !!v.fAd;
   });
@@ -1406,21 +1422,22 @@ function calcHyd(v) {
     if (!(Q > 0 && P > 0 && C > 0)) return err('정격토출량, 정격토출압력, 유량계수에 0보다 큰 값을 넣어 주세요.');
     const f = H.perf, Q15 = Q * f.q, P65 = P * f.p, d = Math.sqrt(Q15 / (k0 * C * Math.sqrt(10 * P65))), dn = nominal(d);
     const steps = [];
-    if (v.pf_P_u !== 'MPa') steps.push(step({ t: '압력 단위 환산', sub: v.pf_P_u === 'kPa' ? `P = ${fx(v.pf_P)} kPa ÷ 1000` : `P = ${fx(v.pf_P)} m ÷ ${v.pf_conv === 'std' ? fx(STD.headPerMPa.std) : 100}`, ans: `${fx(P, 4)} MPa` }));
+    const pS = v.pf_P_u === 'kPa' ? `${fi(v.pf_P)} ÷ 1000` : v.pf_P_u === 'm' ? (v.pf_conv === 'std' ? `${fi(v.pf_P)} × 0.101325 ÷ 10.332` : `${fi(v.pf_P)} ÷ 100`) : fi(P);
+    if (v.pf_P_u !== 'MPa') steps.push(step({ t: '압력 단위 환산', sub: `P = ${pS}`, ans: `${fx(P)} MPa` }));
     steps.push(
-      step({ t: '150% 유량', f: `Q<sub>150</sub> = Q × ${f.q}`, sym: [['Q<sub>150</sub>', '정격토출량의 150% (L/min)'], ['Q', '정격토출량 (L/min)']], sub: `Q<sub>150</sub> = ${fx(Q)} × ${f.q}`, ans: `${fx(Q15)} L/min` }),
-      step({ t: '150% 운전 최소 압력', f: `P<sub>65</sub> = P × ${f.p}`, sym: [['P<sub>65</sub>', '150% 운전 시 확보해야 할 압력 (MPa)'], ['P', '정격토출압력 (MPa)']], sub: `P<sub>65</sub> = ${fx(P, 4)} × ${f.p}`, ans: `${fx(P65, 4)} MPa` }),
-      step({ t: '계산 관경', f: `d = √(Q<sub>150</sub> ÷ (${k0} × C × √(10 × P<sub>65</sub>)))`, sym: [['d', '성능시험배관 관경 (mm)'], ['Q<sub>150</sub>', '150% 유량 (L/min)'], ['C', '유량계수'], ['P<sub>65</sub>', '150% 운전 최소 압력 (MPa)'], [String(k0), 'Q = 0.6597 × C × d² × √(10P)의 상수']], sub: `d = √(${fx(Q15)} ÷ (${k0} × ${fx(C)} × √(10 × ${fx(P65, 4)})))`, ans: `${fx(d)} mm` }),
+      step({ t: '150% 유량', f: `Q<sub>150</sub> = Q × ${f.q}`, sym: [['Q<sub>150</sub>', '정격토출량의 150% (L/min)'], ['Q', '정격토출량 (L/min)']], sub: `Q<sub>150</sub> = ${fi(Q)} × ${f.q}`, ans: `${fx(Q15)} L/min` }),
+      step({ t: '150% 운전 최소 압력', f: `P<sub>65</sub> = P × ${f.p}`, sym: [['P<sub>65</sub>', '150% 운전 시 확보해야 할 압력 (MPa)'], ['P', '정격토출압력 (MPa)']], sub: `P<sub>65</sub> = ${pa(pS)} × ${f.p}`, ans: `${fx(P65)} MPa` }),
+      step({ t: '계산 관경', f: `d = √(Q<sub>150</sub> ÷ (${k0} × C × √(10 × P<sub>65</sub>)))`, sym: [['d', '성능시험배관 관경 (mm)'], ['Q<sub>150</sub>', '150% 유량 (L/min)'], ['C', '유량계수'], ['P<sub>65</sub>', '150% 운전 최소 압력 (MPa)'], [String(k0), 'Q = 0.6597 × C × d² × √(10P)의 상수']], sub: `d = √(${fi(Q)} × ${f.q} ÷ (${k0} × ${fi(C)} × √(10 × ${pa(pS)} × ${f.p})))`, ans: `${fx(d)} mm` }),
       step({ t: '선정 관경', sub: `계산 관경 ${fx(d)} mm 이상인 호칭 관경`, ans: `φ${dn}` }),
-      step({ t: '체절압력 상한', f: `P<sub>체절</sub> = P × ${f.shut}`, sym: [['P<sub>체절</sub>', '체절운전 시 넘으면 안 되는 압력 (MPa)']], sub: `P<sub>체절</sub> = ${fx(P, 4)} × ${f.shut}`, ans: `${fx(P * f.shut, 4)} MPa 이하` }),
-      step({ t: '유량측정 범위', f: `Q<sub>측정</sub> = Q × ${f.meter}`, sym: [['Q<sub>측정</sub>', '유량측정장치가 측정할 수 있어야 하는 유량 (L/min)']], sub: `Q<sub>측정</sub> = ${fx(Q)} × ${f.meter}`, ans: `${fx(Q * f.meter)} L/min 이상` }),
+      step({ t: '체절압력 상한', f: `P<sub>체절</sub> = P × ${f.shut}`, sym: [['P<sub>체절</sub>', '체절운전 시 넘으면 안 되는 압력 (MPa)']], sub: `P<sub>체절</sub> = ${pa(pS)} × ${f.shut}`, ans: `${fx(P * f.shut)} MPa 이하` }),
+      step({ t: '유량측정 범위', f: `Q<sub>측정</sub> = Q × ${f.meter}`, sym: [['Q<sub>측정</sub>', '유량측정장치가 측정할 수 있어야 하는 유량 (L/min)']], sub: `Q<sub>측정</sub> = ${fi(Q)} × ${f.meter}`, ans: `${fx(Q * f.meter)} L/min 이상` }),
     );
     return { cards: [{
       title: '성능시험배관',
       tiles: [
         { l: '선정 관경', v: `φ${dn}`, u: 'mm', tone: 'key' }, { l: '계산 관경', v: fx(d), u: 'mm' },
-        { l: '150% 유량', v: fx(Q15), u: 'L/min' }, { l: '150% 운전 최소 압력', v: fx(P65, 4), u: 'MPa' },
-        { l: '체절압력 상한', v: fx(P * f.shut, 4), u: 'MPa' }, { l: '유량측정 범위', v: fx(Q * f.meter), u: 'L/min 이상' },
+        { l: '150% 유량', v: fx(Q15), u: 'L/min' }, { l: '150% 운전 최소 압력', v: fx(P65), u: 'MPa' },
+        { l: '체절압력 상한', v: fx(P * f.shut), u: 'MPa' }, { l: '유량측정 범위', v: fx(Q * f.meter), u: 'L/min 이상' },
       ],
       notes: [`펌프 성능: 체절운전 시 정격토출압력의 ${f.shut * 100}%를 넘지 않고, 정격토출량의 ${f.q * 100}%로 운전할 때 정격토출압력의 ${f.p * 100}% 이상이어야 해요. 관경은 이 150% 조건에서 Q = ${k0} × C × d² × √(10P)로 구해요.`],
       steps,
@@ -1442,12 +1459,12 @@ function calcHyd(v) {
       if (vel > 0) {
         d = Math.sqrt((4 * (Q / 60000)) / (Math.PI * vel)) * 1000;
         dn = nominal(d);
-        lines.push(`d = √(4 × ${fx(Q / 60000, 5)} ÷ (π × ${fx(vel)})) = ${fx(d / 1000, 4)} m = ${fx(d)} mm${minD ? ` → 호칭 φ${dn}` : ' 이상인 호칭 관경'}`);
+        lines.push(`d = √(4 × (${fi(Q)} ÷ 60000) ÷ (π × ${fi(vel)})) × 1000 = ${fx(d)} mm${minD ? ` → 호칭 φ${dn}` : ' 이상인 호칭 관경'}`);
       }
       const pick = Math.max(Number.isFinite(dn) ? dn : 0, minD || 0);
       if (minD) lines.push(vel > 0 ? `최소 구경${v.pp_reel && minReel ? ' (호스릴)' : ''} φ${minD}과 비교해 큰 값` : `최소 구경${v.pp_reel && minReel ? ' (호스릴)' : ''} ${minD} mm 이상`);
       const why = [vel > 0 ? `유속 ${fx(vel)} m/s${vIn && vStd && grp !== 'custom' ? ' (입력값)' : grp === 'custom' ? '' : ' 이하'}` : '', minD ? `${minD} mm 이상` : ''].filter(Boolean).join(', ');
-      steps.push(step({ t: short, f: vel > 0 ? 'd = √(4Q ÷ (π × v))' : '', sym: vel > 0 ? [['d', '관 안지름 (m → mm로 표시)'], ['Q', '유량 (㎥/s) = L/min ÷ 60000'], ['v', '유속 (m/s)']] : [], sub: lines.join('<br>'), ans: `φ${pick}`, note: why }));
+      steps.push(step({ t: short, f: vel > 0 ? 'd = √(4Q ÷ (π × v))' : '', sym: vel > 0 ? [['d', '관 안지름 (m, × 1000 해서 mm로 표시)'], ['Q', '유량 (㎥/s) = L/min ÷ 60000'], ['v', '유속 (m/s)']] : [], sub: lines.join('<br>'), ans: `φ${pick}`, note: why }));
       tiles.push({ l: short, v: `φ${pick}`, u: 'mm', tone: 'key' });
     }
     return { cards: [{ title: '관경 계산', badge: grp === 'in' ? '옥내소화전' : grp === 'sp' ? '스프링클러' : '직접', flat: true, tiles, steps,
@@ -1457,7 +1474,8 @@ function calcHyd(v) {
   const mode = v.kq_mode, find = v.kq_find === 'K' && mode === 'd' ? 'd' : v.kq_find === 'd' && mode === 'K' ? 'K' : v.kq_find;
   const fix = !!v.kq_653;   // 옥내소화전 노즐: Q = 0.653 × d² × √(10P)
   const Q = n0(v.kq_Q), P = toMPa(n0(v.kq_P), v.kq_P_u), K = n0(v.kq_K), d = n0(v.kq_d), C = fix ? 1 : n0(v.kq_C);
-  const kc = fix ? 0.653 : k0 * C, kt = fix ? '0.653' : `${k0} × C`, ks = fix ? '0.653' : `${k0} × ${fx(C)}`;
+  const kc = fix ? 0.653 : k0 * C, kt = fix ? '0.653' : `${k0} × C`, ks = fix ? '0.653' : `${k0} × ${fi(C)}`;
+  const Ps = v.kq_P_u === 'kPa' ? `(${fi(v.kq_P)} ÷ 1000)` : fi(P), Qv = fi(Q), Kv = fi(K), dv = fi(d);
   const need = { Q: [P, mode === 'K' ? K : d], P: [Q, mode === 'K' ? K : d], K: [Q, P], d: [Q, P] }[find];
   if (mode === 'd' && !(C > 0)) return err('유량계수에 0보다 큰 값을 넣어 주세요.');
   if (need.some((x) => !(x > 0))) return err('구할 값 말고 나머지 칸에 0보다 큰 값을 넣어 주세요.');
@@ -1465,27 +1483,26 @@ function calcHyd(v) {
   const symK = [['Q', '방수량 (L/min)'], ['K', '방출계수'], ['P', '방수압 (MPa)']];
   const symD = [['Q', '방수량 (L/min)'], ...(fix ? [['0.653', '0.6597 × 유량계수 0.99']] : [['C', '유량계수']]), ['d', '노즐 구경 (mm)'], ['P', '방수압 (MPa)']];
   if (mode === 'K') {
-    if (find === 'Q') { ans = K * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = 'Q = K × √(10P)'; sub = `Q = ${fx(K)} × √(10 × ${fx(P, 4)})`; }
-    if (find === 'P') { ans = (Q / K) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = 'P = (Q ÷ K)² ÷ 10'; sub = `P = (${fx(Q)} ÷ ${fx(K)})² ÷ 10`; }
-    if (find === 'K') { ans = Q / Math.sqrt(10 * P); unit = ''; lab = '방출계수 K'; f = 'K = Q ÷ √(10P)'; sub = `K = ${fx(Q)} ÷ √(10 × ${fx(P, 4)})`; }
+    if (find === 'Q') { ans = K * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = 'Q = K × √(10P)'; sub = `Q = ${Kv} × √(10 × ${Ps})`; }
+    if (find === 'P') { ans = (Q / K) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = 'P = (Q ÷ K)² ÷ 10'; sub = `P = (${Qv} ÷ ${Kv})² ÷ 10`; }
+    if (find === 'K') { ans = Q / Math.sqrt(10 * P); unit = ''; lab = '방출계수 K'; f = 'K = Q ÷ √(10P)'; sub = `K = ${Qv} ÷ √(10 × ${Ps})`; }
   } else {
-    if (find === 'Q') { ans = kc * d * d * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = `Q = ${kt} × d² × √(10P)`; sub = `Q = ${ks} × ${fx(d)}² × √(10 × ${fx(P, 4)})`; }
-    if (find === 'P') { ans = (Q / (kc * d * d)) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = `P = (Q ÷ (${kt} × d²))² ÷ 10`; sub = `P = (${fx(Q)} ÷ (${ks} × ${fx(d)}²))² ÷ 10`; }
-    if (find === 'd') { ans = Math.sqrt(Q / (kc * Math.sqrt(10 * P))); unit = 'mm'; lab = '노즐 구경 d'; f = `d = √(Q ÷ (${kt} × √(10P)))`; sub = `d = √(${fx(Q)} ÷ (${ks} × √(10 × ${fx(P, 4)})))`; }
+    if (find === 'Q') { ans = kc * d * d * Math.sqrt(10 * P); unit = 'L/min'; lab = '방수량 Q'; f = `Q = ${kt} × d² × √(10P)`; sub = `Q = ${ks} × ${dv}² × √(10 × ${Ps})`; }
+    if (find === 'P') { ans = (Q / (kc * d * d)) ** 2 / 10; unit = 'MPa'; lab = '방수압 P'; f = `P = (Q ÷ (${kt} × d²))² ÷ 10`; sub = `P = (${Qv} ÷ (${ks} × ${dv}²))² ÷ 10`; }
+    if (find === 'd') { ans = Math.sqrt(Q / (kc * Math.sqrt(10 * P))); unit = 'mm'; lab = '노즐 구경 d'; f = `d = √(Q ÷ (${kt} × √(10P)))`; sub = `d = √(${Qv} ÷ (${ks} × √(10 × ${Ps})))`; }
   }
   const steps = [];
-  if (find !== 'P' && v.kq_P_u === 'kPa') steps.push(step({ t: '압력 단위 환산', sub: `P = ${fx(v.kq_P)} kPa ÷ 1000`, ans: `${fx(P, 4)} MPa` }));
-  steps.push(step({ t: lab, f, sym: mode === 'K' ? symK : symD, sub, ans: `${fx(ans, find === 'P' ? 4 : 2)} ${unit}` }));
+  steps.push(step({ t: lab, f, sym: mode === 'K' ? symK : symD, sub, ans: `${fx(ans)} ${unit}` }));
   const given = [
     find !== 'Q' && { l: '방수량 Q', v: fx(Q), u: 'L/min' },
-    find !== 'P' && { l: '방수압 P', v: fx(P, 4), u: 'MPa' },
+    find !== 'P' && { l: '방수압 P', v: fi(P), u: 'MPa' },
     mode === 'K' && find !== 'K' && { l: '방출계수 K', v: fx(K), u: '' },
     mode === 'd' && find !== 'd' && { l: '노즐 구경 d', v: fx(d), u: 'mm' },
     mode === 'd' && !fix && { l: '유량계수 C', v: fx(C), u: '' },
   ].filter(Boolean);
   return { cards: [{
     title: '방수압·방수량·K', badge: mode === 'K' ? 'Q = K√(10P)' : '노즐',
-    tiles: [{ l: lab, v: fx(ans, find === 'P' ? 4 : 2), u: unit, tone: 'key' }, ...given],
+    tiles: [{ l: lab, v: fx(ans), u: unit, tone: 'key' }, ...given],
     notes: [mode === 'K' ? 'Q는 L/min, P는 MPa예요. 방수압이 4배가 되면 방수량은 2배가 돼요.' : fix ? 'Q는 L/min, d는 mm, P는 MPa예요. 옥내소화전 노즐은 0.653 (0.6597 × 유량계수 0.99)을 써요.' : 'Q는 L/min, d는 mm, P는 MPa예요.'],
     steps,
   }] };
@@ -1558,7 +1575,7 @@ function calcBuilding(v) {
       isHigh ? '고층건축물 기준을 적용했어요. 수원 배수가 커지고, 옥내소화전은 최대 5개까지 계산에 넣어요.' : '',
       !(v.in_use || v.out_use || v.sp_use || v.sm_use) ? '왼쪽(폰에서는 위쪽) 입력칸에서 옥내소화전·옥외소화전·스프링클러·거실제연 중 계산할 설비를 체크하세요.' : '',
     ].filter(Boolean),
-    steps: [step({ t: '한 층 바닥면적', f: 'A = L × W', sym: [['A', '한 층 바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${fx(L)} × ${fx(W)}`, ans: `${fx(A)} ㎡` })],
+    steps: [step({ t: '한 층 바닥면적', f: 'A = L × W', sym: [['A', '한 층 바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${fi(L)} × ${fi(W)}`, ans: `${fx(A)} ㎡` })],
   });
 
   /* ── 옥내소화전 ── */
@@ -1571,14 +1588,14 @@ function calcBuilding(v) {
     } else {
       // 바닥을 같은 크기 칸으로 나눠서, 칸 대각선이 2R 이하가 되는 가장 적은 칸 수
       const D2 = 2 * c.R, d = Math.hypot(L, W);
-      steps.push(step({ t: '바닥 대각선', f: 'd = √(L² + W²)', sym: [['d', '바닥 대각선 (m)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `d = √(${fx(L)}² + ${fx(W)}²)`, ans: `${fx(d)} m`, note: `d가 2R(${D2} m) 이하면 가운데 1개로 모든 지점이 ${c.R} m 안에 들어와요.` }));
+      steps.push(step({ t: '바닥 대각선', f: 'd = √(L² + W²)', sym: [['d', '바닥 대각선 (m)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `d = √(${fi(L)}² + ${fi(W)}²)`, ans: `${fx(d)} m`, note: `d가 2R(${D2} m) 이하면 가운데 1개로 모든 지점이 ${c.R} m 안에 들어와요.` }));
       if (d <= D2) {
         nFloor = 1;
         steps.push(step({ t: '층당 설치개수', sub: `d = ${fx(d)} m ≤ 2R = ${D2} m`, ans: '1개' }));
       } else {
         const g = indoorGrid(L, W, D2);
         nFloor = g.n;
-        steps.push(step({ t: '층당 설치개수 (칸 나누기)', f: 'n = n<sub>x</sub> × n<sub>y</sub>, √(a² + b²) ≤ 2R', sym: [['n', '층당 옥내소화전 개수 (개)'], ['n<sub>x</sub>', '가로 칸 수'], ['n<sub>y</sub>', '세로 칸 수'], ['a', '한 칸 가로 = L ÷ n<sub>x</sub> (m)'], ['b', '한 칸 세로 = W ÷ n<sub>y</sub> (m)'], ['2R', `칸 대각선 한도 (${D2} m)`]], sub: `${g.nx} × ${g.ny}칸, 한 칸 ${fx(g.a)} × ${fx(g.b)} m → 대각선 ${fx(Math.hypot(g.a, g.b))} m ≤ ${D2} m`, ans: `${nFloor}개`, note: '칸 대각선이 2R 이하가 되는 가장 적은 칸 수예요. 칸 가운데에 1개씩 둔다고 본 최소 개수예요.' }));
+        steps.push(step({ t: '층당 설치개수 (칸 나누기)', f: 'n = n<sub>x</sub> × n<sub>y</sub>, √(a² + b²) ≤ 2R', sym: [['n', '층당 옥내소화전 개수 (개)'], ['n<sub>x</sub>', '가로 칸 수'], ['n<sub>y</sub>', '세로 칸 수'], ['a', '한 칸 가로 = L ÷ n<sub>x</sub> (m)'], ['b', '한 칸 세로 = W ÷ n<sub>y</sub> (m)'], ['2R', `칸 대각선 한도 (${D2} m)`]], sub: `${g.nx} × ${g.ny}칸 → 칸 대각선 √((${fi(L)} ÷ ${g.nx})² + (${fi(W)} ÷ ${g.ny})²) = ${fx(Math.hypot(g.a, g.b))} m ≤ ${D2} m`, ans: `${nFloor}개`, note: '칸 대각선이 2R 이하가 되는 가장 적은 칸 수예요. 칸 가운데에 1개씩 둔다고 본 최소 개수예요.' }));
       }
     }
     const nMax = isHigh ? c.nMaxHigh : c.nMax, N = Math.min(nFloor, nMax);
@@ -1587,10 +1604,11 @@ function calcBuilding(v) {
     const per = Math.max(c.vol * factor, whIndoor ? c.volWarehouse : 0), minutes = per * 1000 / c.q;
     const Q = N * per, roof = rt.need ? Q * STD.roofRatio : 0, flow = N * c.q;
     if (whIndoor) steps.push(step({ t: '창고시설 수원 기준', sub: `창고시설 옥내소화전은 1개당 ${c.volWarehouse} ㎥ (130 L/min × 40분)`, ans: `${fx(per)} ㎥` }));
-    steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', `가장 많이 설치된 층의 개수 (최대 ${nMax}개)`], [fx(per), `1개당 수원: ${c.q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
-    if (rt.need) steps.push(...roofSteps(Q, roof));
+    const Qs = `${N} × ${fi(per)}`;
+    steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fi(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', `가장 많이 설치된 층의 개수 (최대 ${nMax}개)`], [fi(per), `1개당 수원: ${c.q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${Qs}`, ans: `${fx(Q)} ㎥` }));
+    if (rt.need) steps.push(...roofSteps(Q, roof, Qs));
     steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${c.q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', '가장 많이 설치된 층의 개수 (개)'], [String(c.q), '1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${c.q}`, ans: `${fx(flow)} L/min` }));
-    const p = pump('in', v, flow, '배관·호스 마찰손실');
+    const p = pump('in', v, flow, '배관·호스 마찰손실', null, `${N} × ${c.q}`);
     const pp = c.pipe;
     cards.push({
       title: '옥내소화전', badge: v.in_share ? '겸용' : '단독',
@@ -1608,7 +1626,7 @@ function calcBuilding(v) {
         ['연결송수관 겸용 방수구로 연결되는 배관', `${pp.outletStandpipe} mm`],
       ])}</div>`,
     });
-    pool.push({ name: '옥내소화전', share: v.in_share, Q, roof, flow, H: p.H });
+    pool.push({ name: '옥내소화전', share: v.in_share, Q, roof, flow, H: p.H, Qs, Hs: p.Hs, flows: `${N} × ${c.q}` });
   }
 
   /* ── 옥외소화전 ── */
@@ -1626,17 +1644,17 @@ function calcBuilding(v) {
       } else if (x > 0) {
         r = Math.sqrt(c.R ** 2 - x ** 2);
         n = up(per / (2 * r));
-        steps.push(step({ t: '유효 수평거리', f: 'r = √(R² − x²)', sym: [['r', '외벽을 따라 소화전 1개가 닿는 거리 (m)'], ['R', `수평거리 ${c.R} (m)`], ['x', '건물 외벽에서 소화전까지 거리 (m)']], sub: `r = √(${c.R}² − ${fx(x)}²)`, ans: `${fx(r)} m` }));
-        steps.push(step({ t: '설치개수', f: 'n = ⌈ℓ ÷ (2 × r)⌉', sym: [['n', '옥외소화전 개수 (개)'], ['ℓ', '건물 외곽 둘레 = 2 × (L + W) (m)'], ['r', '유효 수평거리 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(per)} ÷ (2 × ${fx(r)})⌉`, ans: `${n}개` }));
+        steps.push(step({ t: '유효 수평거리', f: 'r = √(R² − x²)', sym: [['r', '외벽을 따라 소화전 1개가 닿는 거리 (m)'], ['R', `수평거리 ${c.R} (m)`], ['x', '건물 외벽에서 소화전까지 거리 (m)']], sub: `r = √(${c.R}² − ${fi(x)}²)`, ans: `${fx(r)} m` }));
+        steps.push(step({ t: '설치개수', f: 'n = ⌈ℓ ÷ (2 × r)⌉', sym: [['n', '옥외소화전 개수 (개)'], ['ℓ', '건물 외곽 둘레 = 2 × (L + W) (m)'], ['r', '유효 수평거리 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈2 × (${fi(L)} + ${fi(W)}) ÷ (2 × √(${c.R}² − ${fi(x)}²))⌉`, ans: `${n}개` }));
       } else {
         n = up(per / (2 * c.R));
-        steps.push(step({ t: '설치개수', f: 'n = ⌈ℓ ÷ (2 × R)⌉', sym: [['n', '옥외소화전 개수 (개)'], ['ℓ', '건물 외곽 둘레 = 2 × (L + W) (m)'], ['R', `수평거리 ${c.R} (m)`], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(per)} ÷ ${2 * c.R}⌉`, ans: `${n}개`, note: '소화전을 외벽에 붙여 설치한 경우예요. 떨어져 있으면 거리 x를 넣으세요.' }));
+        steps.push(step({ t: '설치개수', f: 'n = ⌈ℓ ÷ (2 × R)⌉', sym: [['n', '옥외소화전 개수 (개)'], ['ℓ', '건물 외곽 둘레 = 2 × (L + W) (m)'], ['R', `수평거리 ${c.R} (m)`], ['⌈ ⌉', '올림']], sub: `n = ⌈2 × (${fi(L)} + ${fi(W)}) ÷ ${2 * c.R}⌉`, ans: `${n}개`, note: '소화전을 외벽에 붙여 설치한 경우예요. 떨어져 있으면 거리 x를 넣으세요.' }));
       }
     }
     const N = Math.min(n, c.nMax), Q = N * c.vol, flow = N * c.q;
     steps.push(step({ t: '수원', f: `Q = N × ${c.vol}`, sym: [['Q', '수원 (㎥)'], ['N', `설치개수 (최대 ${c.nMax}개)`], [String(c.vol), `1개당 수원: ${c.q} L/min × 20분 (㎥)`]], sub: `Q = ${N} × ${c.vol}`, ans: `${fx(Q)} ㎥` }));
     steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${c.q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', '설치개수 (개)'], [String(c.q), '1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${c.q}`, ans: `${fx(flow)} L/min` }));
-    const p = pump('out', v, flow, '배관·호스 마찰손실');
+    const p = pump('out', v, flow, '배관·호스 마찰손실', null, `${N} × ${c.q}`);
     cards.push({
       title: '옥외소화전', badge: v.out_share ? '겸용' : '단독',
       tiles: [{ l: '설치개수', v: fx(n), u: '개' }, { l: '수원', v: fx(Q), u: '㎥', tone: 'key' }, { l: '옥상수조', v: '해당 없음' }, ...pumpTiles(flow, p),
@@ -1644,7 +1662,7 @@ function calcBuilding(v) {
       warns: [outWarn, p.warn].filter(Boolean),
       steps: [...steps, ...p.steps],
     });
-    pool.push({ name: '옥외소화전', share: v.out_share, Q, roof: 0, flow, H: p.H });
+    pool.push({ name: '옥외소화전', share: v.out_share, Q, roof: 0, flow, H: p.H, Qs: `${N} × ${c.vol}`, Hs: p.Hs, flows: `${N} × ${c.q}` });
   }
 
   /* ── 스프링클러 ── */
@@ -1663,14 +1681,14 @@ function calcBuilding(v) {
       else {
         Sx = pick.Sx; Sy = pick.Sy;
         const d = Math.hypot(Sx, Sy);
-        steps.push(step({ t: '헤드 배치 확인', f: 'd = √(S<sub>x</sub>² + S<sub>y</sub>²) ≤ 2R', sym: [['d', '헤드 4개가 만드는 직사각형의 대각선 (m)'], ['S<sub>x</sub>', `가로 간격 = 가로 ÷ 가로 개수 (m)`], ['S<sub>y</sub>', `세로 간격 = 세로 ÷ 세로 개수 (m)`], ['R', '수평거리 (m)']], sub: `S<sub>x</sub> = ${fx(L)} ÷ ${pick.nx} = ${fx(Sx)}, S<sub>y</sub> = ${fx(W)} ÷ ${pick.ny} = ${fx(Sy)}<br>d = √(${fx(Sx)}² + ${fx(Sy)}²) = ${fx(d)} m ≤ 2 × ${R} = ${fx(2 * R)} m`, ans: '배치 가능' }));
+        steps.push(step({ t: '헤드 배치 확인', f: 'd = √(S<sub>x</sub>² + S<sub>y</sub>²) ≤ 2R', sym: [['d', '헤드 4개가 만드는 직사각형의 대각선 (m)'], ['S<sub>x</sub>', `가로 간격 = 가로 ÷ 가로 개수 (m)`], ['S<sub>y</sub>', `세로 간격 = 세로 ÷ 세로 개수 (m)`], ['R', '수평거리 (m)']], sub: `d = √((${fi(L)} ÷ ${pick.nx})² + (${fi(W)} ÷ ${pick.ny})²) = ${fx(d)} m ≤ 2 × ${R} = ${fx(2 * R)} m`, ans: '배치 가능' }));
       }
     } else if (v.sp_layout === 'rect') {
       Sx = v.sp_a;
       if (bad(Sx) || Sx >= 2 * R) spErr = `가로 방향 헤드 간격 a는 0보다 크고 2R(${fx(2 * R)} m)보다 작아야 해요.`;
       else {
         Sy = Math.sqrt((2 * R) ** 2 - Sx ** 2);
-        steps.push(step({ t: '장방형 헤드 간격', f: 'b = √((2R)² − a²)', sym: [['b', '세로 방향 헤드 간격 (m)'], ['R', '수평거리 (m)'], ['a', '가로 방향 헤드 간격 (m)']], sub: `b = √((2 × ${R})² − ${fx(Sx)}²)`, ans: `${fx(Sy)} m`, note: '헤드 4개가 만드는 직사각형의 대각선이 2R 이하가 돼요.' }));
+        steps.push(step({ t: '장방형 헤드 간격', f: 'b = √((2R)² − a²)', sym: [['b', '세로 방향 헤드 간격 (m)'], ['R', '수평거리 (m)'], ['a', '가로 방향 헤드 간격 (m)']], sub: `b = √((2 × ${R})² − ${fi(Sx)}²)`, ans: `${fx(Sy)} m`, note: '헤드 4개가 만드는 직사각형의 대각선이 2R 이하가 돼요.' }));
       }
     } else {
       Sx = Sy = 2 * R * Math.cos(Math.PI / 4);
@@ -1680,8 +1698,9 @@ function calcBuilding(v) {
       cards.push({ title: '스프링클러', error: spErr });
     } else {
       const nx = pick ? pick.nx : up(L / Sx), ny = pick ? pick.ny : up(W / Sy), perFloor = nx * ny, total = perFloor * floors;
+      const sxS = v.sp_layout === 'rect' ? fi(Sx) : `2 × ${R} × cos45°`, syS = v.sp_layout === 'rect' ? `√((2 × ${R})² − ${fi(Sx)}²)` : sxS;
       if (pick) steps.push(step({ t: '층당 헤드 수', f: 'n = 가로 개수 × 세로 개수', sym: [['n', '층당 헤드 수 (개)']], sub: `n = ${nx} × ${ny}`, ans: `${perFloor}개` }));
-      else steps.push(step({ t: '층당 헤드 수', f: 'n = ⌈L ÷ S<sub>x</sub>⌉ × ⌈W ÷ S<sub>y</sub>⌉', sym: [['n', '층당 헤드 수 (개)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['S<sub>x</sub>', '가로 방향 간격 (m)'], ['S<sub>y</sub>', '세로 방향 간격 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(L)} ÷ ${fx(Sx)}⌉ × ⌈${fx(W)} ÷ ${fx(Sy)}⌉ = ${nx} × ${ny}`, ans: `${perFloor}개` }));
+      else steps.push(step({ t: '층당 헤드 수', f: 'n = ⌈L ÷ S<sub>x</sub>⌉ × ⌈W ÷ S<sub>y</sub>⌉', sym: [['n', '층당 헤드 수 (개)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['S<sub>x</sub>', '가로 방향 간격 (m)'], ['S<sub>y</sub>', '세로 방향 간격 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fi(L)} ÷ ${pd(sxS)}⌉ × ⌈${fi(W)} ÷ ${pd(syS)}⌉ = ${nx} × ${ny}`, ans: `${perFloor}개` }));
       steps.push(step({ t: '전체 헤드 수', f: 'n<sub>T</sub> = n × F', sym: [['n<sub>T</sub>', '전체 헤드 수 (개)'], ['n', '층당 헤드 수 (개)'], ['F', '지상 + 지하 층수 (층)']], sub: `n<sub>T</sub> = ${perFloor} × ${floors}`, ans: `${total}개`, note: '모든 층 평면이 같다고 보고 계산했어요.' }));
       let N, q, per, minutes, Q, roof, flow, title = '스프링클러', maxSide = c.maxSide;
       const extraTiles = [], spNotes = [];
@@ -1700,7 +1719,7 @@ function calcBuilding(v) {
         Q = N * per; roof = rt.need ? Q * STD.roofRatio : 0; flow = N * q;
         title = rack ? '스프링클러 (랙식 창고)' : '스프링클러 (창고시설)';
         steps.push(step({ t: '기준개수', sub: `창고시설 라지드롭형: 설치개수가 가장 많은 방호구역 (최대 ${base}개)${perFloor < base ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
-        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fx(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
+        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fi(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fi(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fi(per)}`, ans: `${fx(Q)} ㎥` }));
         if (rack) {
           if (bad(v.sp_rackH)) spNotes.push('랙 높이를 넣으면 헤드 설치 단 수가 나와요.');
           else {
@@ -1714,11 +1733,12 @@ function calcBuilding(v) {
         N = Math.min(bc.n, perFloor); q = c.q; minutes = 20 * factor; per = c.vol * factor;
         Q = N * per; roof = rt.need ? Q * STD.roofRatio : 0; flow = N * q;
         steps.push(step({ t: '기준개수', sub: `${bc.why} → ${bc.n}개${perFloor < bc.n ? `, 설치개수(${perFloor}개)가 더 적어서 ${perFloor}개 적용` : ''}`, ans: `${N}개` }));
-        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fx(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fx(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fx(per)}`, ans: `${fx(Q)} ㎥` }));
+        steps.push(step({ t: '수원 (유효수량)', f: `Q = N × ${fi(per)}`, sym: [['Q', '유효수량 (㎥)'], ['N', '기준개수 (개)'], [fi(per), `헤드 1개당 수원: ${q} L/min × ${minutes}분 (㎥)`]], sub: `Q = ${N} × ${fi(per)}`, ans: `${fx(Q)} ㎥` }));
       }
-      if (roof > 0) steps.push(...roofSteps(Q, roof));
+      const Qs = simple ? `${N} × ${q} × ${minutes} ÷ 1000` : `${N} × ${fi(per)}`;
+      if (roof > 0) steps.push(...roofSteps(Q, roof, Qs));
       steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = N × ${q}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['N', simple ? '동시 개방 헤드 수 (개)' : '기준개수 (개)'], [String(q), '헤드 1개당 방수량 (L/min)']], sub: `Q<sub>p</sub> = ${N} × ${q}`, ans: `${fx(flow)} L/min` }));
-      const p = pump('sp', v, flow);
+      const p = pump('sp', v, flow, null, null, `${N} × ${q}`);
       cards.push({
         title, badge: v.sp_share ? '겸용' : '단독',
         tiles: [
@@ -1733,26 +1753,27 @@ function calcBuilding(v) {
         notes: spNotes,
         steps: [...steps, ...p.steps],
       });
-      pool.push({ name: title, share: v.sp_share, Q, roof, flow, H: p.H });
+      pool.push({ name: title, share: v.sp_share, Q, roof, flow, H: p.H, Qs, Hs: p.Hs, flows: `${N} × ${q}` });
       if (v._ctx) Object.assign(v._ctx, { nx, ny, Sx: L / nx, Sy: W / ny, N });
       cards.push(spDrawingCard(L, W, nx, ny, maxSide, simple ? '' : wh ? '창고시설 전용 구경표는 아직 반영하지 않아서 일반 스프링클러 표로 표시했어요.' : ''));
     }
   }
 
   /* ── 거실제연 ── */
-  if (v.sm_use) cards.push(smokeCard(v, A, Math.hypot(L, W)));
+  if (v.sm_use) cards.push(smokeCard(v, A, Math.hypot(L, W), `${fi(L)} × ${fi(W)}`));
 
   /* ── 최종값 (겸용 합산) ── */
   const sh = pool.filter((p) => p.share), solo = pool.filter((p) => !p.share);
   if (sh.length >= 2) {
     const Q = sum(sh, 'Q'), roof = sum(sh, 'roof'), flow = sum(sh, 'flow'), H = Math.max(...sh.map((p) => p.H));
-    const pw = power(flow, H, v.sum_eta, v.sum_k);
+    const hp = sh.find((p) => p.H === H) || sh[0], flowS = sh.map((p) => pa(p.flows)).join(' + ');
+    const pw = power(flow, H, v.sum_eta, v.sum_k, flowS, hp.Hs);
     const names = sh.map((p) => p.name).join(' + ');
     const steps = [
       step({ t: '유효수량 합계', f: 'Q = ΣQ<sub>i</sub>', sym: [['Q', '겸용 설비 유효수량 합계 (㎥)'], ['Q<sub>i</sub>', '설비별 유효수량 (㎥)']], sub: `Q = ${sh.map((p) => `${fx(p.Q)} (${p.name})`).join(' + ')}`, ans: `${fx(Q)} ㎥` }),
-      step({ t: '옥상수조 합계', f: "Q' = ΣQ'<sub>i</sub>", sym: [["Q'", '겸용 설비 옥상수조 합계 (㎥)'], ["Q'<sub>i</sub>", '설비별 옥상수조 수원 (㎥)']], sub: `Q' = ${sh.map((p) => fx(p.roof)).join(' + ')}`, ans: `${fx(roof)} ㎥` }),
-      step({ t: '수원 합계', f: "Q<sub>T</sub> = Q + Q'", sym: [['Q<sub>T</sub>', '옥상수조를 포함한 수원 합계 (㎥)'], ['Q', '유효수량 합계 (㎥)'], ["Q'", '옥상수조 합계 (㎥)']], sub: `Q<sub>T</sub> = ${fx(Q)} + ${fx(roof)}`, ans: `${fx(Q + roof)} ㎥` }),
-      step({ t: '펌프 토출량 합계', f: 'Q<sub>p</sub> = ΣQ<sub>p,i</sub>', sym: [['Q<sub>p</sub>', '겸용 펌프 토출량 (L/min)'], ['Q<sub>p,i</sub>', '설비별 펌프 토출량 (L/min)']], sub: `Q<sub>p</sub> = ${sh.map((p) => fx(p.flow)).join(' + ')}`, ans: `${fx(flow)} L/min` }),
+      step({ t: '옥상수조 합계', f: "Q' = ΣQ'<sub>i</sub>", sym: [["Q'", '겸용 설비 옥상수조 합계 (㎥)'], ["Q'<sub>i</sub>", '설비별 옥상수조 수원 (㎥)']], sub: `Q' = ${sh.map((p) => (p.roof ? `${pa(p.Qs)} × 1/3` : '0')).join(' + ')}`, ans: `${fx(roof)} ㎥` }),
+      step({ t: '수원 합계', f: "Q<sub>T</sub> = Q + Q'", sym: [['Q<sub>T</sub>', '옥상수조를 포함한 수원 합계 (㎥)'], ['Q', '유효수량 합계 (㎥)'], ["Q'", '옥상수조 합계 (㎥)']], sub: `Q<sub>T</sub> = ${sh.map((p) => p.Qs).join(' + ')}${sh.some((p) => p.roof) ? ' + ' + sh.filter((p) => p.roof).map((p) => `${pa(p.Qs)} × 1/3`).join(' + ') : ''}`, ans: `${fx(Q + roof)} ㎥` }),
+      step({ t: '펌프 토출량 합계', f: 'Q<sub>p</sub> = ΣQ<sub>p,i</sub>', sym: [['Q<sub>p</sub>', '겸용 펌프 토출량 (L/min)'], ['Q<sub>p,i</sub>', '설비별 펌프 토출량 (L/min)']], sub: `Q<sub>p</sub> = ${flowS}`, ans: `${fx(flow)} L/min` }),
       step({ t: '전양정', f: 'H = max(H<sub>i</sub>)', sym: [['H', '겸용 펌프 전양정 (m)'], ['H<sub>i</sub>', '설비별 전양정 (m)']], sub: `H = max(${sh.map((p) => fx(p.H)).join(', ')})`, ans: `${fx(H)} m`, note: '가장 큰 전양정을 적용했어요.' }),
       ...pw.steps,
     ];
@@ -1889,21 +1910,24 @@ function planHint() {
   const st = plStats(d);
   return `그린 도면: 도형 ${d.shapes.length}개, 면적 ${fx(st.area)}㎡, 직경 ${fx(st.D)}m${v.sm_fromPlan ? ' → 아래 칸에 들어가 있어요' : ''}`;
 }
-function smokeCard(v, floorA, diag) {
+function smokeCard(v, floorA, diag, floorS) {
   const c = STD.smoke, steps = [];
   const A = v.sm_A > 0 ? v.sm_A : floorA, D = v.sm_D > 0 ? v.sm_D : diag;
+  let aS = v.sm_A > 0 ? fi(v.sm_A) : floorS || fi(A), QhS;
   const fromPlan = v.sm_fromPlan && v.sm_plan && v.sm_plan.shapes.length;
   if (fromPlan) {
     const d = v.sm_plan, st = plStats(d);
     const parts = d.shapes.map((s) => { const a = Math.abs(polyArea(ptsOf(s))); return `${s.name}${s.type === 'rect' ? ` ${fx(s.w)} × ${fx(s.h)}` : ''} = ${s.sub ? '−' : ''}${fx(a)}㎡`; });
     steps.push(step({ t: '거실 바닥면적 (도면)', sub: parts.join('<br>') + (st.overlap ? '<br>겹친 부분은 한 번만 세고, 빼기 도형은 더하기 도형과 겹친 부분만 뺐어요' : ''), ans: `${fx(A)} ㎡` }));
     steps.push(step({ t: '직경 (도면)', sub: '더하기 도형을 모두 담는 가장 작은 원의 지름', ans: `${fx(D)} m` }));
+    aS = fx(A);
   }
   let Qh;
   if (A < c.bigArea) {
     const q0 = A * c.perM2 * 60;
     Qh = Math.max(q0, c.minSmall);
-    steps.push(step({ t: `배출량 (${c.bigArea}㎡ 미만)`, f: 'Q = A × 1 × 60', sym: [['Q', '배출량 (㎥/h)'], ['A', '거실 바닥면적 (㎡)'], ['1', '바닥 1㎡당 배출량 (㎥/min)'], ['60', '분 → 시간 환산']], sub: `Q = ${fx(A)} × 1 × 60 = ${fx(q0)}${q0 < c.minSmall ? ` → 최저 ${fx(c.minSmall)} 적용` : ''}`, ans: `${fx(Qh)} ㎥/h` }));
+    QhS = q0 < c.minSmall ? fi(Qh) : `${pa(aS)} × 1 × 60`;
+    steps.push(step({ t: `배출량 (${c.bigArea}㎡ 미만)`, f: 'Q = A × 1 × 60', sym: [['Q', '배출량 (㎥/h)'], ['A', '거실 바닥면적 (㎡)'], ['1', '바닥 1㎡당 배출량 (㎥/min)'], ['60', '분 → 시간 환산']], sub: `Q = ${pa(aS)} × 1 × 60${q0 < c.minSmall ? ` = ${fx(q0)} → 최저 ${fx(c.minSmall)} 적용` : ''}`, ans: `${fx(Qh)} ㎥/h` }));
   } else {
     const within = D <= c.diaLimit;
     if (v.sm_div === 'wall') {
@@ -1915,10 +1939,11 @@ function smokeCard(v, floorA, diag) {
       steps.push(step({ t: `배출량 (${c.bigArea}㎡ 이상, 제연경계)`, sub: `직경 ${fx(D)} m (${within ? `${c.diaLimit}m 이내` : `${c.diaLimit}m 초과`}), 수직거리 ${fx(n0(v.sm_h))} m`, ans: `${fx(Qh)} ㎥/h` }));
     }
   }
+  if (!QhS) QhS = fi(Qh);
   const Qm = Qh / 60, e = n0(v.sm_eta) / 100, k = n0(v.sm_k), pt = n0(v.sm_pt);
   const P = e > 0 ? pt * Qm / (c.pConst * e) * k : NaN;
-  steps.push(step({ t: '배출량 (분당)', f: 'Q<sub>m</sub> = Q ÷ 60', sym: [['Q<sub>m</sub>', '배출량 (㎥/min)'], ['Q', '배출량 (㎥/h)']], sub: `Q<sub>m</sub> = ${fx(Qh)} ÷ 60`, ans: `${fx(Qm)} ㎥/min` }));
-  steps.push(step({ t: '배출기 동력', f: 'P = P<sub>t</sub> × Q<sub>m</sub> ÷ (6120 × η) × K', sym: [['P', '배출기 동력 (kW)'], ['P<sub>t</sub>', '배출기 전압 (mmAq)'], ['Q<sub>m</sub>', '배출량 (㎥/min)'], ['6120', '단위 환산 상수 (102 × 60)'], ['η', '배출기 효율'], ['K', '여유율']], sub: `P = ${fx(pt)} × ${fx(Qm)} ÷ (6120 × ${fx(e)}) × ${fx(k)}`, ans: `${fx(P)} kW` }));
+  steps.push(step({ t: '배출량 (분당)', f: 'Q<sub>m</sub> = Q ÷ 60', sym: [['Q<sub>m</sub>', '배출량 (㎥/min)'], ['Q', '배출량 (㎥/h)']], sub: `Q<sub>m</sub> = ${QhS} ÷ 60`, ans: `${fx(Qm)} ㎥/min` }));
+  steps.push(step({ t: '배출기 동력', f: 'P = P<sub>t</sub> × Q<sub>m</sub> ÷ (6120 × η) × K', sym: [['P', '배출기 동력 (kW)'], ['P<sub>t</sub>', '배출기 전압 (mmAq)'], ['Q<sub>m</sub>', '배출량 (㎥/min)'], ['6120', '단위 환산 상수 (102 × 60)'], ['η', '배출기 효율'], ['K', '여유율']], sub: `P = ${fi(pt)} × (${QhS} ÷ 60) ÷ (6120 × ${fi(e)}) × ${fi(k)}`, ans: `${fx(P)} kW` }));
   return {
     title: '거실제연',
     extraTop: fromPlan ? `<figure class="plan-fig">${planSVG(v.sm_plan)}</figure>` : '',
@@ -1940,7 +1965,7 @@ function calcTank(v) {
   // 포를 뿌리는 면적: 콘루프는 π/4 × D², 플로팅루프는 굽도리판 안쪽을 뺀 환상부분 π/4 × (D² − (D − 2w)²)
   const A = fl ? Math.PI / 4 * (D ** 2 - (D - 2 * w) ** 2) : Math.PI / 4 * D ** 2;
   const aF = fl ? 'π/4 × (D² − (D − 2w)²)' : 'π/4 × D²';
-  const aS = fl ? `π/4 × (${fx(D)}² − (${fx(D)} − 2 × ${fx(w)})²)` : `π/4 × ${fx(D)}²`;
+  const aS = fl ? `π/4 × (${fi(D)}² − (${fi(D)} − 2 × ${fi(w)})²)` : `π/4 × ${fi(D)}²`;
   const aSym = fl ? [['D', '탱크 내경 (m)'], ['w', '측판과 굽도리판 사이 간격 (m)'], ['D − 2w', '굽도리판 안쪽 지름 (m)']] : [['D', '탱크 내경 (m)']];
   steps.push(step({ t: fl ? '포 방출 면적 (환상부분)' : '탱크 액표면적', f: `A = ${aF}`, sym: [['A', fl ? '환상부분 면적 (㎡)' : '액표면적 (㎡)'], ...aSym], sub: `A = ${aS}`, ans: `${fx(A)} ㎡` }));
   const rate = v.rate > 0 ? v.rate : tbl[0], T = v.ftime > 0 ? v.ftime : tbl[1];
@@ -1948,7 +1973,8 @@ function calcTank(v) {
   steps.push(step({ t: '방출률', sub: v.rate > 0 ? '직접 입력' : `표 값: ${why}`, ans: `${fx(rate)} L/min·㎡` }));
   steps.push(step({ t: '방출시간', sub: v.ftime > 0 ? '직접 입력' : `표 값: ${why}`, ans: `${fx(T)} min` }));
   const Q1 = A * rate * T;
-  const q1F = `Q₁ = ${aF} × Q × T`, q1S = `Q₁ = ${aS} × ${fx(rate)} × ${fx(T)}`;
+  const q1E = `${aS} × ${fi(rate)} × ${fi(T)}`;
+  const q1F = `Q₁ = ${aF} × Q × T`, q1S = `Q₁ = ${q1E}`;
   const q1Sym = [['Q₁', '고정포방출구 포수용액량 (L)'], ...aSym, ['Q', '방출률 (L/min·㎡)'], ['T', '방출시간 (min)']];
   steps.push(step({ t: '고정포방출구 포수용액량', f: q1F, sym: q1Sym, sub: q1S, ans: `${fx(Q1)} L` }));
   const nOut = 2 * n0(v.Nd) + n0(v.Ns), N = Math.min(nOut, c.hydrantMax), Q2 = N * c.hydrantQ * c.hydrantT;
@@ -1959,28 +1985,29 @@ function calcTank(v) {
   const used = segs.filter(([d]) => d > c.lineMin);
   const Q3 = used.reduce((a, [d, l]) => a + Math.PI / 4 * (d / 1000) ** 2 * l * 1000, 0);
   const lineOn = v.lineUse !== false;
-  const q3F = 'Q₃ = Σ(π/4 × d² × ℓ × 1000)', q3Sub = used.length ? used.map(([d, l]) => `π/4 × ${fx(d / 1000, 3)}² × ${fx(l)} × 1000`).join(' + ') : '0';
+  const q3F = 'Q₃ = Σ(π/4 × d² × ℓ × 1000)', q3Sub = used.length ? used.map(([d, l]) => `π/4 × ${fi(d / 1000)}² × ${fi(l)} × 1000`).join(' + ') : '0';
   const q3Sym = [['Q₃', '송액관을 채우는 포수용액량 (L)'], ['d', `송액관 내경 (m), ${c.lineMin}mm 초과만`], ['ℓ', '송액관 길이 (m)'], ['1000', '㎥ → L 환산']];
   if (lineOn) steps.push(step({ t: '송액관 보정량', f: q3F, sym: q3Sym, sub: used.length ? `Q₃ = ${q3Sub}` : `Q₃ = 0 (${c.lineMin}mm 초과 송액관 없음)`, ans: `${fx(Q3)} L` }));
   const tot = Q1 + Q2 + Q3, agent = tot * S, water = tot * (1 - S);
-  steps.push(step({ t: '포수용액량 합계', f: lineOn ? 'Q<sub>T</sub> = Q₁ + Q₂ + Q₃' : 'Q<sub>T</sub> = Q₁ + Q₂', sym: [['Q<sub>T</sub>', '포수용액량 합계 (L)'], ['Q₁', '고정포방출구 (L)'], ['Q₂', '보조포소화전 (L)'], ...(lineOn ? [['Q₃', '송액관 (L)']] : [])], sub: `Q<sub>T</sub> = ${fx(Q1)} + ${fx(Q2)}${lineOn ? ` + ${fx(Q3)}` : ''}`, ans: `${fx(tot)} L` }));
+  const totE = [q1E, `${N} × ${c.hydrantQ} × ${c.hydrantT}`, ...(lineOn && used.length ? [q3Sub] : [])].join(' + ');
+  steps.push(step({ t: '포수용액량 합계', f: lineOn ? 'Q<sub>T</sub> = Q₁ + Q₂ + Q₃' : 'Q<sub>T</sub> = Q₁ + Q₂', sym: [['Q<sub>T</sub>', '포수용액량 합계 (L)'], ['Q₁', '고정포방출구 (L)'], ['Q₂', '보조포소화전 (L)'], ...(lineOn ? [['Q₃', '송액관 (L)']] : [])], sub: `Q<sub>T</sub> = ${totE}`, ans: `${fx(tot)} L` }));
   // 포 약제량·수원의 양도 고정포방출구 / 보조포소화전 / 송액관 따로
   const part = (name, sym, fac, facName, facSym) => {
-    const k = fac, ks = fx(fac);
+    const k = fac, ks = fi(fac);
     const parts = [
-      ['고정포방출구', `${sym}₁ = ${aF} × Q × T × ${facSym}`, `${sym}₁ = ${aS} × ${fx(rate)} × ${fx(T)} × ${ks}`, Q1 * k, [[`${sym}₁`, `고정포방출구 ${name} (L)`], ...aSym, ['Q', '방출률 (L/min·㎡)'], ['T', '방출시간 (min)'], [facSym, facName]]],
+      ['고정포방출구', `${sym}₁ = ${aF} × Q × T × ${facSym}`, `${sym}₁ = ${q1E} × ${ks}`, Q1 * k, [[`${sym}₁`, `고정포방출구 ${name} (L)`], ...aSym, ['Q', '방출률 (L/min·㎡)'], ['T', '방출시간 (min)'], [facSym, facName]]],
       ['보조포소화전', `${sym}₂ = N × ${c.hydrantQ} × ${c.hydrantT} × ${facSym}`, `${sym}₂ = ${N} × ${c.hydrantQ} × ${c.hydrantT} × ${ks}`, Q2 * k, [[`${sym}₂`, `보조포소화전 ${name} (L)`], ['N', `호스접속구 수 (최대 ${c.hydrantMax}개)`], [String(c.hydrantQ), '접속구 1개당 방사량 (L/min)'], [String(c.hydrantT), '방사시간 (min)'], [facSym, facName]]],
     ];
     if (lineOn) parts.push(['송액관', `${sym}₃ = Σ(π/4 × d² × ℓ × 1000) × ${facSym}`, used.length ? `${sym}₃ = (${q3Sub}) × ${ks}` : `${sym}₃ = 0`, Q3 * k, [[`${sym}₃`, `송액관 ${name} (L)`], ['d', `송액관 내경 (m), ${c.lineMin}mm 초과만`], ['ℓ', '송액관 길이 (m)'], [facSym, facName]]]);
     parts.forEach(([n, f, sub, val, sy]) => steps.push(step({ t: `${name} · ${n}`, f, sym: sy, sub, ans: `${fx(val)} L` })));
     const total = parts.reduce((a, p) => a + p[3], 0);
-    steps.push(step({ t: name, f: `${sym} = ${parts.map((p, i) => `${sym}${'₁₂₃'[i]}`).join(' + ')}`, sym: [[sym, `${name} (L)`]], sub: `${sym} = ${parts.map((p) => fx(p[3])).join(' + ')}`, ans: `${fx(total)} L${name === '수원의 양' ? ` = ${fx(total / 1000)} ㎥` : ''}` }));
+    steps.push(step({ t: name, f: `${sym} = ${parts.map((p, i) => `${sym}${'₁₂₃'[i]}`).join(' + ')}`, sym: [[sym, `${name} (L)`]], sub: `${sym} = (${totE}) × ${ks}`, ans: `${fx(total)} L${name === '수원의 양' ? ` = ${fx(total / 1000)} ㎥` : ''}` }));
   };
   part('포 약제량', 'W', S, '포 약제 농도', 'S');
   part('수원의 양', 'Q<sub>w</sub>', 1 - S, '물의 비율 (1 − 약제 농도)', '(1 − S)');
   const flow = A * rate + N * c.hydrantQ;
-  steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = ${aF} × Q + N × ${c.hydrantQ}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ...aSym, ['Q', '고정포방출구 방출률 (L/min·㎡)'], ['N', '보조포소화전 호스접속구 수 (개)'], [String(c.hydrantQ), '접속구 1개당 방사량 (L/min)']], sub: `Q<sub>p</sub> = ${aS} × ${fx(rate)} + ${N} × ${c.hydrantQ}`, ans: `${fx(flow)} L/min` }));
-  const p = pump('fp', v, flow, null, '방출구 설계압력 환산수두');
+  steps.push(step({ t: '펌프 토출량', f: `Q<sub>p</sub> = ${aF} × Q + N × ${c.hydrantQ}`, sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ...aSym, ['Q', '고정포방출구 방출률 (L/min·㎡)'], ['N', '보조포소화전 호스접속구 수 (개)'], [String(c.hydrantQ), '접속구 1개당 방사량 (L/min)']], sub: `Q<sub>p</sub> = ${aS} × ${fi(rate)} + ${N} × ${c.hydrantQ}`, ans: `${fx(flow)} L/min` }));
+  const p = pump('fp', v, flow, null, '방출구 설계압력 환산수두', `${aS} × ${fi(rate)} + ${N} × ${c.hydrantQ}`);
   const cards = [{
     title: '옥외탱크저장소 포소화설비', badge: `${okName} 고정포방출구`, badgeOn: true,
     tiles: [
@@ -2112,16 +2139,18 @@ function localSpace(v) {
     e[k] = wall[k] ? d : g;
   });
   const X = v.oL + e.dl + e.dr, Y = v.oW + e.df + e.db, Z = v.oH + g;
+  const Xs = `${fi(v.oL)} + ${fi(e.dl)} + ${fi(e.dr)}`, Ys = `${fi(v.oW)} + ${fi(e.df)} + ${fi(e.db)}`, Zs = `${fi(v.oH)} + ${g}`;
   const V = X * Y * Z, A = 2 * (X + Y) * Z;
   const wh = v.wallH > 0 ? Math.min(v.wallH, Z) : Z;
-  const face = { dl: Y, dr: Y, df: X, db: X };
-  const parts = sides.filter(([k]) => wall[k]).map(([k, nm]) => ({ nm, w: face[k] }));
+  const face = { dl: Y, dr: Y, df: X, db: X }, faceS = { dl: Ys, dr: Ys, df: Xs, db: Xs }, whS = v.wallH > 0 && v.wallH < Z ? fi(v.wallH) : Zs;
+  const parts = sides.filter(([k]) => wall[k]).map(([k, nm]) => ({ nm, w: face[k], ws: faceS[k] }));
+  const Vs = `(${Xs}) × (${Ys}) × (${Zs})`, As = `2 × (${Xs} + ${Ys}) × (${Zs})`, as = parts.length ? parts.map((p) => `(${p.ws}) × ${pd(whS)}`).join(' + ') : '0';
   const a = parts.reduce((s, p) => s + p.w * wh, 0);
   const steps = [
-    step({ t: '방호공간 크기', f: 'X = L + e<sub>좌</sub> + e<sub>우</sub><br>Y = W + e<sub>앞</sub> + e<sub>뒤</sub><br>Z = H + 0.6', sym: [['X', '방호공간 가로 (m)'], ['Y', '방호공간 세로 (m)'], ['Z', '방호공간 높이 (m)'], ['L', '방호대상물 가로 (m)'], ['W', '방호대상물 세로 (m)'], ['H', '방호대상물 높이 (m)'], ['e', '면마다 더하는 거리: 벽이 없으면 0.6m, 0.6m 안에 벽이 있으면 벽까지 거리']], sub: `X = ${fx(v.oL)} + ${fx(e.dl)} + ${fx(e.dr)} = ${fx(X)} m<br>Y = ${fx(v.oW)} + ${fx(e.df)} + ${fx(e.db)} = ${fx(Y)} m<br>Z = ${fx(v.oH)} + 0.6 = ${fx(Z)} m` }),
-    step({ t: '방호공간 체적', f: 'V = X × Y × Z', sym: [['V', '방호공간 체적 (㎥)']], sub: `V = ${fx(X)} × ${fx(Y)} × ${fx(Z)}`, ans: `${fx(V)} ㎥` }),
-    step({ t: '방호공간 벽 면적 합계', f: 'A = 2 × (X + Y) × Z', sym: [['A', '방호공간 네 옆면 면적 합계 (㎡). 실제로 벽이 없는 면도 벽이 있다고 보고 계산']], sub: `A = 2 × (${fx(X)} + ${fx(Y)}) × ${fx(Z)}`, ans: `${fx(A)} ㎡` }),
-    step({ t: '실제 벽 면적 합계', f: 'a = Σ(벽 있는 면의 너비 × 벽 높이)', sym: [['a', '방호대상물에서 0.6m 안에 실제로 있는 벽 면적 합계 (㎡)']], sub: parts.length ? `a = ${parts.map((p) => `${fx(p.w)} × ${fx(wh)} (${p.nm})`).join(' + ')}` : 'a = 0 (0.6m 안에 벽 없음)', ans: `${fx(a)} ㎡` }),
+    step({ t: '방호공간 크기', f: 'X = L + e<sub>좌</sub> + e<sub>우</sub><br>Y = W + e<sub>앞</sub> + e<sub>뒤</sub><br>Z = H + 0.6', sym: [['X', '방호공간 가로 (m)'], ['Y', '방호공간 세로 (m)'], ['Z', '방호공간 높이 (m)'], ['L', '방호대상물 가로 (m)'], ['W', '방호대상물 세로 (m)'], ['H', '방호대상물 높이 (m)'], ['e', '면마다 더하는 거리: 벽이 없으면 0.6m, 0.6m 안에 벽이 있으면 벽까지 거리']], sub: `X = ${Xs} = ${fx(X)} m<br>Y = ${Ys} = ${fx(Y)} m<br>Z = ${Zs} = ${fx(Z)} m` }),
+    step({ t: '방호공간 체적', f: 'V = X × Y × Z', sym: [['V', '방호공간 체적 (㎥)']], sub: `V = ${Vs}`, ans: `${fx(V)} ㎥` }),
+    step({ t: '방호공간 벽 면적 합계', f: 'A = 2 × (X + Y) × Z', sym: [['A', '방호공간 네 옆면 면적 합계 (㎡). 실제로 벽이 없는 면도 벽이 있다고 보고 계산']], sub: `A = ${As}`, ans: `${fx(A)} ㎡` }),
+    step({ t: '실제 벽 면적 합계', f: 'a = Σ(벽 있는 면의 너비 × 벽 높이)', sym: [['a', '방호대상물에서 0.6m 안에 실제로 있는 벽 면적 합계 (㎡)']], sub: parts.length ? `a = ${parts.map((p) => `(${p.ws}) × ${pd(whS)} (${p.nm})`).join(' + ')}` : 'a = 0 (0.6m 안에 벽 없음)', ans: `${fx(a)} ㎡` }),
   ];
   // 평면도
   const s = Math.min(520 / X, 300 / Y), pad = 56;
@@ -2142,27 +2171,27 @@ function localSpace(v) {
   const svg = `<svg viewBox="0 0 ${(X * s + 2 * pad).toFixed(0)} ${(Y * s + 2 * pad).toFixed(0)}" role="img" aria-label="국소방출 방호공간 평면도">${o}</svg>`;
   const card = {
     title: '방호공간 (위에서 본 평면)',
-    tiles: [{ l: '방호공간 체적 V', v: fx(V), u: '㎥' }, { l: '벽 면적 합계 A', v: fx(A), u: '㎡' }, { l: '실제 벽 면적 a', v: fx(a), u: '㎡' }, { l: 'a ÷ A', v: fx(a / A, 3) }],
+    tiles: [{ l: '방호공간 체적 V', v: fx(V), u: '㎥' }, { l: '벽 면적 합계 A', v: fx(A), u: '㎡' }, { l: '실제 벽 면적 a', v: fx(a), u: '㎡' }, { l: 'a ÷ A', v: fx(a / A) }],
     notes: ['점선이 방호공간이고, 굵은 선이 실제 벽이에요. 숫자는 방호대상물에서 방호공간 경계(또는 벽)까지 거리(m)예요.'],
     extraTop: `<div class="drawing">${svg}</div><div class="legend"><span><i class="lg-space"></i>방호공간 (0.6m)</span><span><i class="lg-wall"></i>실제 벽</span></div>`,
   };
-  return { X, Y, Z, V, A, a, steps, card };
+  return { X, Y, Z, V, A, a, Vs, As, as, steps, card };
 }
 
 function calcGas(v) {
   const local = isLocal(v), steps = [], warns = [], extraTiles = [];
   const err = (m) => ({ error: m });
-  let V = 0, Wt, unit = 'kg', bottles = null, bottleNote = '', name = '';
+  let V = 0, Wt, unit = 'kg', bottles = null, bottleNote = '', name = '', VS = '', WS = '';
   const Ao = n0(v.Ao);
   if (!local) {
     if (v.Vd) {
       if (bad(v.Vv)) return err('방호구역 체적에 0보다 큰 값을 넣어 주세요.');
-      V = v.Vv;
+      V = v.Vv; VS = fi(V);
       steps.push(step({ t: '방호구역 체적', sub: '직접 입력', ans: `${fx(V)} ㎥` }));
     } else {
     if (bad(v.L) || bad(v.W) || bad(v.H)) return err('방호구역 가로·세로·높이에 0보다 큰 값을 넣어 주세요.');
-    V = v.L * v.W * v.H;
-    steps.push(step({ t: '방호구역 체적', f: 'V = L × W × H', sym: [['V', '방호구역 체적 (㎥)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['H', '높이 (m)']], sub: `V = ${fx(v.L)} × ${fx(v.W)} × ${fx(v.H)}`, ans: `${fx(V)} ㎥` }));
+    V = v.L * v.W * v.H; VS = `${fi(v.L)} × ${fi(v.W)} × ${fi(v.H)}`;
+    steps.push(step({ t: '방호구역 체적', f: 'V = L × W × H', sym: [['V', '방호구역 체적 (㎥)'], ['L', '가로 (m)'], ['W', '세로 (m)'], ['H', '높이 (m)']], sub: `V = ${VS}`, ans: `${fx(V)} ㎥` }));
     }
   }
   let space = null;
@@ -2177,7 +2206,7 @@ function calcGas(v) {
   const perBottle = (Vc, F, range, label) => {
     if (bad(Vc) || bad(F)) return null;
     const kg = Vc / F;
-    steps.push(step({ t: '1병당 충전량', f: 'w = V<sub>c</sub> ÷ C', sym: [['w', '1병당 약제량 (kg)'], ['V<sub>c</sub>', '저장용기 내용적 (L)'], ['C', '충전비 (L/kg)']], sub: `w = ${fx(Vc)} ÷ ${fx(F)}`, ans: `${fx(kg)} kg` }));
+    steps.push(step({ t: '1병당 충전량', f: 'w = V<sub>c</sub> ÷ C', sym: [['w', '1병당 약제량 (kg)'], ['V<sub>c</sub>', '저장용기 내용적 (L)'], ['C', '충전비 (L/kg)']], sub: `w = ${fi(Vc)} ÷ ${fi(F)}`, ans: `${fx(kg)} kg` }));
     if (F < range[0] || F > range[1]) warns.push(`${label} 충전비는 ${range[0]} 이상 ${range[1]} 이하여야 해요. 지금 넣은 값: ${fx(F)}`);
     return kg;
   };
@@ -2189,42 +2218,43 @@ function calcGas(v) {
     if (local) {
       const lc = STD.co2.local, k = lc.k[hi ? 'high' : 'low'];
       if (v.localFire === 'plane') {
-        Wt = v.As * lc.surface * k;
-        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${lc.surface} × k`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(lc.surface), '표면적 1㎡당 약제량 (kg/㎡)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${fx(v.As)} × ${lc.surface} × ${k}`, ans: `${fx(Wt)} kg` }));
+        Wt = v.As * lc.surface * k; WS = `${fi(v.As)} × ${lc.surface} × ${k}`;
+        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${lc.surface} × k`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(lc.surface), '표면적 1㎡당 약제량 (kg/㎡)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
       } else {
-        const q = lc.X - lc.Y * space.a / space.A;
-        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${lc.X} − ${lc.Y} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${lc.X} − ${lc.Y} × ${fx(space.a)} ÷ ${fx(space.A)}`, ans: `${fx(q, 3)} kg/㎥` }));
-        Wt = space.V * q * k;
-        steps.push(step({ t: '약제량 (국소·입면화재)', f: 'W = V × Q × k', sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${fx(space.V)} × ${fx(q, 3)} × ${k}`, ans: `${fx(Wt)} kg` }));
+        const q = lc.X - lc.Y * space.a / space.A, qS = `${lc.X} − ${lc.Y} × ${pd(space.as)} ÷ ${pd(space.As)}`;
+        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${lc.X} − ${lc.Y} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${qS}`, ans: `${fx(q)} kg/㎥` }));
+        Wt = space.V * q * k; WS = `${space.Vs} × (${qS}) × ${k}`;
+        steps.push(step({ t: '약제량 (국소·입면화재)', f: 'W = V × Q × k', sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], ['k', `고압식 ${lc.k.high}, 저압식 ${lc.k.low}`]], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
       }
     } else if (v.co2fire === 'surface') {
       const [, k, min] = pickLT(STD.co2.surface, V);
       const base0 = V * k, base = Math.max(base0, min), corr = v.corr > 0 ? v.corr : 1;
-      steps.push(step({ t: '기본 약제량 (표면화재)', f: 'W₀ = V × K₁', sym: [['W₀', '기본 약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)']], sub: `W₀ = ${fx(V)} × ${fx(k)} = ${fx(base0)}${base0 < min ? ` → 최저량 ${min} kg 적용` : ''}`, ans: `${fx(base)} kg`, note: `체적 구간에 따라 K₁ = ${k} kg/㎥, 최저량 ${min} kg` }));
-      Wt = base * corr + Ao * STD.co2.surfaceOpen;
-      steps.push(step({ t: '약제량 (전역·표면화재)', f: 'W = W₀ × N + A × K₂', sym: [['W', '약제량 (kg)'], ['W₀', '기본 약제량 (kg)'], ['N', '설계농도 보정계수'], ...symOpen], sub: `W = ${fx(base)} × ${fx(corr)} + ${fx(Ao)} × ${STD.co2.surfaceOpen}`, ans: `${fx(Wt)} kg` }));
+      const baseS = base0 < min ? String(min) : `${pa(VS)} × ${fi(k)}`;
+      steps.push(step({ t: '기본 약제량 (표면화재)', f: 'W₀ = V × K₁', sym: [['W₀', '기본 약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)']], sub: `W₀ = ${pa(VS)} × ${fi(k)}${base0 < min ? ` = ${fx(base0)} → 최저량 ${min} kg 적용` : ''}`, ans: `${fx(base)} kg`, note: `체적 구간에 따라 K₁ = ${k} kg/㎥, 최저량 ${min} kg` }));
+      Wt = base * corr + Ao * STD.co2.surfaceOpen; WS = `${baseS} × ${fi(corr)} + ${fi(Ao)} × ${STD.co2.surfaceOpen}`;
+      steps.push(step({ t: '약제량 (전역·표면화재)', f: 'W = W₀ × N + A × K₂', sym: [['W', '약제량 (kg)'], ['W₀', '기본 약제량 (kg)'], ['N', '설계농도 보정계수'], ...symOpen], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
     } else {
       const [k, label] = STD.co2.deep[v.co2deep];
-      Wt = V * k + Ao * STD.co2.deepOpen;
-      steps.push(step({ t: '약제량 (전역·심부화재)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${STD.co2.deepOpen}`, ans: `${fx(Wt)} kg`, note: label }));
+      Wt = V * k + Ao * STD.co2.deepOpen; WS = `${pa(VS)} × ${k} + ${fi(Ao)} × ${STD.co2.deepOpen}`;
+      steps.push(step({ t: '약제량 (전역·심부화재)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${WS}`, ans: `${fx(Wt)} kg`, note: label }));
     }
     const kg = perBottle(v.co2V, v.co2F, STD.co2.fill[hi ? 'high' : 'low'], typeName);
     if (kg === null) return err('저장용기 내용적과 충전비에 0보다 큰 값을 넣어 주세요.');
-    bottles = up(Wt / kg); bottleNote = `${fx(Wt)} ÷ ${fx(kg)}`;
+    bottles = up(Wt / kg); bottleNote = `${pa(WS)} ÷ (${fi(v.co2V)} ÷ ${fi(v.co2F)})`;
   } else if (v.agent === 'halon') {
     name = `할론 ${v.halonType}`;
     const [label, tbl] = STD.halon.kinds[v.halonKind];
     if (!tbl[v.halonType]) return err(`${label}에는 할론 ${v.halonType} 기준값이 없어요. 기준표에 있는 약제: ${Object.keys(tbl).map((x) => '할론 ' + x).join(', ')}`);
     const [k, kA] = tbl[v.halonType];
-    Wt = V * k + Ao * kA;
-    steps.push(step({ t: '약제량', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${k} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg`, note: label }));
+    Wt = V * k + Ao * kA; WS = `${pa(VS)} × ${k} + ${fi(Ao)} × ${kA}`;
+    steps.push(step({ t: '약제량', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${WS}`, ans: `${fx(Wt)} kg`, note: label }));
     const hf = halonFill(v);
     if (bad(v.halonKg)) return err('저장용기 1병 충전량(kg)에 0보다 큰 값을 넣어 주세요.');
     if (!hf.ok(v.halonF)) return err(`충전비를 범위 안으로 넣어 주세요. ${hf.text}`);
     const cvol = v.halonKg * v.halonF;
-    steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = w × C', sym: [['V<sub>c</sub>', '저장용기 1병 내용적 (L)'], ['w', '1병당 충전량 (kg)'], ['C', `충전비 (L/kg), ${hf.text}`]], sub: `V<sub>c</sub> = ${fx(v.halonKg)} × ${fx(v.halonF)}`, ans: `${fx(cvol)} L` }));
+    steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = w × C', sym: [['V<sub>c</sub>', '저장용기 1병 내용적 (L)'], ['w', '1병당 충전량 (kg)'], ['C', `충전비 (L/kg), ${hf.text}`]], sub: `V<sub>c</sub> = ${fi(v.halonKg)} × ${fi(v.halonF)}`, ans: `${fx(cvol)} L` }));
     extraTiles.push({ l: '용기 1병 내용적', v: fx(cvol), u: 'L' });
-    bottles = up(Wt / v.halonKg); bottleNote = `${fx(Wt)} ÷ ${fx(v.halonKg)}`;
+    bottles = up(Wt / v.halonKg); bottleNote = `${pa(WS)} ÷ ${fi(v.halonKg)}`;
   } else if (v.agent === 'halo' || v.agent === 'inert') {
     const isHalo = v.agent === 'halo', cl = STD.clean;
     const key = isHalo ? v.haloAgent : v.inertAgent;
@@ -2232,52 +2262,56 @@ function calcGas(v) {
     name = `${isHalo ? '할로겐화합물' : '불활성기체'} ${key}`;
     if (bad(v.conc)) return err('소화농도에 0보다 큰 값을 넣어 주세요.');
     const t = n0(v.t), Ss = k1 + k2 * t, sf = cl.safety[v.cls], C = v.conc * sf;
+    const SS = `${k1} + ${k2} × ${fi(t)}`, CS = `${fi(v.conc)} × ${sf}`, C95S = `${fi(v.conc)} × ${sf} × ${cl.ratio95}`;
     if (C >= 100) return err('설계농도가 100% 이상이 됐어요. 소화농도를 확인해 주세요.');
-    steps.push(step({ t: '선형상수', f: 'S = K₁ + K₂ × t', sym: [['S', '소화약제별 선형상수 (㎥/kg)'], ['K₁', `약제 상수 (${key})`], ['K₂', `약제 상수 (${key})`], ['t', '방호구역 최소 예상온도 (℃)']], sub: `S = ${k1} + ${k2} × ${fx(t)}`, ans: `${fx(Ss, 4)} ㎥/kg` }));
-    steps.push(step({ t: '설계농도', f: 'C = C₀ × 안전계수', sym: [['C', '설계농도 (%)'], ['C₀', '소화농도 (%)'], ['안전계수', `${v.cls === 'B' ? 'B급' : 'A·C급'} 화재 ${sf}`]], sub: `C = ${fx(v.conc)} × ${sf}`, ans: `${fx(C)} %` }));
+    steps.push(step({ t: '선형상수', f: 'S = K₁ + K₂ × t', sym: [['S', '소화약제별 선형상수 (㎥/kg)'], ['K₁', `약제 상수 (${key})`], ['K₂', `약제 상수 (${key})`], ['t', '방호구역 최소 예상온도 (℃)']], sub: `S = ${SS}`, ans: `${fx(Ss)} ㎥/kg` }));
+    steps.push(step({ t: '설계농도', f: 'C = C₀ × 안전계수', sym: [['C', '설계농도 (%)'], ['C₀', '소화농도 (%)'], ['안전계수', `${v.cls === 'B' ? 'B급' : 'A·C급'} 화재 ${sf}`]], sub: `C = ${CS}`, ans: `${fx(C)} %` }));
     const C95 = C * cl.ratio95;
     if (isHalo) {
-      Wt = V / Ss * C / (100 - C);
-      steps.push(step({ t: '약제량', f: 'W = V ÷ S × C ÷ (100 − C)', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)']], sub: `W = ${fx(V)} ÷ ${fx(Ss, 4)} × ${fx(C)} ÷ ${fx(100 - C)}`, ans: `${fx(Wt)} kg` }));
-      const W95 = V / Ss * C95 / (100 - C95), tt = cl.timeHalo, q = W95 / tt;
-      steps.push(step({ t: '95% 방출량', f: "W' = V ÷ S × 0.95C ÷ (100 − 0.95C)", sym: [["W'", '최소설계농도의 95%에 해당하는 약제량 (kg)'], ['0.95C', '설계농도의 95% (%)']], sub: `W' = ${fx(V)} ÷ ${fx(Ss, 4)} × ${fx(C95)} ÷ ${fx(100 - C95)}`, ans: `${fx(W95)} kg` }));
-      steps.push(step({ t: '방사 유량', f: "q = W' ÷ t", sym: [['q', '방사 유량 (kg/s)'], ["W'", '95% 방출량 (kg)'], ['t', `방사시간: 할로겐화합물 ${tt}초 이내`]], sub: `q = ${fx(W95)} ÷ ${tt}`, ans: `${fx(q)} kg/s` }));
+      Wt = V / Ss * C / (100 - C); WS = `${pa(VS)} ÷ (${SS}) × (${CS}) ÷ (100 − ${CS})`;
+      steps.push(step({ t: '약제량', f: 'W = V ÷ S × C ÷ (100 − C)', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)']], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
+      const W95 = V / Ss * C95 / (100 - C95), tt = cl.timeHalo, q = W95 / tt, W95S = `${pa(VS)} ÷ (${SS}) × (${C95S}) ÷ (100 − ${C95S})`;
+      steps.push(step({ t: '95% 방출량', f: "W' = V ÷ S × 0.95C ÷ (100 − 0.95C)", sym: [["W'", '최소설계농도의 95%에 해당하는 약제량 (kg)'], ['0.95C', '설계농도의 95% (%)']], sub: `W' = ${W95S}`, ans: `${fx(W95)} kg` }));
+      steps.push(step({ t: '방사 유량', f: "q = W' ÷ t", sym: [['q', '방사 유량 (kg/s)'], ["W'", '95% 방출량 (kg)'], ['t', `방사시간: 할로겐화합물 ${tt}초 이내`]], sub: `q = ${W95S} ÷ ${tt}`, ans: `${fx(q)} kg/s` }));
       extraTiles.push({ l: '방사 유량', v: fx(q), u: 'kg/s' });
       if (bad(v.haloB)) return err('저장용기 1병 충전량에 0보다 큰 값을 넣어 주세요.');
-      bottles = up(Wt / v.haloB); bottleNote = `${fx(Wt)} ÷ ${fx(v.haloB)}`;
+      bottles = up(Wt / v.haloB); bottleNote = `${pa(WS)} ÷ ${fi(v.haloB)}`;
     } else {
       const Vs = k1 + k2 * cl.baseTemp;
       const X = 2.303 * (Vs / Ss) * Math.log10(100 / (100 - C));
       Wt = X * V; unit = '㎥';
-      steps.push(step({ t: '20℃ 비체적', f: 'V<sub>s</sub> = K₁ + K₂ × 20', sym: [['V<sub>s</sub>', '20℃에서 소화약제의 비체적 (㎥/kg)']], sub: `V<sub>s</sub> = ${k1} + ${k2} × 20`, ans: `${fx(Vs, 4)} ㎥/kg` }));
-      steps.push(step({ t: '1㎥당 약제량', f: 'X = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − C))', sym: [['X', '방호구역 1㎥당 약제 부피 (㎥/㎥)'], ['V<sub>s</sub>', '20℃ 비체적 (㎥/kg)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)'], ['log', '상용로그']], sub: `X = 2.303 × (${fx(Vs, 4)} ÷ ${fx(Ss, 4)}) × log(100 ÷ ${fx(100 - C)})`, ans: `${fx(X, 4)} ㎥/㎥` }));
-      steps.push(step({ t: '약제량', f: 'Q = X × V', sym: [['Q', '약제량 (㎥)'], ['X', '1㎥당 약제 부피 (㎥/㎥)'], ['V', '방호구역 체적 (㎥)']], sub: `Q = ${fx(X, 4)} × ${fx(V)}`, ans: `${fx(Wt)} ㎥` }));
+      const VsS = `${k1} + ${k2} × 20`, XS = `2.303 × ((${VsS}) ÷ (${SS})) × log(100 ÷ (100 − ${CS}))`;
+      WS = `${XS} × ${pa(VS)}`;
+      steps.push(step({ t: '20℃ 비체적', f: 'V<sub>s</sub> = K₁ + K₂ × 20', sym: [['V<sub>s</sub>', '20℃에서 소화약제의 비체적 (㎥/kg)']], sub: `V<sub>s</sub> = ${VsS}`, ans: `${fx(Vs)} ㎥/kg` }));
+      steps.push(step({ t: '1㎥당 약제량', f: 'X = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − C))', sym: [['X', '방호구역 1㎥당 약제 부피 (㎥/㎥)'], ['V<sub>s</sub>', '20℃ 비체적 (㎥/kg)'], ['S', '선형상수 (㎥/kg)'], ['C', '설계농도 (%)'], ['log', '상용로그']], sub: `X = ${XS}`, ans: `${fx(X)} ㎥/㎥` }));
+      steps.push(step({ t: '약제량', f: 'Q = X × V', sym: [['Q', '약제량 (㎥)'], ['X', '1㎥당 약제 부피 (㎥/㎥)'], ['V', '방호구역 체적 (㎥)']], sub: `Q = ${WS}`, ans: `${fx(Wt)} ㎥` }));
       const X95 = 2.303 * (Vs / Ss) * Math.log10(100 / (100 - C95)), Q95 = X95 * V, tt = cl.timeInert[v.cls], q = Q95 / tt;
-      steps.push(step({ t: '95% 방출량', f: "Q' = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − 0.95C)) × V", sym: [["Q'", '최소설계농도의 95%에 해당하는 약제량 (㎥)'], ['0.95C', '설계농도의 95% (%)']], sub: `Q' = 2.303 × (${fx(Vs, 4)} ÷ ${fx(Ss, 4)}) × log(100 ÷ ${fx(100 - C95)}) × ${fx(V)}`, ans: `${fx(Q95)} ㎥` }));
-      steps.push(step({ t: '방사 유량', f: "q = Q' ÷ t", sym: [['q', '방사 유량 (㎥/s)'], ["Q'", '95% 방출량 (㎥)'], ['t', `방사시간: ${v.cls === 'B' ? 'B급 60초 (1분)' : 'A·C급 120초 (2분)'} 이내`]], sub: `q = ${fx(Q95)} ÷ ${tt}`, ans: `${fx(q, 3)} ㎥/s (${fx(q * 60)} ㎥/min)` }));
+      const Q95S = `2.303 × ((${VsS}) ÷ (${SS})) × log(100 ÷ (100 − ${C95S})) × ${pa(VS)}`;
+      steps.push(step({ t: '95% 방출량', f: "Q' = 2.303 × (V<sub>s</sub> ÷ S) × log(100 ÷ (100 − 0.95C)) × V", sym: [["Q'", '최소설계농도의 95%에 해당하는 약제량 (㎥)'], ['0.95C', '설계농도의 95% (%)']], sub: `Q' = ${Q95S}`, ans: `${fx(Q95)} ㎥` }));
+      steps.push(step({ t: '방사 유량', f: "q = Q' ÷ t", sym: [['q', '방사 유량 (㎥/s)'], ["Q'", '95% 방출량 (㎥)'], ['t', `방사시간: ${v.cls === 'B' ? 'B급 60초 (1분)' : 'A·C급 120초 (2분)'} 이내`]], sub: `q = ${Q95S} ÷ ${tt}`, ans: `${fx(q)} ㎥/s (${fx(q * 60)} ㎥/min)` }));
       extraTiles.push({ l: '방사 유량', v: fx(q * 60), u: '㎥/min' });
       if (bad(v.inertB)) return err('저장용기 1병 약제량에 0보다 큰 값을 넣어 주세요.');
-      bottles = up(Wt / v.inertB); bottleNote = `${fx(Wt)} ÷ ${fx(v.inertB)}`;
+      bottles = up(Wt / v.inertB); bottleNote = `${pa(WS)} ÷ ${fi(v.inertB)}`;
     }
   } else {
     const ty = v.powderType, [kG, kA, fill] = STD.powder[ty], [kP, pX, pY] = STD.powderLocal[ty], k = STD.powderLocalK;
     name = `분말 제${ty}종`;
     if (local) {
       if (v.localFire === 'plane') {
-        Wt = v.As * kP * k;
-        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${kP} × ${k}`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(kP), `제${ty}종 표면적 1㎡당 약제량 (kg/㎡)`], [String(k), '할증 계수']], sub: `W = ${fx(v.As)} × ${kP} × ${k}`, ans: `${fx(Wt)} kg` }));
+        Wt = v.As * kP * k; WS = `${fi(v.As)} × ${kP} × ${k}`;
+        steps.push(step({ t: '약제량 (국소·평면화재)', f: `W = A<sub>s</sub> × ${kP} × ${k}`, sym: [['W', '약제량 (kg)'], ['A<sub>s</sub>', '방호대상물 표면적 (㎡)'], [String(kP), `제${ty}종 표면적 1㎡당 약제량 (kg/㎡)`], [String(k), '할증 계수']], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
       } else {
-        const q = pX - pY * space.a / space.A;
-        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${pX} − ${pY} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(pX), `제${ty}종 X 값`], [String(pY), `제${ty}종 Y 값`], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${pX} − ${pY} × ${fx(space.a)} ÷ ${fx(space.A)}`, ans: `${fx(q, 3)} kg/㎥` }));
-        Wt = space.V * q * k;
-        steps.push(step({ t: '약제량 (국소·입면화재)', f: `W = V × Q × ${k}`, sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(k), '할증 계수']], sub: `W = ${fx(space.V)} × ${fx(q, 3)} × ${k}`, ans: `${fx(Wt)} kg` }));
+        const q = pX - pY * space.a / space.A, qS = `${pX} − ${pY} × ${pd(space.as)} ÷ ${pd(space.As)}`;
+        steps.push(step({ t: '방호공간 1㎥당 약제량', f: `Q = ${pX} − ${pY} × a ÷ A`, sym: [['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(pX), `제${ty}종 X 값`], [String(pY), `제${ty}종 Y 값`], ['a', '실제 벽 면적 합계 (㎡)'], ['A', '방호공간 벽 면적 합계 (㎡)']], sub: `Q = ${qS}`, ans: `${fx(q)} kg/㎥` }));
+        Wt = space.V * q * k; WS = `${space.Vs} × (${qS}) × ${k}`;
+        steps.push(step({ t: '약제량 (국소·입면화재)', f: `W = V × Q × ${k}`, sym: [['W', '약제량 (kg)'], ['V', '방호공간 체적 (㎥)'], ['Q', '방호공간 1㎥당 약제량 (kg/㎥)'], [String(k), '할증 계수']], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
       }
     } else {
-      Wt = V * kG + Ao * kA;
-      steps.push(step({ t: '약제량 (전역)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${fx(V)} × ${kG} + ${fx(Ao)} × ${kA}`, ans: `${fx(Wt)} kg` }));
+      Wt = V * kG + Ao * kA; WS = `${pa(VS)} × ${kG} + ${fi(Ao)} × ${kA}`;
+      steps.push(step({ t: '약제량 (전역)', f: 'W = V × K₁ + A × K₂', sym: [['W', '약제량 (kg)'], ['V', '방호구역 체적 (㎥)'], ['K₁', '체적 1㎥당 약제량 (kg/㎥)'], ...symOpen], sub: `W = ${WS}`, ans: `${fx(Wt)} kg` }));
     }
     const vol = Wt * fill;
-    steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = W × C', sym: [['V<sub>c</sub>', '저장용기 내용적 (L)'], ['W', '약제량 (kg)'], ['C', '충전비 (L/kg)']], sub: `V<sub>c</sub> = ${fx(Wt)} × ${fill}`, ans: `${fx(vol)} L` }));
+    steps.push(step({ t: '저장용기 내용적', f: 'V<sub>c</sub> = W × C', sym: [['V<sub>c</sub>', '저장용기 내용적 (L)'], ['W', '약제량 (kg)'], ['C', '충전비 (L/kg)']], sub: `V<sub>c</sub> = ${pa(WS)} × ${fill}`, ans: `${fx(vol)} L` }));
     extraTiles.push({ l: '저장용기 내용적', v: fx(vol), u: 'L', tone: 'key' });
   }
   if (bottles !== null) steps.push(step({ t: '저장용기 수', f: 'n = ⌈W ÷ w⌉', sym: [['n', '저장용기 수 (병)'], ['W', `약제량 (${unit})`], ['w', `1병당 약제량 (${unit})`], ['⌈ ⌉', '올림']], sub: `n = ⌈${bottleNote}⌉`, ans: `${bottles}병` }));
@@ -2294,14 +2328,14 @@ function calcGas(v) {
     let [hx, hy] = v.layout.split('x').map(Number), heads = hx * hy, drawNote = '';
     if (v.headMode === 'calc') {
       const tm = gasTime(v), ts = v.hT > 0 ? v.hT : tm.s, tmin = ts / 60;
-      steps.push(step({ t: '방사시간', sub: `${v.hT > 0 ? `직접 입력 ${fx(ts)}초` : `기준값: ${tm.why}`} → 식에는 분 단위로 t = ${fx(tmin, 3)}분을 넣어요` }));
+      steps.push(step({ t: '방사시간', sub: `${v.hT > 0 ? `직접 입력 ${fi(ts)}초` : `기준값: ${tm.why}`} → 식에는 분 단위로 t = ${fi(ts)} ÷ 60분을 넣어요` }));
       if (bad(v.hA) || bad(v.hQ)) {
         heads = NaN;
         warns.push('헤드 1개 분구면적과 방출률을 넣으면 분사헤드 수가 나와요.');
       } else {
         const per = v.hA * v.hQ * tmin;
         heads = up(Wt / per);
-        steps.push(step({ t: '분사헤드 수', f: 'n<sub>h</sub> = ⌈W ÷ (a × q × t)⌉', sym: [['n<sub>h</sub>', '분사헤드 수 (개)'], ['W', `약제량 (${unit})`], ['a', '헤드 1개 분구면적 (㎟)'], ['q', `방출률 (${unit}/㎟·min)`], ['t', '방사시간 (min)'], ['⌈ ⌉', '올림']], sub: `n<sub>h</sub> = ⌈${fx(Wt)} ÷ (${fx(v.hA)} × ${fx(v.hQ)} × ${fx(tmin, 3)})⌉ = ⌈${fx(Wt)} ÷ ${fx(per)}⌉`, ans: `${heads}개` }));
+        steps.push(step({ t: '분사헤드 수', f: 'n<sub>h</sub> = ⌈W ÷ (a × q × t)⌉', sym: [['n<sub>h</sub>', '분사헤드 수 (개)'], ['W', `약제량 (${unit})`], ['a', '헤드 1개 분구면적 (㎟)'], ['q', `방출률 (${unit}/㎟·min)`], ['t', '방사시간 (min)'], ['⌈ ⌉', '올림']], sub: `n<sub>h</sub> = ⌈${pa(WS)} ÷ (${fi(v.hA)} × ${fi(v.hQ)} × ${fi(ts)} ÷ 60)⌉`, ans: `${heads}개` }));
         const lay = GAS_LAYOUTS.find(([, n]) => n >= heads);
         if (lay) {
           [hx, hy] = lay[0].split('x').map(Number);
@@ -2310,7 +2344,7 @@ function calcGas(v) {
       }
     }
     const perHead = Wt / heads;
-    if (Number.isFinite(perHead)) steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${fx(Wt)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
+    if (Number.isFinite(perHead)) steps.push(step({ t: '헤드 1개당 방사량', f: 'w<sub>h</sub> = W ÷ n<sub>h</sub>', sym: [['w<sub>h</sub>', `헤드 1개당 방사량 (${unit})`], ['W', `약제량 (${unit})`], ['n<sub>h</sub>', '분사헤드 수 (개)']], sub: `w<sub>h</sub> = ${pa(WS)} ÷ ${heads}`, ans: `${fx(perHead)} ${unit}` }));
     tiles.push({ l: '분사헤드', v: fx(heads), u: '개' }, { l: '헤드 1개당', v: fx(perHead), u: unit });
     head.tiles = tiles;
     cards.push(head);
@@ -2385,65 +2419,67 @@ function gasDrawingCard(L, W, nx, ny, noDim) {
    ========================================================= */
 function calcFoam(v) {
   const c = STD.foam, S = Number(v.S) / 100, steps = [], tiles = [], notes = [], direct = !!v.fAd;
-  let A;
+  let A, aS;
   if (direct) {
     if (bad(v.fA)) return { error: '바닥면적에 0보다 큰 값을 넣어 주세요.' };
-    A = v.fA;
+    A = v.fA; aS = fi(A);
     steps.push(step({ t: '바닥면적', sub: '직접 입력', ans: `${fx(A)} ㎡` }));
   } else {
     if (bad(v.L) || bad(v.W)) return { error: '가로와 세로에 0보다 큰 값을 넣어 주세요.' };
-    A = v.L * v.W;
-    steps.push(step({ t: '바닥면적', f: 'A = L × W', sym: [['A', '바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${fx(v.L)} × ${fx(v.W)}`, ans: `${fx(A)} ㎡` }));
+    A = v.L * v.W; aS = `${fi(v.L)} × ${fi(v.W)}`;
+    steps.push(step({ t: '바닥면적', f: 'A = L × W', sym: [['A', '바닥면적 (㎡)'], ['L', '가로 (m)'], ['W', '세로 (m)']], sub: `A = ${aS}`, ans: `${fx(A)} ㎡` }));
   }
   const placeName = { parking: '차고·주차장', hangar: '항공기 격납고', special: '특수가연물 저장·취급 공장·창고' }[v.place];
   // 헤드 개수: 면적만 주어지면 헤드 1개당 면적으로 나누고, 가로·세로가 주어지면 정방형 간격 S로 나눠서 곱해요
-  const Sx = 2 * c.headR * Math.cos(Math.PI / 4);
-  const count = (per, nm, perWhy, tName) => {
+  const r = v.fR === 'c' ? n0(v.fRc) : Number(v.fR || 2.1), rWhy = v.fR === 'c' ? '직접 입력' : c.headR[v.fR || '2.1'];
+  if (!direct && !(r > 0)) return { error: '유효반경 r에 0보다 큰 값을 넣어 주세요.' };
+  const Sx = 2 * r * Math.cos(Math.PI / 4);
+  const count = (per, nm, perWhy, tName, cap) => {
     if (direct) {
-      const n = up(A / per - 1e-9);
-      steps.push(step({ t: tName, f: `n = ⌈A ÷ ${per}⌉`, sym: [['n', `${nm} 개수 (개)`], ['A', '바닥면적 (㎡)'], [String(per), perWhy], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(A)} ÷ ${per}⌉`, ans: `${n}개` }));
+      const over = cap && A > c.zoneMax, n = up((over ? c.zoneMax : A) / per - 1e-9);
+      steps.push(step({ t: tName, f: `n = ⌈A ÷ ${per}⌉`, sym: [['n', `${nm} 개수 (개)`], ['A', cap ? `바닥면적 (㎡), ${c.zoneMax}㎡를 넘으면 ${c.zoneMax}㎡` : '바닥면적 (㎡)'], [String(per), perWhy], ['⌈ ⌉', '올림']], sub: `n = ⌈${over ? c.zoneMax : pa(aS)} ÷ ${per}⌉`, ans: `${n}개`, note: over ? `바닥면적 ${fx(A)}㎡가 ${c.zoneMax}㎡를 넘어서 ${c.zoneMax}㎡로 나눴어요.` : '' }));
       return n;
     }
-    steps.push(step({ t: '헤드 간격', f: 'S = 2 × r × cos45°', sym: [['S', '헤드 상호 간 거리 (m), 정방형 배치'], ['r', `유효반경 ${c.headR} m`]], sub: `S = 2 × ${c.headR} × cos45°`, ans: `${fx(Sx, 3)} m` }));
+    steps.push(step({ t: '헤드 간격', f: 'S = 2 × r × cos45°', sym: [['S', '헤드 상호 간 거리 (m), 정방형 배치'], ['r', `유효반경 (m): ${rWhy} ${fx(r)} m`]], sub: `S = 2 × ${fi(r)} × cos45°`, ans: `${fx(Sx)} m` }));
     const nL = up(v.L / Sx - 1e-9), nW = up(v.W / Sx - 1e-9);
-    steps.push(step({ t: tName, f: 'n = ⌈L ÷ S⌉ × ⌈W ÷ S⌉', sym: [['n', `${nm} 개수 (개)`], ['L', '가로 (m)'], ['W', '세로 (m)'], ['S', '헤드 간격 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fx(v.L)} ÷ ${fx(Sx, 3)}⌉ × ⌈${fx(v.W)} ÷ ${fx(Sx, 3)}⌉ = ${nL} × ${nW}`, ans: `${nL * nW}개` }));
+    steps.push(step({ t: tName, f: 'n = ⌈L ÷ S⌉ × ⌈W ÷ S⌉', sym: [['n', `${nm} 개수 (개)`], ['L', '가로 (m)'], ['W', '세로 (m)'], ['S', '헤드 간격 (m)'], ['⌈ ⌉', '올림']], sub: `n = ⌈${fi(v.L)} ÷ (2 × ${fi(r)} × cos45°)⌉ × ⌈${fi(v.W)} ÷ (2 × ${fi(r)} × cos45°)⌉ = ${nL} × ${nW}`, ans: `${nL * nW}개` }));
     return nL * nW;
   };
-  let heads, headName, flowHead, solHead, sysName;
+  let heads, headName, flowHead, solHead, sysName, flowS;
 
   if (v.sys === 'caf') {
     sysName = '압축공기포소화설비'; headName = '분사헤드';
     const per = v.cafArea === 'tank' ? c.caf.perTank : c.caf.perSpecial;
-    heads = count(per, '분사헤드', `${v.cafArea === 'tank' ? '유류탱크 주위' : '특수가연물 저장소'} 헤드 1개당 바닥면적 (㎡)`, '분사헤드 개수');
+    heads = count(per, '분사헤드', `${v.cafArea === 'tank' ? '유류탱크 주위' : '특수가연물 저장소'} 헤드 1개당 바닥면적 (㎡)`, '분사헤드 개수', false);
     const q = c.caf.density[v.cafDensity], Az = v.zone > 0 ? v.zone : A;
-    flowHead = Az * q; solHead = flowHead * c.time;
-    steps.push(step({ t: '방출량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방출량 (L/min)'], ['A<sub>z</sub>', '방호구역 면적 (㎡)'], ['q', `설계방출밀도: ${v.cafDensity === 'special' ? '특수가연물·알코올류·케톤류' : '일반가연물·탄화수소류'} (L/min·㎡)`]], sub: `Q₁ = ${fx(Az)} × ${q}`, ans: `${fx(flowHead)} L/min` }));
+    flowHead = Az * q; solHead = flowHead * c.time; flowS = `${pa(v.zone > 0 ? fi(v.zone) : aS)} × ${q}`;
+    steps.push(step({ t: '방출량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방출량 (L/min)'], ['A<sub>z</sub>', '방호구역 면적 (㎡)'], ['q', `설계방출밀도: ${v.cafDensity === 'special' ? '특수가연물·알코올류·케톤류' : '일반가연물·탄화수소류'} (L/min·㎡)`]], sub: `Q₁ = ${flowS}`, ans: `${fx(flowHead)} L/min` }));
   } else {
     const capped = v.place !== 'hangar';
     if (v.sys === 'fw') {
       sysName = '포워터스프링클러설비'; headName = '포워터스프링클러헤드';
-      heads = count(c.perHeadFW, '포워터스프링클러헤드', '헤드 1개당 바닥면적 (㎡)', '헤드 개수');
-      const cap = up(c.zoneMax / c.perHeadFW), over = capped && A > c.zoneMax, Nz = over ? Math.min(heads, cap) : heads;
-      steps.push(step({ t: '동시 방사 헤드 수', sub: !capped ? `항공기 격납고: 헤드가 가장 많이 설치된 격납고의 헤드 전체 ${heads}개` : over ? `바닥면적 ${fx(A)}㎡ → ${c.zoneMax}㎡ 초과: ${c.zoneMax}㎡ 안의 헤드 ⌈${c.zoneMax} ÷ ${c.perHeadFW}⌉ = ${cap}개와 전체 ${heads}개 중 작은 값` : `바닥면적 ${fx(A)}㎡ → ${c.zoneMax}㎡ 이하: 헤드 전체 ${heads}개`, ans: `${Nz}개` }));
-      flowHead = Nz * c.fwQ; solHead = flowHead * c.time;
-      steps.push(step({ t: '방사량', f: `Q₁ = N × ${c.fwQ}`, sym: [['Q₁', '포수용액 방사량 (L/min)'], ['N', '동시 방사 헤드 수 (개)'], [String(c.fwQ), '포워터스프링클러헤드 1개당 표준방사량 (L/min)']], sub: `Q₁ = ${Nz} × ${c.fwQ}`, ans: `${fx(flowHead)} L/min` }));
+      heads = count(c.perHeadFW, '포워터스프링클러헤드', '헤드 1개당 바닥면적 (㎡)', '헤드 개수', capped);
+      const Nz = v.fwN > 0 ? v.fwN : heads;
+      if (v.fwN > 0) steps.push(step({ t: '동시 방사 헤드 수', sub: '직접 입력', ans: `${Nz}개` }));
+      flowHead = Nz * c.fwQ; solHead = flowHead * c.time; flowS = `${Nz} × ${c.fwQ}`;
+      steps.push(step({ t: '방사량', f: `Q₁ = N × ${c.fwQ}`, sym: [['Q₁', '포수용액 방사량 (L/min)'], ['N', '포워터스프링클러헤드 수 (개)'], [String(c.fwQ), '포워터스프링클러헤드 1개당 표준방사량 (L/min)']], sub: `Q₁ = ${Nz} × ${c.fwQ}`, ans: `${fx(flowHead)} L/min` }));
     } else {
       sysName = '포헤드설비'; headName = '포헤드';
-      heads = count(c.perHead, '포헤드', '헤드 1개당 바닥면적 (㎡)', '헤드 개수');
+      heads = count(c.perHead, '포헤드', '헤드 1개당 바닥면적 (㎡)', '헤드 개수', capped);
       const Az = capped ? Math.min(A, c.zoneMax) : A;
       steps.push(step({ t: '동시 방사 면적', sub: capped ? `바닥면적 ${fx(A)}㎡ → ${c.zoneMax}㎡를 넘으면 ${c.zoneMax}㎡ 안의 헤드만 동시에 방사` : '항공기 격납고: 헤드가 가장 많이 설치된 격납고의 헤드 전체가 동시에 방사 (격납고가 여러 동이면 그 격납고 크기를 넣으세요)', ans: `${fx(Az)} ㎡` }));
       const rate = v.place === 'special' ? c.rateSpecial : c.rate[v.agentType];
       const rateWhy = v.place === 'special' ? '특수가연물 저장·취급: 약제 종류와 관계없이' : { protein: '단백포', synthetic: '합성계면활성제포', afff: '수성막포' }[v.agentType];
-      flowHead = Az * rate; solHead = flowHead * c.time;
-      steps.push(step({ t: '방사량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방사량 (L/min)'], ['A<sub>z</sub>', '동시 방사 면적 (㎡)'], ['q', `바닥 1㎡당 방사량: ${placeName}, ${rateWhy} (L/min·㎡)`]], sub: `Q₁ = ${fx(Az)} × ${rate}`, ans: `${fx(flowHead)} L/min` }));
+      flowHead = Az * rate; solHead = flowHead * c.time; flowS = `${pa(Az < A ? fi(Az) : aS)} × ${rate}`;
+      steps.push(step({ t: '방사량', f: 'Q₁ = A<sub>z</sub> × q', sym: [['Q₁', '포수용액 방사량 (L/min)'], ['A<sub>z</sub>', '동시 방사 면적 (㎡)'], ['q', `바닥 1㎡당 방사량: ${placeName}, ${rateWhy} (L/min·㎡)`]], sub: `Q₁ = ${flowS}`, ans: `${fx(flowHead)} L/min` }));
     }
   }
-  steps.push(step({ t: `${sysName} 포수용액량`, f: `V₁ = Q₁ × ${c.time}`, sym: [['V₁', '포수용액량 (L)'], ['Q₁', '방사량 (L/min)'], [String(c.time), '방사시간 (min)']], sub: `V₁ = ${fx(flowHead)} × ${c.time}`, ans: `${fx(solHead)} L` }));
+  steps.push(step({ t: `${sysName} 포수용액량`, f: `V₁ = Q₁ × ${c.time}`, sym: [['V₁', '포수용액량 (L)'], ['Q₁', '방사량 (L/min)'], [String(c.time), '방사시간 (min)']], sub: `V₁ = ${pa(flowS)} × ${c.time}`, ans: `${fx(solHead)} L` }));
   tiles.push({ l: '바닥면적', v: fx(A), u: '㎡' }, { l: headName, v: fx(heads), u: '개' });
 
   if (v.sensor && v.sys !== 'caf') {
     const ns = up(A / c.sensorArea);
-    steps.push(step({ t: '감지용 스프링클러헤드', f: `n<sub>s</sub> = ⌈A ÷ ${c.sensorArea}⌉`, sym: [['n<sub>s</sub>', '자동기동용 감지 스프링클러헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(c.sensorArea), '헤드 1개당 경계면적 (㎡)']], sub: `n<sub>s</sub> = ⌈${fx(A)} ÷ ${c.sensorArea}⌉`, ans: `${ns}개` }));
+    steps.push(step({ t: '감지용 스프링클러헤드', f: `n<sub>s</sub> = ⌈A ÷ ${c.sensorArea}⌉`, sym: [['n<sub>s</sub>', '자동기동용 감지 스프링클러헤드 개수 (개)'], ['A', '바닥면적 (㎡)'], [String(c.sensorArea), '헤드 1개당 경계면적 (㎡)']], sub: `n<sub>s</sub> = ⌈${pa(aS)} ÷ ${c.sensorArea}⌉`, ans: `${ns}개` }));
     tiles.push({ l: '감지용 헤드', v: fx(ns), u: '개' });
   }
 
@@ -2455,19 +2491,23 @@ function calcFoam(v) {
     if (v.place === 'hangar') steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${fx(qr * c.reelT / 1000)}`, sym: [['V₂', '호스릴포 포수용액량 (㎥)'], ['N', `호스릴포방수구가 가장 많은 격납고의 방수구 수 (최대 ${c.reelMax}개)`], [fx(qr * c.reelT / 1000), `방수구 1개당 수원 = ${qr} L/min × ${c.reelT}분 (㎥)`]], sub: `V₂ = ${Nr} × ${fx(qr * c.reelT / 1000)}`, ans: `${fx(solReel / 1000)} ㎥ (${fx(solReel)} L)` }));
     else steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${qr} × ${c.reelT}`, sym: [['V₂', '호스릴포·포소화전 포수용액량 (L)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], [String(qr), `방수구 1개당 방사량 (L/min)${small ? ', 1개층 바닥면적 200㎡ 이하' : ''}`], [String(c.reelT), '방사시간 (min)']], sub: `V₂ = ${Nr} × ${qr} × ${c.reelT}`, ans: `${fx(solReel)} L` }));
   }
-  let sol, flow;
+  let sol, flow, solS, fS;
+  const solHS = `${pa(flowS)} × ${c.time}`, solRS = solReel > 0 ? `${Math.min(n0(v.reelN), c.reelMax)} × ${v.place === 'parking' && A <= c.zoneMax ? c.reelQsmall : c.reelQ} × ${c.reelT}` : '0';
+  const flowRS = solReel > 0 ? `${Math.min(n0(v.reelN), c.reelMax)} × ${v.place === 'parking' && A <= c.zoneMax ? c.reelQsmall : c.reelQ}` : '0';
   if (v.place === 'parking' && solReel > 0) {
     sol = Math.max(solHead, solReel); flow = Math.max(flowHead, flowReel);
+    solS = solHead >= solReel ? solHS : solRS; fS = flowHead >= flowReel ? flowS : flowRS;
     steps.push(step({ t: '포수용액량 (차고·주차장)', f: 'V = max(V₁, V₂)', sym: [['V', '포수용액량 (L)'], ['V₁', `${sysName} (L)`], ['V₂', '호스릴포·포소화전 (L)']], sub: `V = max(${fx(solHead)}, ${fx(solReel)})`, ans: `${fx(sol)} L`, note: '차고·주차장에 여러 설비를 같이 두면 설비별 수원 중 큰 값을 써요.' }));
   } else {
     sol = solHead + solReel; flow = flowHead + flowReel;
-    if (solReel > 0) steps.push(step({ t: '포수용액량 합계', f: 'V = V₁ + V₂', sym: [['V', '포수용액량 합계 (L)']], sub: `V = ${fx(solHead)} + ${fx(solReel)}`, ans: `${fx(sol)} L`, note: v.place === 'hangar' ? '항공기 격납고: 헤드(또는 고정포방출구)가 가장 많은 격납고의 10분 방사량에 호스릴포 수원을 더해요.' : '' }));
+    solS = solReel > 0 ? `${solHS} + ${solRS}` : solHS; fS = flowReel > 0 ? `${flowS} + ${flowRS}` : flowS;
+    if (solReel > 0) steps.push(step({ t: '포수용액량 합계', f: 'V = V₁ + V₂', sym: [['V', '포수용액량 합계 (L)']], sub: `V = ${solS}`, ans: `${fx(sol)} L`, note: v.place === 'hangar' ? '항공기 격납고: 헤드(또는 고정포방출구)가 가장 많은 격납고의 10분 방사량에 호스릴포 수원을 더해요.' : '' }));
   }
   const agent = sol * S, water = sol * (1 - S);
-  steps.push(step({ t: '포 약제량', f: 'W = V × S', sym: [['W', '포 약제량 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `W = ${fx(sol)} × ${fx(S)}`, ans: `${fx(agent)} L` }));
-  steps.push(step({ t: '수원의 양', f: 'Q<sub>w</sub> = V × (1 − S)', sym: [['Q<sub>w</sub>', '수원의 양: 약제를 뺀 물의 양 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${fx(sol)} × ${fx(1 - S)}`, ans: `${fx(water)} L` }));
-  steps.push(step({ t: '펌프 토출량', sub: v.place === 'parking' && solReel > 0 ? `큰 쪽 설비 기준: max(${fx(flowHead)}, ${fx(flowReel)})` : `${fx(flowHead)}${flowReel ? ` + ${fx(flowReel)}` : ''}`, ans: `${fx(flow)} L/min` }));
-  const p = pump('fh', v, flow, null, '방출구 설계압력 환산수두');
+  steps.push(step({ t: '포 약제량', f: 'W = V × S', sym: [['W', '포 약제량 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `W = ${pa(solS)} × ${fi(S)}`, ans: `${fx(agent)} L` }));
+  steps.push(step({ t: '수원의 양', f: 'Q<sub>w</sub> = V × (1 − S)', sym: [['Q<sub>w</sub>', '수원의 양: 약제를 뺀 물의 양 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${pa(solS)} × (1 − ${fi(S)})`, ans: `${fx(water)} L` }));
+  steps.push(step({ t: '펌프 토출량', sub: v.place === 'parking' && solReel > 0 ? `큰 쪽 설비 기준: max(${fx(flowHead)}, ${fx(flowReel)}) → ${fS}` : fS, ans: `${fx(flow)} L/min` }));
+  const p = pump('fh', v, flow, null, '방출구 설계압력 환산수두', fS);
   tiles.push({ l: '포수용액량', v: fx(sol / 1000), u: '㎥', tone: 'key' }, { l: '포 약제량', v: fx(agent), u: 'L', tone: 'key' }, { l: '수원의 양', v: fx(water / 1000), u: '㎥', tone: 'key' }, ...pumpTiles(flow, p));
   if (n0(v.reelN) > c.reelMax && v.place !== 'special') notes.push(`호스릴포·포소화전 방수구는 최대 ${c.reelMax}개까지만 계산에 넣었어요.`);
   return { cards: [{ title: `${placeName} ${sysName}`, tiles, warns: [p.warn].filter(Boolean), notes, steps: [...steps, ...p.steps] }] };
@@ -2478,24 +2518,24 @@ function calcFoam(v) {
    ========================================================= */
 function calcSpray(v) {
   const k = STD.spray.kinds[v.kind], steps = [];
-  let A;
+  let A, aS;
   if (v.kind === 'transformer' && v.tAd) {
     if (bad(v.tA)) return { error: '바닥을 뺀 표면적에 0보다 큰 값을 넣어 주세요.' };
-    A = v.tA;
+    A = v.tA; aS = fi(A);
   } else if (v.kind === 'transformer') {
     if (bad(v.tL) || bad(v.tW) || bad(v.tH)) return { error: '변압기 가로·세로·높이에 0보다 큰 값을 넣어 주세요.' };
-    A = v.tL * v.tW + 2 * (v.tL + v.tW) * v.tH;
-    steps.push(step({ t: '바닥을 뺀 표면적', f: 'A = a × b + 2 × (a + b) × h', sym: [['A', '바닥을 뺀 표면적 (㎡)'], ['a', '가로 (m)'], ['b', '세로 (m)'], ['h', '높이 (m)']], sub: `A = ${fx(v.tL)} × ${fx(v.tW)} + 2 × (${fx(v.tL)} + ${fx(v.tW)}) × ${fx(v.tH)}`, ans: `${fx(A)} ㎡` }));
+    A = v.tL * v.tW + 2 * (v.tL + v.tW) * v.tH; aS = `${fi(v.tL)} × ${fi(v.tW)} + 2 × (${fi(v.tL)} + ${fi(v.tW)}) × ${fi(v.tH)}`;
+    steps.push(step({ t: '바닥을 뺀 표면적', f: 'A = a × b + 2 × (a + b) × h', sym: [['A', '바닥을 뺀 표면적 (㎡)'], ['a', '가로 (m)'], ['b', '세로 (m)'], ['h', '높이 (m)']], sub: `A = ${aS}`, ans: `${fx(A)} ㎡` }));
   } else {
     if (bad(v.A)) return { error: '면적에 0보다 큰 값을 넣어 주세요.' };
-    A = v.A;
+    A = v.A; aS = fi(A);
   }
-  const Aeff = Math.max(A, k.min), flow = Aeff * k.q, vol = flow * STD.spray.time / 1000;
-  steps.push(step({ t: '토출량', f: `Q = A × ${k.q}`, sym: [['Q', '토출량 (L/min)'], ['A', k.min ? `면적 (㎡, 최소 ${k.min}㎡)` : '면적 (㎡)'], [String(k.q), '1㎡당 방사량 (L/min·㎡)']], sub: `Q = ${fx(Aeff)} × ${k.q}`, ans: `${fx(flow)} L/min`, note: A < k.min ? `면적이 ${k.min}㎡보다 작아서 ${k.min}㎡로 계산했어요.` : '' }));
-  steps.push(step({ t: '수원', f: `V = Q × ${STD.spray.time} ÷ 1000`, sym: [['V', '수원 (㎥)'], ['Q', '토출량 (L/min)'], [String(STD.spray.time), '방사시간 (min)'], ['1000', 'L → ㎥ 환산']], sub: `V = ${fx(flow)} × ${STD.spray.time} ÷ 1000`, ans: `${fx(vol)} ㎥` }));
+  const Aeff = Math.max(A, k.min), flow = Aeff * k.q, vol = flow * STD.spray.time / 1000, fS = `${pa(A < k.min ? fi(k.min) : aS)} × ${k.q}`;
+  steps.push(step({ t: '토출량', f: `Q = A × ${k.q}`, sym: [['Q', '토출량 (L/min)'], ['A', k.min ? `면적 (㎡, 최소 ${k.min}㎡)` : '면적 (㎡)'], [String(k.q), '1㎡당 방사량 (L/min·㎡)']], sub: `Q = ${fS}`, ans: `${fx(flow)} L/min`, note: A < k.min ? `면적이 ${k.min}㎡보다 작아서 ${k.min}㎡로 계산했어요.` : '' }));
+  steps.push(step({ t: '수원', f: `V = Q × ${STD.spray.time} ÷ 1000`, sym: [['V', '수원 (㎥)'], ['Q', '토출량 (L/min)'], [String(STD.spray.time), '방사시간 (min)'], ['1000', 'L → ㎥ 환산']], sub: `V = ${pa(fS)} × ${STD.spray.time} ÷ 1000`, ans: `${fx(vol)} ㎥` }));
   return { cards: [{
     title: '물분무소화설비', flat: true,
-    tiles: [{ l: '면적', v: fx(Aeff), u: '㎡' }, { l: '토출량', v: fx(flow), u: 'L/min', tone: 'key' }, { l: '토출량 (㎥/min)', dl: '토출량', v: fx(flow / 1000, 4), u: '㎥/min' }, { l: '수원', v: fx(vol), u: '㎥', tone: 'key' }],
+    tiles: [{ l: '면적', v: fx(Aeff), u: '㎡' }, { l: '토출량', v: fx(flow), u: 'L/min', tone: 'key' }, { l: '토출량 (㎥/min)', dl: '토출량', v: fx(flow / 1000), u: '㎥/min' }, { l: '수원', v: fx(vol), u: '㎥', tone: 'key' }],
     notes: [k.label],
     steps,
   }] };
@@ -3656,7 +3696,7 @@ function netSvgPT(M, R, n, open, o) {
       drops += `<path class="nt-hd${on ? ' on' : ''}${hs ? ' sel' : ''}" d="M${p3[0] - 6},${p3[1]} h12 l-6,9 z"/><line class="nt-hdl" x1="${p3[0] - 6}" y1="${p3[1] + 10}" x2="${p3[0] + 6}" y2="${p3[1] + 10}"/>`;
       if (gov) drops += `<circle class="nt-gov" cx="${p3[0]}" cy="${p3[1] + 4}" r="11"/>`;
       labels += `<text class="nt-hn${on ? ' on' : ''}" x="${p3[0] + 9}" y="${p3[1] - 2}">${h.label}</text>`;
-      if (o.edit) hits += `<circle class="nt-hhit" data-head="${sg.b}" cx="${p3[0]}" cy="${p3[1] + 4}" r="13"><title>헤드 ${h.label}${on && R ? ` · ${fx(R.P.get(sg.b), 4)} MPa · ${fx(R.q.get(sg.b))} L/min` : ' · 닫힘'}</title></circle>`;
+      if (o.edit) hits += `<circle class="nt-hhit" data-head="${sg.b}" cx="${p3[0]}" cy="${p3[1] + 4}" r="13"><title>헤드 ${h.label}${on && R ? ` · ${fx(R.P.get(sg.b))} MPa · ${fx(R.q.get(sg.b))} L/min` : ' · 닫힘'}</title></circle>`;
       if (o.edit && dr) hits += `<polyline class="nt-hit" data-seg="${sg.id}" points="${path}"><title>${sg.label}</title></polyline>`;
       return;
     }
@@ -3679,33 +3719,34 @@ function netCardPT(v) {
   const no = (id) => M.nodes.get(id).label, sq = n.formula === 'sq';
   const opn = open.slice().sort((a, b) => M.nodes.get(a).rank - M.nodes.get(b).rank);
   const zS = M.nodes.get(M.root).z, zg = M.nodes.get(R.gov).z - zS, fric = R.path.reduce((a, s) => a + R.loss.get(s.id).hf, 0);
+  const zgS = n.conv === 'std' ? `${fi(zg)} × 0.101325 ÷ 10.332` : `${fi(zg)} ÷ 100`;
   const steps = [];
-  if (!simple && n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', '기준 방수량 (L/min)'], ['P', '기준 방수압 (MPa)']], sub: `K = ${fx(n.qS)} ÷ √(10 × ${fx(n.Pmin)})`, ans: fx(K) }));
+  if (!simple && n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', '기준 방수량 (L/min)'], ['P', '기준 방수압 (MPa)']], sub: `K = ${fi(n.qS)} ÷ √(10 × ${fi(n.Pmin)})`, ans: fx(K) }));
   const ex = R.path.filter((s) => R.loss.get(s.id).hf > 0).pop();
   const fForm = sq ? 'ΔP = 6 × 10⁴ × Q² ÷ (C² × d⁵) × (L + L<sub>e</sub>)' : 'ΔP = 6.053 × 10⁴ × Q<sup>1.85</sup> ÷ (C<sup>1.85</sup> × d<sup>4.87</sup>) × (L + L<sub>e</sub>)';
   const fSym = [['ΔP', '구간 마찰손실압력 (MPa)'], ['Q', '그 구간에 흐르는 유량 (L/min)'], ['C', '조도계수'], ['d', '배관 안지름 (mm)'], ['L', '직관 길이 (m)'], ['L<sub>e</sub>', '관부속 상당길이 합 (m)']];
   if (ex) {
     const L = R.loss.get(ex.id), Qe = R.Q.get(ex.id);
-    steps.push(step({ t: '마찰손실 식', f: fForm, sym: fSym, sub: `예) ${ex.label}<br>ΔP = ${sq ? `6 × 10⁴ × ${fx(Qe)}² ÷ (${fx(n.C2)}² × ${fx(L.d)}⁵)` : `6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fx(n.C)}<sup>1.85</sup> × ${fx(L.d)}<sup>4.87</sup>)`} × (${fx(ex.L)} + ${fx(L.Le)})`, ans: `${fx(L.hf, 5)} MPa`, note: '구간마다 흐르는 유량이 달라서 구간별로 따로 계산했어요. 아래 표에 구간별 값이 있어요.' }));
+    steps.push(step({ t: '마찰손실 식', f: fForm, sym: fSym, sub: `예) ${ex.label}<br>ΔP = ${sq ? `6 × 10⁴ × ${fx(Qe)}² ÷ (${fx(n.C2)}² × ${fx(L.d)}⁵)` : `6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fx(n.C)}<sup>1.85</sup> × ${fx(L.d)}<sup>4.87</sup>)`} × (${fx(ex.L)} + ${fx(L.Le)})`, ans: `${fx(L.hf)} MPa`, note: '구간마다 흐르는 유량이 달라서 구간별로 따로 계산했어요. 아래 표에 구간별 값이 있어요.' }));
   }
   const pl = R.path.filter((s) => R.loss.get(s.id).hf > 0);
-  steps.push(step({ t: '총 마찰손실압력', f: 'ΔP<sub>T</sub> = ΣΔP', sym: [['ΔP<sub>T</sub>', `시작점에서 헤드 ${no(R.gov)}까지 마찰손실압력 합 (MPa)`], ['ΔP', '구간별 마찰손실압력 (MPa)']], sub: `ΔP<sub>T</sub> = ${pl.length && pl.length <= 10 ? pl.map((s) => fx(R.loss.get(s.id).hf, 4)).join(' + ') : `${pl.length}개 구간의 합`}`, ans: `${fx(fric, 4)} MPa` }));
-  steps.push(step({ t: '낙차', f: 'h = z<sub>헤드</sub> − z<sub>시작점</sub>', sym: [['h', '낙차 (m, 헤드가 높으면 +)'], ['z', '높이 (m)']], sub: `h = ${fx(zg)} m → 압력으로 ${fx(zg)} ÷ ${fx(k)}`, ans: `${fx(zg / k, 4)} MPa` }));
-  if (!start) steps.push(step({ t: '시작점 압력', f: 'P<sub>s</sub> = P<sub>h</sub> + ΔP<sub>T</sub> + h ÷ k', sym: [['P<sub>s</sub>', '시작점에서 필요한 압력 (MPa)'], ['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', `낙차를 압력으로 (1 MPa = ${fx(k)} m)`]], sub: `P<sub>s</sub> = ${fx(n.Pmin)} + ${fx(fric, 4)} + (${fx(zg / k, 4)})`, ans: `${fx(R.Proot, 4)} MPa` }));
-  else steps.push(step({ t: '최말단 방수압', f: 'P<sub>h</sub> = P<sub>s</sub> − ΔP<sub>T</sub> − h ÷ k', sym: [['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['P<sub>s</sub>', '시작점 압력 (MPa)'], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', '낙차를 압력으로 (MPa)']], sub: `P<sub>h</sub> = ${fx(n.Pstart)} − ${fx(fric, 4)} − (${fx(zg / k, 4)})`, ans: `${fx(R.P.get(R.gov), 4)} MPa` }));
+  steps.push(step({ t: '총 마찰손실압력', f: 'ΔP<sub>T</sub> = ΣΔP', sym: [['ΔP<sub>T</sub>', `시작점에서 헤드 ${no(R.gov)}까지 마찰손실압력 합 (MPa)`], ['ΔP', '구간별 마찰손실압력 (MPa)']], sub: `ΔP<sub>T</sub> = 구간 ${pl.length}개 마찰손실압력의 합 (구간별 값은 아래 표, 반올림하지 않고 더했어요)`, ans: `${fx(fric)} MPa` }));
+  steps.push(step({ t: '낙차', f: 'h = z<sub>헤드</sub> − z<sub>시작점</sub>', sym: [['h', '낙차 (m, 헤드가 높으면 +)'], ['z', '높이 (m)']], sub: `h = ${fi(zg)} m → 압력으로 ${zgS}`, ans: `${fx(zg / k)} MPa` }));
+  if (!start) steps.push(step({ t: '시작점 압력', f: 'P<sub>s</sub> = P<sub>h</sub> + ΔP<sub>T</sub> + h ÷ k', sym: [['P<sub>s</sub>', '시작점에서 필요한 압력 (MPa)'], ['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', `낙차를 압력으로 (1 MPa = ${fx(k)} m)`]], sub: `P<sub>s</sub> = ${fi(n.Pmin)} + ΔP<sub>T</sub> + (${zgS})`, ans: `${fx(R.Proot)} MPa`, note: `ΔP<sub>T</sub>는 위 총 마찰손실압력 값(반올림 전)을 그대로 넣었어요.` }));
+  else steps.push(step({ t: '최말단 방수압', f: 'P<sub>h</sub> = P<sub>s</sub> − ΔP<sub>T</sub> − h ÷ k', sym: [['P<sub>h</sub>', `압력이 가장 낮은 헤드(${no(R.gov)}) 방수압 (MPa)`], ['P<sub>s</sub>', '시작점 압력 (MPa)'], ['ΔP<sub>T</sub>', '총 마찰손실압력 (MPa)'], ['h ÷ k', '낙차를 압력으로 (MPa)']], sub: `P<sub>h</sub> = ${fi(n.Pstart)} − ΔP<sub>T</sub> − (${zgS})`, ans: `${fx(R.P.get(R.gov))} MPa`, note: `ΔP<sub>T</sub>는 위 총 마찰손실압력 값(반올림 전)을 그대로 넣었어요.` }));
   if (simple) steps.push(step({ t: '헤드 방수량', sub: `열린 헤드 모두 ${fx(n.qS)} L/min으로 봤어요 (간단 계산)`, ans: `${fx(n.qS)} L/min` }));
-  else steps.push(step({ t: '헤드 방수량', f: 'Q = K × √(10P)', sym: [['Q', '헤드 방수량 (L/min)'], ['K', `방출계수 (${fx(K)})`], ['P', '그 헤드 방수압 (MPa)']], sub: opn.slice(0, 8).map((id) => `${no(id)}: Q = ${fx(K)} × √(10 × ${fx(R.P.get(id), 4)}) = ${fx(R.q.get(id))}`).join('<br>') + (opn.length > 8 ? `<br>나머지 ${opn.length - 8}개는 아래 표에 있어요` : ''), note: start ? '시작점 압력에서 배관을 따라 걸리는 압력을 빼서 헤드마다 방수압을 구했어요.' : `헤드 ${no(R.gov)}가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 헤드는 배관을 따라 걸리는 압력으로 구했어요.` }));
+  else steps.push(step({ t: '헤드 방수량', f: 'Q = K × √(10P)', sym: [['Q', '헤드 방수량 (L/min)'], ['K', `방출계수 (${fx(K)})`], ['P', '그 헤드 방수압 (MPa)']], sub: opn.slice(0, 8).map((id) => `${no(id)}: Q = ${fx(K)} × √(10 × ${fx(R.P.get(id))}) = ${fx(R.q.get(id))}`).join('<br>') + (opn.length > 8 ? `<br>나머지 ${opn.length - 8}개는 아래 표에 있어요` : ''), note: start ? '시작점 압력에서 배관을 따라 걸리는 압력을 빼서 헤드마다 방수압을 구했어요.' : `헤드 ${no(R.gov)}가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 헤드는 배관을 따라 걸리는 압력으로 구했어요.` }));
   steps.push(step({ t: '전체 방수량', f: 'Q<sub>T</sub> = ΣQ', sym: [['Q<sub>T</sub>', '열린 헤드 방수량 합 = 시작점 유량 (L/min)']], sub: `Q<sub>T</sub> = ${opn.length <= 10 ? opn.map((id) => fx(R.q.get(id))).join(' + ') : `${opn.length}개 합`}`, ans: `${fx(R.flow)} L/min` }));
   const fitTxt = (s) => R.loss.get(s.id).parts.map(([t, c]) => `${FR.types[t][0]} ${c}`).join(', ');
-  const segRow = (s) => { const L = R.loss.get(s.id); return [s.label, `${s.size}A${L.d !== s.size ? ` (${fx(L.d)})` : ''}`, fx(R.Q.get(s.id)), fx(s.L), L.Le ? `${fx(L.Le)}<br><small class="muted">${fitTxt(s)}</small>` : '0', fx(L.hf, 4)]; };
+  const segRow = (s) => { const L = R.loss.get(s.id); return [s.label, `${s.size}A${L.d !== s.size ? ` (${fx(L.d)})` : ''}`, fx(R.Q.get(s.id)), fx(s.L), L.Le ? `${fx(L.Le)}<br><small class="muted">${fitTxt(s)}</small>` : '0', fx(L.hf)]; };
   const head = ['구간', '구경 (안지름)', '유량 (L/min)', '직관 (m)', '상당길이 (m)', '마찰손실 (MPa)'];
   const onPath = new Set(R.path.map((s) => s.id)), others = M.segs.filter((s) => !onPath.has(s.id) && R.Q.get(s.id) > 0 && (s.L > 0 || R.loss.get(s.id).Le > 0));
   const neg = opn.filter((id) => R.P.get(id) <= 0);
   const off = Object.keys(FR.types).filter((t) => !n.fitOn[t]).map((t) => FR.types[t][0]);
   const tiles = start
-    ? [{ l: '시작점 압력', v: fx(n.Pstart, 4), u: 'MPa' }, { l: '최말단 방수압', v: fx(R.P.get(R.gov), 4), u: 'MPa', tone: 'key' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }]
-    : [{ l: '시작점 압력', v: fx(R.Proot, 4), u: 'MPa', tone: 'key' }, { l: '최말단 방수압 (기준)', v: fx(n.Pmin, 4), u: 'MPa' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }];
-  tiles.push({ l: '총 마찰손실압력', v: fx(fric, 4), u: 'MPa' }, { l: '낙차', v: fx(zg), u: 'm' }, { l: '전체 방수량', v: fx(R.flow), u: 'L/min', tone: 'key' }, { l: '개방 헤드', v: fx(open.length), u: '개' });
+    ? [{ l: '시작점 압력', v: fx(n.Pstart), u: 'MPa' }, { l: '최말단 방수압', v: fx(R.P.get(R.gov)), u: 'MPa', tone: 'key' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }]
+    : [{ l: '시작점 압력', v: fx(R.Proot), u: 'MPa', tone: 'key' }, { l: '최말단 방수압 (기준)', v: fx(n.Pmin), u: 'MPa' }, { l: '최말단 방수량', v: fx(R.q.get(R.gov)), u: 'L/min' }];
+  tiles.push({ l: '총 마찰손실압력', v: fx(fric), u: 'MPa' }, { l: '낙차', v: fx(zg), u: 'm' }, { l: '전체 방수량', v: fx(R.flow), u: 'L/min', tone: 'key' }, { l: '개방 헤드', v: fx(open.length), u: '개' });
   return [{
     title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(K)}`,
     tiles,
@@ -3716,8 +3757,8 @@ function netCardPT(v) {
       '도면에서 배관이나 헤드를 누르면 길이·구경·관부속과 열린 헤드를 고칠 수 있어요.',
     ],
     steps,
-    extra: `<div><h4 class="sub-h">헤드별 방수압·방수량 (①이 가장 먼 헤드)</h4>${table(['헤드', '방수압 (MPa)', '방수량 (L/min)'], opn.map((id) => [no(id) + (id === R.gov ? ' · 방수압 최저' : ''), fx(R.P.get(id), 4), fx(R.q.get(id))]))}</div>
-      <div><h4 class="sub-h">시작점 → 헤드 ${no(R.gov)} 구간</h4>${table(head, [...R.path.filter((s) => s.L > 0 || R.loss.get(s.id).Le > 0).map(segRow), ['합계', '', '', '', '', `<b>${fx(fric, 4)}</b>`]])}</div>
+    extra: `<div><h4 class="sub-h">헤드별 방수압·방수량 (①이 가장 먼 헤드)</h4>${table(['헤드', '방수압 (MPa)', '방수량 (L/min)'], opn.map((id) => [no(id) + (id === R.gov ? ' · 방수압 최저' : ''), fx(R.P.get(id)), fx(R.q.get(id))]))}</div>
+      <div><h4 class="sub-h">시작점 → 헤드 ${no(R.gov)} 구간</h4>${table(head, [...R.path.filter((s) => s.L > 0 || R.loss.get(s.id).Le > 0).map(segRow), ['합계', '', '', '', '', `<b>${fx(fric)}</b>`]])}</div>
       ${others.length ? `<details class="more"><summary>나머지 구간 ${others.length}개</summary>${table(head, others.map(segRow))}</details>` : ''}`,
   }];
 }
@@ -3870,7 +3911,9 @@ function netCard(v, kind, ctx) {
   const title = '배관 수리계산 (도면)', u = kind === 'sp' ? '헤드' : '노즐';
   const btn = `<p class="net-open"><button type="button" class="btn-act" data-act="net">도면 열어서 고치기</button></p>`;
   if (X.err) return { title, error: X.err, extraTop: btn };
-  const pw = power(R.flow, R.H, v[ctx.pre + '_eta'], v[ctx.pre + '_k']);
+  const h3S = n.conv === 'std' ? `${fi(n.Pmin)} × 10.332 ÷ 0.101325` : `${fi(n.Pmin)} × 100`;
+  const HS = `${pa(`${fi(R.zg)} − (${fi(R.zw)})`)} + h₂ + (${h3S})`;
+  const pw = power(R.flow, R.H, v[ctx.pre + '_eta'], v[ctx.pre + '_k'], undefined, HS);
   const k = R.k, simple = n.mode === 'simple';
   const no = new Map(open.map((id, i) => [id, i + 1]));
   const name = (id) => `${M.nodes.get(id).label}`;
@@ -3880,13 +3923,13 @@ function netCard(v, kind, ctx) {
   if (simple) steps.push(step({ t: '헤드 방수량', sub: `열린 ${u} 모두 같은 방수량으로 봤어요 (간단 계산)`, ans: `${fx(n.qS)} L/min` }));
   else {
     const show = open.slice(0, 6), K = netK(n);
-    if (n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', `기준 방수량 (L/min)`], ['P', '최소 방수압 (MPa)']], sub: `K = ${fx(n.qS)} ÷ √(10 × ${fx(n.Pmin)})`, ans: fx(K) }));
-    else if (n.kMode === 'd') steps.push(step({ t: '방출계수 K', f: 'K = 0.653 × d²', sym: [['K', '방출계수'], ['0.653', '0.6597 × 유량계수 0.99'], ['d', '노즐 구경 (mm)']], sub: `K = 0.653 × ${fx(n.nozD)}²`, ans: fx(K) }));
+    if (n.kMode === 'qp') steps.push(step({ t: '방출계수 K', f: 'K = Q ÷ √(10P)', sym: [['K', '방출계수'], ['Q', `기준 방수량 (L/min)`], ['P', '최소 방수압 (MPa)']], sub: `K = ${fi(n.qS)} ÷ √(10 × ${fi(n.Pmin)})`, ans: fx(K) }));
+    else if (n.kMode === 'd') steps.push(step({ t: '방출계수 K', f: 'K = 0.653 × d²', sym: [['K', '방출계수'], ['0.653', '0.6597 × 유량계수 0.99'], ['d', '노즐 구경 (mm)']], sub: `K = 0.653 × ${fi(n.nozD)}²`, ans: fx(K) }));
     else steps.push(step({ t: '방출계수 K', sub: '직접 넣은 값', ans: fx(K) }));
     steps.push(step({
       t: '헤드 방수량', f: 'Q = K × √(10P)',
       sym: [['Q', `${u} 방수량 (L/min)`], ['K', `방출계수 (${fx(K)})`], ['P', `${u} 방수압 (MPa)`]],
-      sub: show.map((id) => `${no.get(id)}번 (${name(id)}): Q = ${fx(K)} × √(10 × ${fx(R.P.get(id), 4)}) = ${fx(R.q.get(id))}`).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
+      sub: show.map((id) => `${no.get(id)}번 (${name(id)}): Q = ${fx(K)} × √(10 × ${fx(R.P.get(id))}) = ${fx(R.q.get(id))}`).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
       note: `압력이 가장 낮은 ${u}(${name(R.gov)})가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 ${u}는 배관을 따라 걸리는 압력으로 방수량을 구했어요.`,
     }));
   }
@@ -3898,26 +3941,26 @@ function netCard(v, kind, ctx) {
     steps.push(step({
       t: '하젠-윌리엄스 식', f: 'ΔP = 6.053 × 10⁴ × Q<sup>1.85</sup> ÷ (C<sup>1.85</sup> × d<sup>4.87</sup>) × (L + L<sub>e</sub>)',
       sym: [['ΔP', '마찰손실 압력 (MPa)'], ['Q', '그 구간 유량 (L/min)'], ['C', '조도계수'], ['d', '배관 안지름 (mm)'], ['L', '직관 길이 (m)'], ['L<sub>e</sub>', '관부속 상당길이 합 (m)']],
-      sub: `예) ${ex.label}<br>ΔP = 6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fx(n.C)}<sup>1.85</sup> × ${fx(L.d)}<sup>4.87</sup>) × (${fx(ex.L)} + ${fx(L.Le)}) = ${fx(L.hf, 5)} MPa<br>수두로: ${fx(L.hf, 5)} × ${fx(k)}`,
-      ans: `${fx(L.hm, 3)} m`, note: '다른 구간도 같은 식으로 구했어요. 구간별 값은 아래 표에 있어요.',
+      sub: `예) ${ex.label}<br>ΔP = 6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fi(n.C)}<sup>1.85</sup> × ${fi(L.d)}<sup>4.87</sup>) × (${fi(ex.L)} + ${fi(L.Le)})<br>수두로: 6.053 × 10⁴ × ${fx(Qe)}<sup>1.85</sup> ÷ (${fi(n.C)}<sup>1.85</sup> × ${fi(L.d)}<sup>4.87</sup>) × (${fi(ex.L)} + ${fi(L.Le)}) × ${n.conv === 'std' ? '10.332 ÷ 0.101325' : '100'}`,
+      ans: `${fx(L.hm)} m`, note: '다른 구간도 같은 식으로 구했어요. 구간별 값은 아래 표에 있어요.',
     }));
   }
   const parts = R.path.filter((s) => R.loss.get(s.id).hm > 0);
   steps.push(step({
     t: '마찰손실 h₂', f: 'h₂ = Σh<sub>f</sub>' + (n0(n.sucLoss) > 0 ? ' + h<sub>s</sub>' : ''),
     sym: [['h₂', '마찰손실양정 (m)'], ['h<sub>f</sub>', `펌프에서 최말단 ${u}까지 구간별 마찰손실수두 (m)${kind === 'in' && n.hoseOn ? ', 호스 포함' : ''}`], ...(n0(n.sucLoss) > 0 ? [['h<sub>s</sub>', '흡입측 마찰손실 (m)']] : [])],
-    sub: `h₂ = ${parts.length && parts.length <= 10 ? parts.map((s) => fx(R.loss.get(s.id).hm, 3)).join(' + ') : `${parts.length}개 구간의 합 ${fx(R.h2pipe, 3)}`}${n0(n.sucLoss) > 0 ? ` + ${fx(n.sucLoss)}` : ''}`, ans: `${fx(R.h2)} m`,
+    sub: `h₂ = 구간 ${parts.length}개 마찰손실수두의 합 (구간별 값은 아래 표, 반올림하지 않고 더했어요)${n0(n.sucLoss) > 0 ? ` + ${fi(n.sucLoss)}` : ''}`, ans: `${fx(R.h2)} m`,
   }));
-  steps.push(step({ t: '실양정 h₁', f: 'h₁ = z<sub>h</sub> − z<sub>w</sub>', sym: [['h₁', '실양정 (m)'], ['z<sub>h</sub>', `최말단 ${u} 높이 (펌프 = 0, m)`], ['z<sub>w</sub>', n.tankOn ? '수조 수면 높이 (펌프 = 0, 아래면 −, m)' : '물을 빨아들이는 높이 = 펌프 (0 m)']], sub: `h₁ = ${fx(R.zg)} − (${fx(R.zw)})`, ans: `${fx(R.h1)} m` }));
-  steps.push(step({ t: '방사압 환산수두 h₃', f: 'h₃ = P × k', sym: [['h₃', '최말단 방사압 환산수두 (m)'], ['P', `최말단 ${u} 방수압 (MPa)`], ['k', n.conv === 'std' ? `1 MPa = ${fx(k)} m (표준대기압 0.101325 MPa = 10.332 m)` : '1 MPa = 100 m (간략)']], sub: `h₃ = ${fx(n.Pmin)} × ${fx(k)}`, ans: `${fx(R.h3)} m` }));
-  steps.push(step({ t: '전양정', f: 'H = h₁ + h₂ + h₃', sym: [['H', '전양정 (m)'], ['h₁', '실양정 (m)'], ['h₂', '마찰손실양정 (m)'], ['h₃', '방사압 환산수두 (m)']], sub: `H = ${fx(R.h1)} + ${fx(R.h2)} + ${fx(R.h3)}`, ans: `${fx(R.H)} m` }));
+  steps.push(step({ t: '실양정 h₁', f: 'h₁ = z<sub>h</sub> − z<sub>w</sub>', sym: [['h₁', '실양정 (m)'], ['z<sub>h</sub>', `최말단 ${u} 높이 (펌프 = 0, m)`], ['z<sub>w</sub>', n.tankOn ? '수조 수면 높이 (펌프 = 0, 아래면 −, m)' : '물을 빨아들이는 높이 = 펌프 (0 m)']], sub: `h₁ = ${fi(R.zg)} − (${fi(R.zw)})`, ans: `${fx(R.h1)} m` }));
+  steps.push(step({ t: '방사압 환산수두 h₃', f: 'h₃ = P × k', sym: [['h₃', '최말단 방사압 환산수두 (m)'], ['P', `최말단 ${u} 방수압 (MPa)`], ['k', n.conv === 'std' ? `1 MPa = ${fx(k)} m (표준대기압 0.101325 MPa = 10.332 m)` : '1 MPa = 100 m (간략)']], sub: `h₃ = ${h3S}`, ans: `${fx(R.h3)} m` }));
+  steps.push(step({ t: '전양정', f: 'H = h₁ + h₂ + h₃', sym: [['H', '전양정 (m)'], ['h₁', '실양정 (m)'], ['h₂', '마찰손실양정 (m)'], ['h₃', '방사압 환산수두 (m)']], sub: `H = ${HS}`, ans: `${fx(R.H)} m`, note: 'h₂는 위 마찰손실 값(반올림 전)을 그대로 넣었어요.' }));
   steps.push(...pw.steps);
 
   const fitTxt = (s) => R.loss.get(s.id).parts.map(([t, c]) => `${FR.types[t][0]} ${c}`).join(', ');
   const segRow = (s) => {
     const L = R.loss.get(s.id), Q = R.Q.get(s.id);
-    if (s.hose) return [s.label, '호스', fx(Q), '-', fx(n.hoseLen), '-', fx(L.hm, 3)];
-    return [s.label, `φ${s.size}`, fx(Q), fx(L.vel), fx(s.L), L.Le ? `${fx(L.Le)}<br><small class="muted">${fitTxt(s)}</small>` : '0', fx(L.hm, 3)];
+    if (s.hose) return [s.label, '호스', fx(Q), '-', fx(n.hoseLen), '-', fx(L.hm)];
+    return [s.label, `φ${s.size}`, fx(Q), fx(L.vel), fx(s.L), L.Le ? `${fx(L.Le)}<br><small class="muted">${fitTxt(s)}</small>` : '0', fx(L.hm)];
   };
   const head = ['구간', '구경', '유량 (L/min)', '유속 (m/s)', '직관 (m)', '상당길이 (m)', '마찰손실 (m)'];
   const onPath = new Set(R.path.map((s) => s.id));
@@ -3938,7 +3981,7 @@ function netCard(v, kind, ctx) {
     title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(netK(n))}`,
     tiles: [
       ...pumpTiles(R.flow, { H: R.H, ...pw }),
-      { l: '펌프 토출압력', v: fx(R.Proot, 3), u: 'MPa' },
+      { l: '펌프 토출압력', v: fx(R.Proot), u: 'MPa' },
       { l: '실양정 h₁', v: fx(R.h1), u: 'm' }, { l: '마찰손실 h₂', v: fx(R.h2), u: 'm' }, { l: '방사압 환산수두 h₃', v: fx(R.h3), u: 'm' },
       { l: kind === 'sp' ? '개방 헤드' : '개방 노즐', v: fx(open.length), u: '개' },
     ],
@@ -3949,8 +3992,8 @@ function netCard(v, kind, ctx) {
       '관부속 상당길이는 흔히 쓰는 표 값을 기본으로 넣었어요. 문제에 값이 주어지면 도면 화면의 마찰손실 설정에서 고쳐 쓰세요.',
     ],
     steps,
-    extra: `<div><h4 class="sub-h">열린 ${u} (1번이 펌프에서 가장 먼 ${u}${kind === 'sp' ? ', 이름은 행-열' : ''})</h4>${table(['번호', u, '방수압 (MPa)', '방수량 (L/min)'], open.map((id) => [no.get(id), name(id) + (id === R.gov ? ' · 압력 최저' : ''), fx(R.P.get(id), 4), fx(R.q.get(id))]))}</div>
-      <div><h4 class="sub-h">펌프 → 압력이 가장 낮은 ${u}까지 구간</h4>${table(head, [...R.path.filter(shown).map(segRow), ['합계', '', '', '', '', '', `<b>${fx(R.h2pipe, 3)}</b>`]])}</div>
+    extra: `<div><h4 class="sub-h">열린 ${u} (1번이 펌프에서 가장 먼 ${u}${kind === 'sp' ? ', 이름은 행-열' : ''})</h4>${table(['번호', u, '방수압 (MPa)', '방수량 (L/min)'], open.map((id) => [no.get(id), name(id) + (id === R.gov ? ' · 압력 최저' : ''), fx(R.P.get(id)), fx(R.q.get(id))]))}</div>
+      <div><h4 class="sub-h">펌프 → 압력이 가장 낮은 ${u}까지 구간</h4>${table(head, [...R.path.filter(shown).map(segRow), ['합계', '', '', '', '', '', `<b>${fx(R.h2pipe)}</b>`]])}</div>
       ${others.length ? `<details class="more"><summary>나머지 구간 ${others.length}개</summary>${table(head, others.map(segRow))}</details>` : ''}`,
   };
 }
@@ -3993,7 +4036,7 @@ function netSvgIN(M, R, n, open, o) {
     out += `<circle class="nt-h${on ? ' on' : ''}${sel.t === 'head' && sel.id === id ? ' sel' : ''}" cx="${cx}" cy="${cy}" r="6"/>`;
     if (gov) out += `<circle class="nt-gov" cx="${cx}" cy="${cy}" r="10"/>`;
     if (on) labels += `<text class="nt-no" x="${cx + 9}" y="${cy - 7}">${no.get(id)}</text>`;
-    if (o.edit) hits += `<circle class="nt-hhit" data-head="${id}" cx="${cx}" cy="${cy}" r="13"><title>${h.label} 노즐${on && R ? ` · ${fx(R.P.get(id), 3)} MPa · ${fx(R.q.get(id))} L/min` : ' · 닫힘'}</title></circle>`;
+    if (o.edit) hits += `<circle class="nt-hhit" data-head="${id}" cx="${cx}" cy="${cy}" r="13"><title>${h.label} 노즐${on && R ? ` · ${fx(R.P.get(id))} MPa · ${fx(R.q.get(id))} L/min` : ' · 닫힘'}</title></circle>`;
   });
   const py = Y(g.pz);
   out += `<circle class="nt-pump" cx="${pX}" cy="${py}" r="13"/><text class="nt-pt" x="${pX}" y="${py + 4}" text-anchor="middle">P</text>`;
@@ -4076,16 +4119,16 @@ function ntSum(X) {
   if (X.M.kind === 'pt') {
     const R = X.R, start = X.n.basis === 'start', fr = R.path.reduce((a, s) => a + R.loss.get(s.id).hf, 0);
     return `<div class="pl-sum">
-    <div class="pl-tot"><span>${start ? '최말단 방수압' : '시작점 압력'}</span><b>${fx(start ? R.P.get(R.gov) : R.Proot, 4)}<small>MPa</small></b></div>
+    <div class="pl-tot"><span>${start ? '최말단 방수압' : '시작점 압력'}</span><b>${fx(start ? R.P.get(R.gov) : R.Proot)}<small>MPa</small></b></div>
     <div class="pl-tot"><span>전체 방수량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
-    <p class="pl-note">총 마찰손실압력 ${fx(fr, 4)} MPa · 낙차 ${fx(X.M.nodes.get(R.gov).z - X.M.nodes.get(X.M.root).z)} m · 열린 헤드 ${X.open.length}개 · 방수압이 가장 낮은 헤드: ${X.M.nodes.get(R.gov).label}</p>
+    <p class="pl-note">총 마찰손실압력 ${fx(fr)} MPa · 낙차 ${fx(X.M.nodes.get(R.gov).z - X.M.nodes.get(X.M.root).z)} m · 열린 헤드 ${X.open.length}개 · 방수압이 가장 낮은 헤드: ${X.M.nodes.get(R.gov).label}</p>
   </div>`;
   }
   const R = X.R, u = X.M.kind === 'sp' ? '헤드' : '노즐';
   return `<div class="pl-sum">
     <div class="pl-tot"><span>펌프 토출량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
     <div class="pl-tot"><span>전양정</span><b>${fx(R.H)}<small>m</small></b></div>
-    <p class="pl-note">h₁ ${fx(R.h1)} + h₂ ${fx(R.h2)} + h₃ ${fx(R.h3)} m · 펌프 토출압력 ${fx(R.Proot, 3)} MPa · 열린 ${u} ${X.open.length}개 · 압력이 가장 낮은 ${u}: ${X.M.nodes.get(R.gov).label}</p>
+    <p class="pl-note">h₁ ${fx(R.h1)} + h₂ ${fx(R.h2)} + h₃ ${fx(R.h3)} m · 펌프 토출압력 ${fx(R.Proot)} MPa · 열린 ${u} ${X.open.length}개 · 압력이 가장 낮은 ${u}: ${X.M.nodes.get(R.gov).label}</p>
   </div>`;
 }
 function ntTools(X) {
@@ -4128,10 +4171,10 @@ function ntStat(X) {
   const s = ntEditSeg(X);
   if (!s) return '';
   const L = X.R.loss.get(s.id), Q = X.R.Q.get(s.id);
-  let t = `유량 ${fx(Q)} L/min${s.hose ? '' : ` · 유속 ${fx(L.vel)} m/s · 상당길이 ${fx(L.Le)} m`} · 마찰손실 ${fx(L.hm, 3)} m`;
+  let t = `유량 ${fx(Q)} L/min${s.hose ? '' : ` · 유속 ${fx(L.vel)} m/s · 상당길이 ${fx(L.Le)} m`} · 마찰손실 ${fx(L.hm)} m`;
   if (NET.sel.t === 'head') {
     const id = NET.sel.id;
-    t = (X.open.includes(id) ? `<b>방수압 ${fx(X.R.P.get(id), 4)} MPa · 방수량 ${fx(X.R.q.get(id))} L/min</b>` : '닫혀 있어요') + '<br>' + t;
+    t = (X.open.includes(id) ? `<b>방수압 ${fx(X.R.P.get(id))} MPa · 방수량 ${fx(X.R.q.get(id))} L/min</b>` : '닫혀 있어요') + '<br>' + t;
   }
   return t;
 }
@@ -4294,6 +4337,7 @@ function lkGraph(lk) {
 }
 const lkSolve = (lk) => lkSolveG(lkGraph(lk));
 // 합성 누설틈새면적: 병렬은 더하고, 직렬은 1 ÷ √(1/A₁² + 1/A₂²). 직렬·병렬로 안 풀리면 압력 균형으로 풀어요
+const r5 = (x) => Math.round(x * 1e5) / 1e5;
 function lkSolveG(lk) {
   const src = lk.rooms.find((r) => r.kind === 'src'), snk = lk.rooms.find((r) => r.kind === 'sink');
   if (!src) return { err: '제연구역(가압하는 실)을 하나 정해 주세요. 실을 누르고 "이 실은"에서 고르면 돼요.' };
@@ -4301,7 +4345,7 @@ function lkSolveG(lk) {
   const notes = [];
   lk.doors.filter((d) => d.a === d.b).forEach((d) => notes.push(`${esc(d.label)}${josa(d.label, '은', '는')} 양쪽이 같은 실(${esc(nm[d.a])})이라 뺐어요. 실과 실 사이 벽에 놓아 주세요.`));
   // 창문은 따로 더해요 (Q = 0.827 × A × P^(1/1.6)). 직렬·병렬은 출입문끼리
-  const wins = lk.doors.filter((d) => isWin(d) && d.a !== d.b && lkArea(d) > 0), Aw = wins.reduce((a, d) => a + lkArea(d), 0);
+  const wins = lk.doors.filter((d) => isWin(d) && d.a !== d.b && lkArea(d) > 0), Aw = r5(wins.reduce((a, d) => a + lkArea(d), 0));
   let E = lk.doors.filter((d) => !isWin(d) && d.a !== d.b && nm[d.a] && nm[d.b] && lkArea(d) > 0).map((d) => ({ a: d.a, b: d.b, A: lkArea(d), name: d.label }));
   // 제연구역과 이어진 것만
   const reach = (from) => { const seen = new Set([from]), st = [from]; while (st.length) { const u = st.pop(); E.forEach((e) => { const w = e.a === u ? e.b : e.b === u ? e.a : null; if (w && !seen.has(w)) { seen.add(w); st.push(w); } }); } return seen; };
@@ -4327,7 +4371,7 @@ function lkSolveG(lk) {
     E.forEach((e) => { (groups[pair(e)] = groups[pair(e)] || []).push(e); });
     const g = Object.values(groups).find((x) => x.length >= 2);
     if (g) {
-      const A = g.reduce((s2, e) => s2 + e.A, 0), name = `합성 ${++cn}`;
+      const A = r5(g.reduce((s2, e) => s2 + e.A, 0)), name = `합성 ${++cn}`;
       steps.push({ t: `${g.map((e) => e.name).join(', ')} 병렬 (${nm[g[0].a]} ↔ ${nm[g[0].b]})`, f: 'A = A₁ + A₂ + …', sub: `${name} = ${g.map((e) => fa(e.A)).join(' + ')}`, ans: `${fa(A)} ㎡` });
       E = E.filter((e) => !g.includes(e)); E.push({ a: g[0].a, b: g[0].b, A, name });
       continue;
@@ -4337,7 +4381,7 @@ function lkSolveG(lk) {
     if (mid) {
       const [e1, e2] = E.filter((e) => e.a === mid || e.b === mid);
       const o1 = e1.a === mid ? e1.b : e1.a, o2 = e2.a === mid ? e2.b : e2.a;
-      const A = 1 / Math.sqrt(1 / e1.A ** 2 + 1 / e2.A ** 2), name = `합성 ${++cn}`;
+      const A = r5(1 / Math.sqrt(1 / e1.A ** 2 + 1 / e2.A ** 2)), name = `합성 ${++cn}`;
       steps.push({ t: `${e1.name}, ${e2.name} 직렬 (${nm[mid]}${josa(nm[mid], '을', '를')} 거쳐서)`, f: 'A = 1 ÷ √(1/A₁² + 1/A₂²)', sub: `${name} = 1 ÷ √(1/${fa(e1.A)}² + 1/${fa(e2.A)}²)`, ans: `${fa(A)} ㎡` });
       E = E.filter((e) => e !== e1 && e !== e2);
       if (o1 !== o2) E.push({ a: o1, b: o2, A, name });
@@ -4358,7 +4402,8 @@ function lkSolveG(lk) {
     });
     if (dmax < 1e-12) break;
   }
-  const A = E.filter((e) => e.a === src.id || e.b === src.id).reduce((s2, e) => s2 + e.A * Math.sqrt(Math.max(0, p[src.id] - p[e.a === src.id ? e.b : e.a])), 0);
+  let A = E.filter((e) => e.a === src.id || e.b === src.id).reduce((s2, e) => s2 + e.A * Math.sqrt(Math.max(0, p[src.id] - p[e.a === src.id ? e.b : e.a])), 0);
+  A = r5(A);
   steps.push({ t: '남은 연결 (직렬·병렬로 안 나뉨)', sub: '실마다 들어오고 나가는 공기량이 같아지는 압력을 찾아서, 제연구역에서 나가는 공기량으로 구했어요 (Q = 0.827 × A × √ΔP)', ans: `${fa(A)} ㎡` });
   return { A, Aw, wins, steps, notes, method: 'net', src, snk };
 }
@@ -4380,7 +4425,7 @@ function lkBounds(lk) {
 }
 function lkDoorSVG(d, o = {}) {
   const U = LKU, X = d.x * U, Y = d.y * U, v = d.o === 'v', hw = v ? 6 : 17, hh = v ? 17 : 6, w = isWin(d);
-  const lab = `${esc(d.label)}${w ? ' 창문' : ''}`, ar = `${fx(lkArea(d), 4)}㎡`;
+  const lab = `${esc(d.label)}${w ? ' 창문' : ''}`, ar = `${fx(lkArea(d))}㎡`;
   const txt = v
     ? `<text class="lk-dt" x="${X - 11}" y="${Y - 2}" text-anchor="end">${lab}</text><text class="lk-da" x="${X - 11}" y="${Y + 12}" text-anchor="end">${ar}</text>`
     : `<text class="lk-dt" x="${X}" y="${Y - 23}" text-anchor="middle">${lab}</text><text class="lk-da" x="${X}" y="${Y - 10}" text-anchor="middle">${ar}</text>`;
@@ -4437,8 +4482,8 @@ function calcPress(v) {
       warns: Fp < 0 ? ['문 여는 힘이 도어클로저 힘보다 작아서 차압이 음수예요. 값을 확인해 주세요.'] : [],
       notes: [`기준: 제연구역과 옥내 사이 최소 차압은 ${c.dP} Pa 이상 (옥내에 스프링클러설비가 있으면 ${c.dPsp} Pa 이상), 문 여는 힘은 ${c.force} N 이하`],
       steps: [
-        step({ t: '힘 차이 (F − F_dc)', f: 'F<sub>p</sub> = F − F<sub>dc</sub>', sym: [['F<sub>p</sub>', '차압 때문에 더 드는 힘 (N)'], ['F', '문을 여는 데 필요한 힘 (N)'], ['F<sub>dc</sub>', '도어클로저 힘 (N)']], sub: `F<sub>p</sub> = ${fx(F)} − ${fx(Fdc)}`, ans: `${fx(Fp)} N` }),
-        step({ t: '차압 ΔP', f: 'ΔP = F<sub>p</sub> × 2 × (W − d) ÷ (K<sub>d</sub> × W × A)', sym: [['ΔP', '차압 (Pa)'], ['F<sub>p</sub>', '힘 차이 F − F<sub>dc</sub> (N)'], ...symDoor], sub: `ΔP = ${fx(Fp)} × 2 × (${fx(W)} − ${fx(d)}) ÷ (1 × ${fx(W)} × ${fx(Ad)})`, ans: `${fx(dP)} Pa` }),
+        step({ t: '힘 차이 (F − F_dc)', f: 'F<sub>p</sub> = F − F<sub>dc</sub>', sym: [['F<sub>p</sub>', '차압 때문에 더 드는 힘 (N)'], ['F', '문을 여는 데 필요한 힘 (N)'], ['F<sub>dc</sub>', '도어클로저 힘 (N)']], sub: `F<sub>p</sub> = ${fi(F)} − ${fi(Fdc)}`, ans: `${fx(Fp)} N` }),
+        step({ t: '차압 ΔP', f: 'ΔP = F<sub>p</sub> × 2 × (W − d) ÷ (K<sub>d</sub> × W × A)', sym: [['ΔP', '차압 (Pa)'], ['F<sub>p</sub>', '힘 차이 F − F<sub>dc</sub> (N)'], ...symDoor], sub: `ΔP = (${fi(F)} − ${fi(Fdc)}) × 2 × (${fi(W)} − ${fi(d)}) ÷ (1 × ${fi(W)} × ${fi(Ad)})`, ans: `${fx(dP)} Pa` }),
       ],
     });
     return { cards };
@@ -4452,8 +4497,8 @@ function calcPress(v) {
       tiles: [{ l: '개방력', v: fx(F), u: 'N', tone: 'key' }, { l: '차압으로 생기는 힘', v: fx(Fp), u: 'N' }, { l: '도어클로저 힘', v: fx(Fdc), u: 'N' }],
       warns: F > c.force ? [`개방력이 ${c.force} N을 넘어요. 차압이나 도어클로저 힘을 줄여야 해요.`] : [],
       steps: [
-        step({ t: '차압으로 생기는 힘', f: 'F<sub>p</sub> = K<sub>d</sub> × W × A × ΔP ÷ (2 × (W − d))', sym: [['F<sub>p</sub>', '차압 때문에 문을 열 때 더 드는 힘 (N)'], ...symDoor, ['ΔP', '차압 (Pa)']], sub: `F<sub>p</sub> = 1 × ${fx(W)} × ${fx(Ad)} × ${fx(dP)} ÷ (2 × (${fx(W)} − ${fx(d)}))`, ans: `${fx(Fp)} N` }),
-        step({ t: '개방력', f: 'F = F<sub>dc</sub> + F<sub>p</sub>', sym: [['F', '문을 여는 데 필요한 힘 (N)'], ['F<sub>dc</sub>', '도어클로저 힘 (N)'], ['F<sub>p</sub>', '차압으로 생기는 힘 (N)']], sub: `F = ${fx(Fdc)} + ${fx(Fp)}`, ans: `${fx(F)} N`, note: `기준: 제연설비가 작동할 때 출입문 개방에 필요한 힘은 ${c.force} N 이하` }),
+        step({ t: '차압으로 생기는 힘', f: 'F<sub>p</sub> = K<sub>d</sub> × W × A × ΔP ÷ (2 × (W − d))', sym: [['F<sub>p</sub>', '차압 때문에 문을 열 때 더 드는 힘 (N)'], ...symDoor, ['ΔP', '차압 (Pa)']], sub: `F<sub>p</sub> = 1 × ${fi(W)} × ${fi(Ad)} × ${fi(dP)} ÷ (2 × (${fi(W)} − ${fi(d)}))`, ans: `${fx(Fp)} N` }),
+        step({ t: '개방력', f: 'F = F<sub>dc</sub> + F<sub>p</sub>', sym: [['F', '문을 여는 데 필요한 힘 (N)'], ['F<sub>dc</sub>', '도어클로저 힘 (N)'], ['F<sub>p</sub>', '차압으로 생기는 힘 (N)']], sub: `F = ${fi(Fdc)} + 1 × ${fi(W)} × ${fi(Ad)} × ${fi(dP)} ÷ (2 × (${fi(W)} − ${fi(d)}))`, ans: `${fx(F)} N`, note: `기준: 제연설비가 작동할 때 출입문 개방에 필요한 힘은 ${c.force} N 이하` }),
       ],
     });
     return { cards };
@@ -4469,18 +4514,19 @@ function calcPress(v) {
   if (r.Aw > 0) steps.push(step({ t: '창문 틈새면적', f: 'A<sub>w</sub> = ΣA', sym: [['A<sub>w</sub>', '창문 틈새면적 합 (㎡)']], sub: `A<sub>w</sub> = ${r.wins.map((x) => fa(lkArea(x))).join(' + ')}`, ans: `${fa(r.Aw)} ㎡` }));
   const dP = n0(v.ps_dP), N = Math.max(1, Math.round(n0(v.ps_N)) || 1);
   const q1 = c.c * r.A * Math.sqrt(dP) * N, q2 = r.Aw > 0 ? c.c * r.Aw * Math.pow(dP, 1 / c.winN) * N : 0, Q = q1 + q2;
+  const q1S = `0.827 × ${fa(r.A)} × √${fi(dP)} × ${N}`, q2S = `0.827 × ${fa(r.Aw)} × ${fi(dP)}<sup>1/${c.winN}</sup> × ${N}`, QS = r.Aw > 0 ? `${q1S} + ${q2S}` : q1S;
   const symN = [['P', '차압 (Pa)'], ['N', '제연구역 수 (층)']];
-  steps.push(step({ t: r.Aw > 0 ? '누설량 (출입문)' : '누설량', f: 'Q = 0.827 × A × √P × N', sym: [['Q', '누설량 (㎥/s)'], ['0.827', '유량계수 0.64 × √(2 ÷ 공기 밀도 1.2)'], ['A', '합성 누설틈새면적 (㎡)'], ...symN], sub: `Q = 0.827 × ${fa(r.A)} × √${fx(dP)} × ${N}`, ans: `${fx(q1, 4)} ㎥/s` }));
+  steps.push(step({ t: r.Aw > 0 ? '누설량 (출입문)' : '누설량', f: 'Q = 0.827 × A × √P × N', sym: [['Q', '누설량 (㎥/s)'], ['0.827', '유량계수 0.64 × √(2 ÷ 공기 밀도 1.2)'], ['A', '합성 누설틈새면적 (㎡)'], ...symN], sub: `Q = ${q1S}`, ans: `${fx(q1)} ㎥/s` }));
   if (r.Aw > 0) {
-    steps.push(step({ t: '누설량 (창문)', f: `Q = 0.827 × A<sub>w</sub> × P<sup>1/${c.winN}</sup> × N`, sym: [['Q', '창문 누설량 (㎥/s)'], ['A<sub>w</sub>', '창문 틈새면적 (㎡)'], ...symN], sub: `Q = 0.827 × ${fa(r.Aw)} × ${fx(dP)}<sup>1/${c.winN}</sup> × ${N}`, ans: `${fx(q2, 4)} ㎥/s` }));
-    steps.push(step({ t: '누설량', f: 'Q = Q<sub>문</sub> + Q<sub>창</sub>', sym: [['Q', '누설량 합계 (㎥/s)']], sub: `Q = ${fx(q1, 4)} + ${fx(q2, 4)}`, ans: `${fx(Q, 4)} ㎥/s` }));
+    steps.push(step({ t: '누설량 (창문)', f: `Q = 0.827 × A<sub>w</sub> × P<sup>1/${c.winN}</sup> × N`, sym: [['Q', '창문 누설량 (㎥/s)'], ['A<sub>w</sub>', '창문 틈새면적 (㎡)'], ...symN], sub: `Q = ${q2S}`, ans: `${fx(q2)} ㎥/s` }));
+    steps.push(step({ t: '누설량', f: 'Q = Q<sub>문</sub> + Q<sub>창</sub>', sym: [['Q', '누설량 합계 (㎥/s)']], sub: `Q = ${QS}`, ans: `${fx(Q)} ㎥/s` }));
   }
-  steps.push(step({ t: '누설량 (분당)', sub: `${fx(Q, 4)} × 60`, ans: `${fx(Q * 60)} ㎥/min` }), step({ t: '누설량 (시간당)', sub: `${fx(Q, 4)} × 3600`, ans: `${fx(Q * 3600)} ㎥/h` }));
+  steps.push(step({ t: '누설량 (분당)', sub: `${pa(QS)} × 60`, ans: `${fx(Q * 60)} ㎥/min` }), step({ t: '누설량 (시간당)', sub: `${pa(QS)} × 3600`, ans: `${fx(Q * 3600)} ㎥/h` }));
   cards.push({
     title, badge: r.method === 'sp' ? '직렬·병렬' : '압력 균형', top: fig,
     tiles: [
       { l: '합성 누설틈새면적', v: fa(r.A), u: '㎡', tone: 'key' }, ...(r.Aw > 0 ? [{ l: '창문 틈새면적', v: fa(r.Aw), u: '㎡' }] : []),
-      { l: '누설량', v: fx(Q, 4), u: '㎥/s', tone: 'key' }, ...(r.Aw > 0 ? [{ l: '누설량 (출입문)', v: fx(q1, 4), u: '㎥/s' }, { l: '누설량 (창문)', v: fx(q2, 4), u: '㎥/s' }] : []),
+      { l: '누설량', v: fx(Q), u: '㎥/s', tone: 'key' }, ...(r.Aw > 0 ? [{ l: '누설량 (출입문)', v: fx(q1), u: '㎥/s' }, { l: '누설량 (창문)', v: fx(q2), u: '㎥/s' }] : []),
       { l: '누설량 (분당)', v: fx(Q * 60), u: '㎥/min' }, { l: '누설량 (시간당)', v: fx(Q * 3600), u: '㎥/h' },
     ],
     warns: dP < c.dP ? [`차압 ${fx(dP)} Pa는 기준(${c.dP} Pa 이상, 옥내에 스프링클러설비가 있으면 ${c.dPsp} Pa 이상)보다 작아요. 스프링클러설비가 있는 경우인지 확인해 주세요.`] : [],
@@ -4544,7 +4590,7 @@ function lkDraw(all) {
   $('#lk-tip').textContent = LK_TIPS[LK.tool];
   const r = lkSolve(lk);
   $('#lk-sum').innerHTML = r.err ? `<p class="err">${r.err}</p>` : `<div class="pl-sum"><div class="pl-tot"${r.Aw ? '' : ' style="grid-column:1/-1"'}><span>합성 누설틈새면적 (출입문)</span><b>${fa(r.A)}<small>㎡</small></b></div>${r.Aw ? `<div class="pl-tot"><span>창문 틈새면적</span><b>${fa(r.Aw)}<small>㎡</small></b></div>` : ''}<p class="pl-note">${r.method === 'sp' ? '직렬·병렬로 합쳤어요.' : '직렬·병렬로 안 나뉘는 연결이 있어서 압력 균형으로 풀었어요.'} ${r.steps.length ? r.steps.map((x) => x.t).join(' → ') : ''}</p></div>`;
-  $('#lk-list').innerHTML = lk.doors.length ? lk.doors.map((d) => { const [a, b] = lkEnds(lk, d); return `<div class="pl-row${LK.sel && LK.sel.t === 'door' && LK.sel.id === d.id ? ' on' : ''}"><button type="button" class="pl-pick" data-lkpick="${d.id}"><span class="pl-chip${isWin(d) ? ' win' : ''}"></span><b>${esc(d.label)}</b><span>${esc(lkName(lk, a))} ↔ ${esc(lkName(lk, b))}${a === b ? ' (같은 실)' : ''} · ${isWin(d) ? '창문 · ' : ''}${fx(lkArea(d), 4)}㎡</span></button></div>`; }).join('') : '<p class="pl-empty">아직 문이 없어요. 문 놓기로 벽을 누르세요.</p>';
+  $('#lk-list').innerHTML = lk.doors.length ? lk.doors.map((d) => { const [a, b] = lkEnds(lk, d); return `<div class="pl-row${LK.sel && LK.sel.t === 'door' && LK.sel.id === d.id ? ' on' : ''}"><button type="button" class="pl-pick" data-lkpick="${d.id}"><span class="pl-chip${isWin(d) ? ' win' : ''}"></span><b>${esc(d.label)}</b><span>${esc(lkName(lk, a))} ↔ ${esc(lkName(lk, b))}${a === b ? ' (같은 실)' : ''} · ${isWin(d) ? '창문 · ' : ''}${fx(lkArea(d))}㎡</span></button></div>`; }).join('') : '<p class="pl-empty">아직 문이 없어요. 문 놓기로 벽을 누르세요.</p>';
   if (all) $('#lk-edit').innerHTML = lkEdit(lk);
 }
 function lkEdit(lk) {
@@ -4807,6 +4853,8 @@ function fixHalon(k) {
     const g = cur(), K = STD.halon.kinds;
     if (!K[g.halonKind][1][g.halonType]) g.halonKind = Object.keys(K).find((x) => K[x][1][g.halonType]);
   }
+  // 포: 특수가연물 장소를 고르면 유효반경 1.7 m, 다른 장소는 2.1 m (바꿀 수 있어요)
+  if (k === 'place' && current === 'foam') cur().fR = cur().place === 'special' ? '1.7' : '2.1';
 }
 // 선택란·칩에서 고른 값 넣기: 입력칸을 다시 그리고, 고른 칸에 포커스를 돌려줘요
 function setField(k, val) {
