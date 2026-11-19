@@ -496,6 +496,125 @@ details.more { margin-top: 6px; } details.more summary { cursor: pointer; font-s
 .plan-svg .pl-cur { fill: var(--ink); }
 .plan-fig { margin: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 6px; }
 .plan-fig svg { width: 100%; height: auto; max-height: 420px; }
+
+/* 스프링클러 배관 도면 (직접 그리기) */
+.pe-box { grid-template-rows: auto auto 1fr; }
+.plan-main.pe-main { grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
+.pe-left { min-height: 0; min-width: 0; overflow-y: auto; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto; gap: 8px; align-content: start; }
+.pe-left > * { min-width: 0; }
+.pe-tl button { white-space: nowrap; }
+.pe-canvas { height: min(50vh, 470px); position: relative; }
+.pe-inbox { position: absolute; top: 8px; right: 8px; width: 196px; pointer-events: none; }
+.pe-inbox svg { width: 100%; height: auto; display: block; }
+.pe-canvas svg { cursor: default; touch-action: none; }
+.pe-tools .pl-seg button { display: inline-flex; align-items: center; gap: 4px; }
+.pe-fitbtn .pf-ic { width: 20px; height: 20px; }
+.pe-svg .pe-node { fill: var(--surface); stroke: var(--muted); stroke-width: 1.4; opacity: 0; pointer-events: none; }
+.pe-svg.mode-pipe .pe-node { opacity: 1; pointer-events: all; cursor: crosshair; }
+.pe-svg.mode-pipe .pe-node:hover { fill: #e8a200; stroke: #e8a200; }
+.pe-svg.mode-pipe .nt-hit, .pe-svg.mode-fit .nt-hit { cursor: crosshair; }
+.pe-svg.mode-del .nt-hit:hover, .pe-svg.mode-del .nt-hhit:hover { stroke: color-mix(in srgb, #d6453d 35%, transparent); fill: color-mix(in srgb, #d6453d 25%, transparent); }
+.pe-svg .pe-ghost { stroke: #e8a200; stroke-width: 3.5; stroke-dasharray: 7 4; stroke-linecap: round; }
+.pe-svg .pe-gt { font-size: 13px; font-weight: 700; fill: #b57d00; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.pe-svg .pe-mark { fill: none; stroke: #e8a200; stroke-width: 2; }
+.pf .pf-bg, .pf-ic .pf-bg { fill: var(--surface); stroke: var(--ink); stroke-width: 1.2; }
+.pf .pf-l, .pf-ic .pf-l { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pf .pf-f, .pf-ic .pf-f { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.pf .pf-a, .pf-ic .pf-a { fill: var(--accent); stroke: none; }
+.pf.off { opacity: .45; }
+.pf.sel .pf-bg { stroke: #e8a200; stroke-width: 3; }
+.pe-svg .pf[data-fit] { cursor: pointer; }
+.net-svg .pf-t { font-size: 10.5px; fill: var(--ink); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.pf-ic { width: 22px; height: 22px; flex: none; vertical-align: middle; }
+.pe-pop { position: fixed; z-index: 70; width: min(430px, calc(100vw - 16px)); max-height: 60vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 34px rgba(0,0,0,.22); padding: 10px 12px; display: grid; gap: 10px; }
+.pe-fg > b { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 6px; }
+.pe-ftabs { display: flex; flex-wrap: wrap; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.pe-ft { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 12.5px; padding: 3px 9px 3px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.pe-ft[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); font-weight: 700; }
+.pe-ft .pf-ic { width: 18px; height: 18px; }
+.pe-fl { display: flex; flex-wrap: wrap; gap: 4px; }
+.pe-fi { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-size: 12px; padding: 3px 8px 3px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); cursor: grab; touch-action: none; }
+.pe-fi:hover { border-color: var(--accent); }
+.pe-fi .pf-ic { width: 18px; height: 18px; }
+.pe-dragic { position: fixed; z-index: 80; pointer-events: none; transform: translate(-50%, -50%); }
+.pe-dragic .pf-ic { width: 34px; height: 34px; filter: drop-shadow(0 3px 6px rgba(0,0,0,.25)); }
+.pe-tot b { font-size: 26px; }
+.pe-big { display: grid; gap: 6px; margin: 6px 0 8px; }
+.pe-big .pl-tot b { font-size: 24px; }
+.pe-h { font-size: 15px; }
+.pl-sub { font-size: 13px; font-weight: 700; margin: 8px 0 4px; }
+.pe-flist { display: grid; gap: 4px; }
+.pe-frow { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 6px; font-size: 13px; padding: 3px 4px; border-radius: 6px; }
+.pe-frow.on { background: color-mix(in srgb, #e8a200 16%, transparent); }
+.pe-frow label { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.pe-frow input { width: 46px; font: inherit; font-size: 13px; padding: 2px 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); }
+.pe-le { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.pe-le-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 8px; font-size: 13px; }
+.pe-le-h .muted { font-size: 12px; }
+.pe-le-t { width: 100%; font-size: 13px; }
+.pe-le-t th, .pe-le-t td { padding: 4px 6px; white-space: nowrap; }
+.pe-le-t thead th { text-align: center; }
+.pe-le-t tbody th { text-align: left; }
+.pe-le-t tbody th .nt-c { align-items: center; font-size: 13px; }
+.pe-le-t input[type=number] { width: 100%; min-width: 48px; max-width: 80px; font: inherit; font-size: 13px; padding: 3px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); text-align: right; }
+.pe-le-t tr.off td input, .pe-le-t tr.off th span { opacity: .45; }
+.pe-inset .pe-in-bg { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.pe-inset .pe-in-t { font-size: 12.5px; font-weight: 700; fill: var(--ink); }
+.pe-inset .pe-in-br { stroke: var(--pipe-branch); stroke-width: 4; stroke-linecap: round; }
+.pe-inset .pe-in-p { fill: none; stroke: var(--pipe-branch); stroke-width: 3; stroke-linejoin: round; }
+.pe-inset .pe-in-d { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 2; }
+.pe-inset .pe-in-l { font-size: 11px; fill: var(--muted); }
+.pe-inset .pe-in-v { font-size: 12px; font-weight: 700; fill: var(--accent); }
+.pe-inset .pe-in-s { font-size: 11px; fill: var(--ink); }
+@media (max-width: 860px) {
+  /* 휴대폰: 도면 → 안내 → 고른 것(큰 숫자) → 표 순서 */
+  .plan-main.pe-main { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+  .pe-left { display: contents; }
+  .pe-left > .pe-canvas { order: 1; }
+  .pe-left > .pl-tip { order: 2; }
+  .pe-main > .plan-side { order: 3; border: 1px solid var(--line); border-radius: 8px; }
+  .pe-left > :not(.pe-canvas):not(.pl-tip) { order: 4; }
+  .pe-canvas { height: 46vh; }
+  .pe-le { overflow-x: auto; }
+  .pe-tools .pl-seg { flex-wrap: wrap; }
+  .pe-tools .pl-seg button { padding: 6px 9px; font-size: 13px; }
+  .pe-inbox { width: 128px; top: 4px; right: 4px; }
+  .pe-canvas { height: auto; min-height: 200px; }
+  .pe-canvas svg.pe-svg { height: auto; }
+  .pe-frow input, .pe-le-t input[type=number] { font-size: 16px; }
+}
+/* 옥내소화전 배관 도면 (층 추가·층고·노즐) */
+.ie-svg .ie-band { fill: transparent; cursor: pointer; }
+.ie-svg .ie-band:hover { fill: color-mix(in srgb, var(--accent) 5%, transparent); }
+.ie-svg .ie-band.on { fill: color-mix(in srgb, #e8a200 12%, transparent); }
+.ie-svg.mode-add .ie-band { cursor: copy; }
+.ie-svg.mode-add .ie-band:hover { fill: color-mix(in srgb, #2e9d5b 12%, transparent); }
+.ie-svg.mode-fit .nt-hit { cursor: crosshair; }
+.ie-svg.mode-del .nt-hhit:hover { fill: color-mix(in srgb, #d6453d 25%, transparent); }
+.ie-svg .pf[data-fit] { cursor: pointer; }
+.net-svg .ie-gl { stroke: var(--ink); stroke-dasharray: none; stroke-width: 1.4; }
+.net-svg .ie-fn { font-weight: 700; fill: var(--ink); font-size: 12px; }
+.net-svg .ie-fh { font-size: 12px; font-weight: 700; fill: var(--accent); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; }
+.ie-svg .ie-fh { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+.net-svg .ie-fh.on { fill: #b57d00; }
+.net-svg .ie-dim { stroke: var(--accent); stroke-width: 1; }
+.net-svg .ie-noz { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; stroke-linejoin: round; }
+.net-svg .ie-noz.on { fill: var(--accent); stroke: var(--accent); }
+.net-svg .ie-end { fill: var(--surface); stroke: var(--ink); stroke-width: 1.6; }
+.net-svg .ie-end.on { fill: var(--accent); stroke: var(--accent); }
+.net-svg .ie-noz.sel, .net-svg .ie-end.sel { stroke: #e8a200; stroke-width: 3; }
+.net-svg .ie-nl { font-size: 11px; fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.net-svg .ie-nl.on { fill: var(--ink); font-weight: 700; }
+.net-svg .nt-pump.sel { stroke: #e8a200; stroke-width: 3.5; }
+.net-svg .nt-hose.sel, .net-svg .nt-p.sel { stroke: #e8a200; }
+.legend .lg-hose { display: inline-block; width: 22px; height: 0; border-top: 2px dotted var(--pipe-branch); }
+.ie-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px; align-items: end; }
+#ie-hose .nt-c, #ie-cond .nt-c { margin-bottom: 6px; }
+@media (max-width: 860px) {
+  .ie-canvas { height: auto; min-height: 220px; }
+  .ie-canvas svg.ie-svg { height: auto; max-height: 70vh; }
+  .ie-g input, .ie-g select { font-size: 16px; }
+}
 </style>
 </head>
 
@@ -616,7 +735,9 @@ const STD = {
     // 가로·세로가 주어지면 헤드 간격 S = 2 × r × cos45° (정방형)로 세요. r: 유효반경
     headR: { '1.7': '특수가연물 저장·취급', '2.1': '기본', '2.3': '내화구조' },
     caf: { perTank: 13.9, perSpecial: 9.3, density: { general: 1.63, special: 2.3 } },
-    sensorArea: 20, reelQ: 300, reelQsmall: 230, reelT: 20, reelMax: 5,
+    // 호스릴포·포소화전: 수원 방수구 1개당 6㎥(최대 5개), 방사량 300 L/min (차고·주차장 1개 층 바닥면적 200㎡ 이하 230),
+    // 약제 N × S × 6,000 L (바닥면적 200㎡ 미만 건축물은 75%)
+    sensorArea: 20, reelQ: 300, reelQsmall: 230, reelT: 20, reelMax: 5, reelVol: 6000, reelLess: 0.75,
   },
 
   spray: {                                            // 물분무
@@ -1047,15 +1168,15 @@ const TARGETS = [
         { id: 'fRc', label: '유효반경 r', type: 'num', unit: 'm', def: 2.1, show: (v) => !v.fAd && v.fR === 'c' },
       ]},
       { title: '설비', fields: [
-        { id: 'sys', label: '종류', type: 'sel', wide: true, def: 'head', opts: [['head', '포헤드설비'], ['fw', '포워터스프링클러설비'], ['caf', '압축공기포소화설비']] },
+        { id: 'sys', label: '종류', type: 'sel', wide: true, def: 'head', dep: (v) => v.place, opts: () => [['head', '포헤드설비'], ['fw', '포워터스프링클러설비'], ['caf', '압축공기포소화설비'], ...(cur().place !== 'special' ? [['reel', '호스릴포·포소화전설비']] : [])] },
         { id: 'agentType', label: '포 약제', type: 'sel', wide: true, def: 'synthetic', show: (v) => v.sys === 'head' && v.place !== 'special', opts: () => [['protein', `단백포 ${STD.foam.rate.protein} L/min·㎡`], ['synthetic', `합성계면활성제포 ${STD.foam.rate.synthetic} L/min·㎡`], ['afff', `수성막포 ${STD.foam.rate.afff} L/min·㎡`]] },
         { id: 'cafArea', label: '헤드 배치 기준', type: 'sel', wide: true, def: 'special', show: (v) => v.sys === 'caf', opts: () => [['tank', `유류탱크 주위: ${STD.foam.caf.perTank}㎡마다 1개`], ['special', `특수가연물 저장소: ${STD.foam.caf.perSpecial}㎡마다 1개`]] },
         { id: 'cafDensity', label: '설계방출밀도', type: 'sel', wide: true, def: 'general', show: (v) => v.sys === 'caf', opts: () => [['general', `일반가연물·탄화수소류 ${STD.foam.caf.density.general} L/min·㎡`], ['special', `특수가연물·알코올류·케톤류 ${STD.foam.caf.density.special} L/min·㎡`]] },
         { id: 'zone', label: '방호구역 면적', type: 'num', unit: '㎡', def: null, ph: '비우면 바닥면적 전체', wide: true, show: (v) => v.sys === 'caf' },
         { id: 'fwN', label: '동시 방사 헤드 수', type: 'num', unit: '개', def: null, ph: '비우면 자동', wide: true, show: (v) => v.sys === 'fw', hint: '비우면 헤드 개수를 그대로 써요. 면적만 주어지면 200㎡를 넘을 때 200㎡로 나누고(최대 25개, 항공기 격납고는 제외), 가로·세로가 주어지면 가로 개수 × 세로 개수예요.' },
         { id: 'S', label: '포 약제 농도 S', type: 'sel', opts: [['3', '3%'], ['6', '6%']], def: '3' },
-        { id: 'sensor', label: '자동기동용 감지 스프링클러헤드 사용', type: 'chk', def: false, show: (v) => v.sys !== 'caf' },
-        { id: 'reelN', label: '호스릴포·포소화전 방수구 수', type: 'num', unit: '개', def: 0, wide: true, show: (v) => v.place !== 'special', hint: '없으면 0' },
+        { id: 'sensor', label: '자동기동용 감지 스프링클러헤드 사용', type: 'chk', def: false, show: (v) => v.sys !== 'caf' && v.sys !== 'reel' },
+        { id: 'reelN', label: '호스릴포·포소화전 방수구 수', type: 'num', unit: '개', def: 0, wide: true, dep: (v) => v.sys, show: (v) => v.place !== 'special', hint: () => (cur().sys === 'reel' ? '방수구가 가장 많은 층(격납고는 가장 많은 격납고)의 설치개수예요. 5개 이상이면 5개로 계산해요.' : '헤드 설비와 같이 있으면 넣어요. 없으면 0') },
       ]},
       { title: '펌프', fields: pumpFields('fh', { h1: 10, h2: 10, h3: null, h3label: '방출구 설계압력 환산수두', h3ph: '헤드 사양값', h3hint: '헤드(또는 노즐) 설계압력을 넣어 주세요. 단위를 MPa로 바꾸면 압력 그대로 넣을 수 있어요.' }) },
     ],
@@ -1168,8 +1289,9 @@ const NET_SEC = (sp) => ({
   title: '배관 수리계산 (도면)', toggle: 'net_use', toggleDef: sp, kw: '마찰손실 하젠윌리엄스 상당길이 관부속 엘보 티 레듀셔 배관 도면 수리계산 방사압 전양정',
   note: sp
     ? '헤드 배치대로 펌프 → 수직배관 → 교차배관 → 가지배관 → 헤드를 자동으로 그려서, 헤드마다 방수압·방수량과 마찰손실, 전양정을 구해요. 배관 길이·구경·관부속, 열린 헤드, 높이는 도면에서 고쳐요.'
-    : '층마다 수직배관 → 방수구 → 호스 → 노즐을 자동으로 그려서, 노즐마다 방수압·방수량과 마찰손실, 전양정을 구해요. 배관 길이·구경·관부속, 열린 노즐, 높이는 도면에서 고쳐요.',
-  fields: [{ id: 'net_btn', type: 'btn', act: 'net', label: '배관 도면 열기' }],
+    : '지상 층수만큼 층마다 옥내소화전 1개(수직배관 → 방수구 → 호스 → 노즐)를 그려서, 노즐마다 방수압·방수량과 마찰손실, 전양정을 구해요. 층 추가·층고, 옥내소화전, 노즐, 호스, 관부속, 펌프 위치는 도면에서 고쳐요.',
+  fields: [{ id: 'net_btn', type: 'btn', act: 'net', label: '배관 도면 열기' },
+    ...(sp ? [] : [{ id: 'in_reskel', type: 'btn', act: 'inskel', label: '지상 층수로 도면 다시 그리기', show: (v) => !!(v.net && v.net.kind === 'in' && v.net.igEdited), hint: '도면을 직접 고쳐서, 지상 층수를 바꿔도 도면은 그대로예요. 누르면 지상 층수대로 다시 그려요 (고친 내용은 사라져요).' }])],
 });
 const pumpSec = (p, d) => ({ title: '펌프 (양정을 직접 넣어서)', fields: pumpFields(p, d) });
 
@@ -1185,8 +1307,9 @@ TARGETS.find((t) => t.id === 'gas').hidden = true;
   const place = F.sections[0].fields.find((f) => f.id === 'place');
   place.opts = [...place.opts, ['tank', '옥외탱크저장소 (고정포방출구·보조포소화전)']];
   F.sections[0].fields.forEach((f) => {
-    if (f.id === 'L' || f.id === 'W' || f.id === 'fR') f.show = (v) => notTank(v) && !v.fAd;
-    if (f.id === 'fRc') f.show = (v) => notTank(v) && !v.fAd && v.fR === 'c';
+    if (f.id === 'L' || f.id === 'W') f.show = (v) => notTank(v) && !v.fAd;
+    if (f.id === 'fR') f.show = (v) => notTank(v) && !v.fAd && v.sys !== 'reel';
+    if (f.id === 'fRc') f.show = (v) => notTank(v) && !v.fAd && v.sys !== 'reel' && v.fR === 'c';
     if (f.id === 'fAd') f.show = notTank;
     if (f.id === 'fA') f.show = (v) => notTank(v) && !!v.fAd;
   });
@@ -1264,8 +1387,9 @@ TARGETS.push(
   {
     id: 'sppoint', name: '스프링클러설비 일정지점 유량 및 압력', desc: '배관 도면으로 헤드별 방수압·방수량, 마찰손실, 낙차', calc: (v) => ({ cards: netCardPT(v) }),
     sections: [
-      { title: '배관 모양', note: '가지배관 수와 헤드 수를 넣으면 시험 도면처럼 그려져요. 배관 하나하나의 길이·구경·관부속은 도면에서 눌러 고쳐요.', fields: [
-        { id: 'pt_btn', type: 'btn', act: 'net', label: '도면 열어서 배관·헤드 고치기' },
+      { title: '배관 모양', note: '가지배관 수와 헤드 수로 처음 뼈대를 그려요. 그 뒤에는 도면에서 배관·헤드·관부속을 직접 그리고 길이·구경을 고쳐요.', fields: [
+        { id: 'pt_btn', type: 'btn', act: 'net', label: '도면 열어서 배관·헤드·관부속 그리기' },
+        { id: 'pt_reskel', type: 'btn', act: 'peskel', label: '아래 값으로 뼈대 다시 그리기', show: (v) => !!(v.net && v.net.gEdited), hint: '도면을 직접 고쳐서, 아래 값을 바꿔도 도면은 그대로예요. 누르면 아래 값으로 다시 그려요 (도면에서 고친 내용은 없어져요).' },
         { id: 'pt_lines', label: '가지배관 수', type: 'num', unit: '줄', def: 2, min: 1 },
         { id: 'pt_heads', label: '가지배관 1줄 헤드 수', type: 'num', unit: '개', def: 5, min: 1 },
         { id: 'pt_S', label: '헤드 사이 거리', type: 'num', unit: 'm', def: 3.4 },
@@ -2446,6 +2570,32 @@ function calcFoam(v) {
     return nL * nW;
   };
   let heads, headName, flowHead, solHead, sysName, flowS;
+  // 호스릴포·포소화전: 수원 N × 6㎥, 약제 N × S × 6,000 L (200㎡ 미만 75%), 방사량 N × 300 (차고·주차장 200㎡ 이하 230)
+  const reel = () => {
+    const N0 = Math.round(n0(v.reelN)), N = Math.min(N0, c.reelMax), hangar = v.place === 'hangar';
+    const small = v.place === 'parking' && A <= c.zoneMax, qr = small ? c.reelQsmall : c.reelQ, less = A < c.zoneMax;
+    steps.push(step({ t: '방수구 수', sub: `${hangar ? '호스릴포방수구가 가장 많이 설치된 격납고' : '방수구가 가장 많은 층'}의 설치개수 ${N0}개${N0 > c.reelMax ? ` → ${c.reelMax}개 이상이면 ${c.reelMax}개` : ''}`, ans: `${N}개` }));
+    const sol = N * c.reelVol, solS = `${N} × ${fx(c.reelVol)}`;
+    steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${fx(c.reelVol)}`, sym: [['V₂', '호스릴포·포소화전 포수용액량 = 수원 (L)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], [fx(c.reelVol), `방수구 1개당 수원 ${fx(c.reelVol / 1000)}㎥ (L)`]], sub: `V₂ = ${solS}`, ans: `${fx(sol)} L` }));
+    const agent = N * S * c.reelVol * (less ? c.reelLess : 1), agentS = `${N} × ${fi(S)} × ${fx(c.reelVol)}${less ? ` × ${c.reelLess}` : ''}`;
+    steps.push(step({ t: '호스릴포·포소화전 약제량', f: `W₂ = N × S × ${fx(c.reelVol)}${less ? ` × ${c.reelLess}` : ''}`, sym: [['W₂', '호스릴포·포소화전 포 약제량 (L)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], ['S', '포 약제 농도'], [fx(c.reelVol), '방수구 1개당 포수용액 (L)'], ...(less ? [[String(c.reelLess), `바닥면적 ${c.zoneMax}㎡ 미만 건축물은 75%`]] : [])], sub: `W₂ = ${agentS}`, ans: `${fx(agent)} L`, note: less ? `바닥면적 ${fx(A)}㎡가 ${c.zoneMax}㎡ 미만이라 75%로 줄였어요.` : '' }));
+    const flow = N * qr, flowS2 = `${N} × ${qr}`;
+    steps.push(step({ t: '호스릴포·포소화전 방사량', f: `Q₂ = N × ${qr}`, sym: [['Q₂', '호스릴포·포소화전 방사량 (L/min)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], [String(qr), `방수구 1개당 방사량 (L/min)${v.place === 'parking' ? `: 1개 층 바닥면적 ${c.zoneMax}㎡ ${small ? '이하' : '초과'}` : ''}`]], sub: `Q₂ = ${flowS2}`, ans: `${fx(flow)} L/min` }));
+    return { N, sol, solS, agent, agentS, flow, flowS: flowS2 };
+  };
+  if (v.sys === 'reel') {
+    if (v.place === 'special') return { error: '특수가연물 저장·취급 공장·창고 수원 기준에는 호스릴포·포소화전이 없어요. 다른 종류를 골라 주세요.' };
+    if (!(Math.round(n0(v.reelN)) > 0)) return { error: '호스릴포·포소화전 방수구 수에 1 이상을 넣어 주세요.' };
+    sysName = '호스릴포·포소화전설비';
+    const R = reel(), water = R.sol * (1 - S);
+    steps.push(step({ t: '수원의 양', f: 'Q<sub>w</sub> = V₂ × (1 − S)', sym: [['Q<sub>w</sub>', '수원의 양: 약제를 뺀 물의 양 (L)'], ['V₂', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${pa(R.solS)} × (1 − ${fi(S)})`, ans: `${fx(water)} L` }));
+    steps.push(step({ t: '펌프 토출량', sub: R.flowS, ans: `${fx(R.flow)} L/min` }));
+    const p = pump('fh', v, R.flow, null, '방출구 설계압력 환산수두', R.flowS);
+    tiles.push({ l: '바닥면적', v: fx(A), u: '㎡' }, { l: '방수구 수', v: fx(R.N), u: '개' },
+      { l: '포수용액량', v: fx(R.sol / 1000), u: '㎥', tone: 'key' }, { l: '포 약제량', v: fx(R.agent), u: 'L', tone: 'key' }, { l: '수원의 양', v: fx(water / 1000), u: '㎥', tone: 'key' }, ...pumpTiles(R.flow, p));
+    if (Math.round(n0(v.reelN)) > c.reelMax) notes.push(`방수구가 ${c.reelMax}개 이상이라 ${c.reelMax}개로 계산했어요.`);
+    return { cards: [{ title: `${placeName} ${sysName}`, tiles, warns: [p.warn].filter(Boolean), notes, steps: [...steps, ...p.steps] }] };
+  }
 
   if (v.sys === 'caf') {
     sysName = '압축공기포소화설비'; headName = '분사헤드';
@@ -2483,28 +2633,28 @@ function calcFoam(v) {
     tiles.push({ l: '감지용 헤드', v: fx(ns), u: '개' });
   }
 
-  let flowReel = 0, solReel = 0;
-  if (v.place !== 'special' && n0(v.reelN) > 0) {
-    const Nr = Math.min(n0(v.reelN), c.reelMax);
-    const small = v.place === 'parking' && A <= c.zoneMax, qr = small ? c.reelQsmall : c.reelQ;
-    flowReel = Nr * qr; solReel = flowReel * c.reelT;
-    if (v.place === 'hangar') steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${fx(qr * c.reelT / 1000)}`, sym: [['V₂', '호스릴포 포수용액량 (㎥)'], ['N', `호스릴포방수구가 가장 많은 격납고의 방수구 수 (최대 ${c.reelMax}개)`], [fx(qr * c.reelT / 1000), `방수구 1개당 수원 = ${qr} L/min × ${c.reelT}분 (㎥)`]], sub: `V₂ = ${Nr} × ${fx(qr * c.reelT / 1000)}`, ans: `${fx(solReel / 1000)} ㎥ (${fx(solReel)} L)` }));
-    else steps.push(step({ t: '호스릴포·포소화전 포수용액량', f: `V₂ = N × ${qr} × ${c.reelT}`, sym: [['V₂', '호스릴포·포소화전 포수용액량 (L)'], ['N', `방수구 수 (최대 ${c.reelMax}개)`], [String(qr), `방수구 1개당 방사량 (L/min)${small ? ', 1개층 바닥면적 200㎡ 이하' : ''}`], [String(c.reelT), '방사시간 (min)']], sub: `V₂ = ${Nr} × ${qr} × ${c.reelT}`, ans: `${fx(solReel)} L` }));
-  }
-  let sol, flow, solS, fS;
-  const solHS = `${pa(flowS)} × ${c.time}`, solRS = solReel > 0 ? `${Math.min(n0(v.reelN), c.reelMax)} × ${v.place === 'parking' && A <= c.zoneMax ? c.reelQsmall : c.reelQ} × ${c.reelT}` : '0';
-  const flowRS = solReel > 0 ? `${Math.min(n0(v.reelN), c.reelMax)} × ${v.place === 'parking' && A <= c.zoneMax ? c.reelQsmall : c.reelQ}` : '0';
-  if (v.place === 'parking' && solReel > 0) {
+  // 헤드 설비와 호스릴포·포소화전을 같이 둔 경우: 차고·주차장은 큰 값, 항공기 격납고는 더해요
+  const R = v.place !== 'special' && Math.round(n0(v.reelN)) > 0 ? reel() : null;
+  const solReel = R ? R.sol : 0, flowReel = R ? R.flow : 0;
+  const solHS = `${pa(flowS)} × ${c.time}`;
+  let sol, flow, solS, fS, agent, agentS;
+  if (R && v.place === 'parking') {
+    const useR = solReel > solHead;
     sol = Math.max(solHead, solReel); flow = Math.max(flowHead, flowReel);
-    solS = solHead >= solReel ? solHS : solRS; fS = flowHead >= flowReel ? flowS : flowRS;
-    steps.push(step({ t: '포수용액량 (차고·주차장)', f: 'V = max(V₁, V₂)', sym: [['V', '포수용액량 (L)'], ['V₁', `${sysName} (L)`], ['V₂', '호스릴포·포소화전 (L)']], sub: `V = max(${fx(solHead)}, ${fx(solReel)})`, ans: `${fx(sol)} L`, note: '차고·주차장에 여러 설비를 같이 두면 설비별 수원 중 큰 값을 써요.' }));
-  } else {
+    solS = useR ? R.solS : solHS; fS = flowHead >= flowReel ? flowS : R.flowS;
+    agent = useR ? R.agent : solHead * S; agentS = useR ? R.agentS : `${pa(solHS)} × ${fi(S)}`;
+    steps.push(step({ t: '포수용액량 (차고·주차장)', f: 'V = max(V₁, V₂)', sym: [['V', '포수용액량 (L)'], ['V₁', `${sysName} (L)`], ['V₂', '호스릴포·포소화전 (L)']], sub: `V = max(${fx(solHead)}, ${fx(solReel)})`, ans: `${fx(sol)} L`, note: '차고·주차장에 여러 설비를 같이 두면 설비별 수원 중 큰 값을 써요. 약제량도 그 설비 기준으로 구해요.' }));
+  } else if (R) {
     sol = solHead + solReel; flow = flowHead + flowReel;
-    solS = solReel > 0 ? `${solHS} + ${solRS}` : solHS; fS = flowReel > 0 ? `${flowS} + ${flowRS}` : flowS;
-    if (solReel > 0) steps.push(step({ t: '포수용액량 합계', f: 'V = V₁ + V₂', sym: [['V', '포수용액량 합계 (L)']], sub: `V = ${solS}`, ans: `${fx(sol)} L`, note: v.place === 'hangar' ? '항공기 격납고: 헤드(또는 고정포방출구)가 가장 많은 격납고의 10분 방사량에 호스릴포 수원을 더해요.' : '' }));
+    solS = `${solHS} + ${R.solS}`; fS = `${flowS} + ${R.flowS}`;
+    agent = solHead * S + R.agent; agentS = `${pa(solHS)} × ${fi(S)} + ${R.agentS}`;
+    steps.push(step({ t: '포수용액량 합계', f: 'V = V₁ + V₂', sym: [['V', '포수용액량 합계 (L)'], ['V₁', `${sysName} (L)`], ['V₂', '호스릴포·포소화전 (L)']], sub: `V = ${solS}`, ans: `${fx(sol)} L`, note: '항공기 격납고: 헤드(또는 고정포방출구)가 가장 많은 격납고의 10분 방사량에 호스릴포 수원을 더해요.' }));
+  } else {
+    sol = solHead; flow = flowHead; solS = solHS; fS = flowS;
+    agent = solHead * S; agentS = `${pa(solHS)} × ${fi(S)}`;
   }
-  const agent = sol * S, water = sol * (1 - S);
-  steps.push(step({ t: '포 약제량', f: 'W = V × S', sym: [['W', '포 약제량 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `W = ${pa(solS)} × ${fi(S)}`, ans: `${fx(agent)} L` }));
+  const water = sol * (1 - S);
+  steps.push(step({ t: '포 약제량', f: R ? (v.place === 'parking' ? 'W = 큰 쪽 설비의 약제량' : 'W = V₁ × S + W₂') : 'W = V × S', sym: [['W', '포 약제량 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도'], ...(R ? [['W₂', '호스릴포·포소화전 약제량 (L)']] : [])], sub: `W = ${agentS}`, ans: `${fx(agent)} L` }));
   steps.push(step({ t: '수원의 양', f: 'Q<sub>w</sub> = V × (1 − S)', sym: [['Q<sub>w</sub>', '수원의 양: 약제를 뺀 물의 양 (L)'], ['V', '포수용액량 (L)'], ['S', '포 약제 농도']], sub: `Q<sub>w</sub> = ${pa(solS)} × (1 − ${fi(S)})`, ans: `${fx(water)} L` }));
   steps.push(step({ t: '펌프 토출량', sub: v.place === 'parking' && solReel > 0 ? `큰 쪽 설비 기준: max(${fx(flowHead)}, ${fx(flowReel)}) → ${fS}` : fS, ans: `${fx(flow)} L/min` }));
   const p = pump('fh', v, flow, null, '방출구 설계압력 환산수두', fS);
@@ -2959,7 +3109,7 @@ function renderStd() {
       ['헤드 1개당 바닥면적', `포헤드 ${f.perHead}㎡ / 포워터스프링클러 ${f.perHeadFW}㎡ / 압축공기포: 유류탱크 주위 ${f.caf.perTank}㎡, 특수가연물 저장소 ${f.caf.perSpecial}㎡ / 감지용 스프링클러헤드 ${f.sensorArea}㎡`, ''],
       ['포워터스프링클러 표준방사량', `헤드 1개당 ${f.fwQ} L/min`, ''],
       ['압축공기포 설계방출밀도', `일반가연물·탄화수소류 ${f.caf.density.general} / 특수가연물·알코올류·케톤류 ${f.caf.density.special} L/min·㎡`, `${f.time}분`],
-      ['호스릴포·포소화전', `방수구 1개당 ${f.reelQ} L/min (200㎡ 이하 층 ${f.reelQsmall}) × ${f.reelT}분, 최대 ${f.reelMax}개`, '차고·주차장은 설비별 수원 중 큰 값'],
+      ['호스릴포·포소화전', `수원: 방수구 1개당 ${fx(f.reelVol / 1000)}㎥ (최대 ${f.reelMax}개)<br>방사량: 1개당 ${f.reelQ} L/min (차고·주차장 1개 층 바닥면적 200㎡ 이하 ${f.reelQsmall} L/min)<br>약제: N × S × ${fx(f.reelVol)} L (바닥면적 200㎡ 미만 ${f.reelLess * 100}%)`, '차고·주차장은 설비별 수원 중 큰 값, 항공기 격납고는 더해요'],
     ]],
     ['물분무', [
       ...Object.values(s.spray.kinds).map((k) => [k.label, `${k.q} L/min·㎡`, '']),
@@ -3021,6 +3171,9 @@ function buildIndex() {
       });
     });
   });
+  out.push({ k: 'opt', t: 'sppoint', si: 0, label: '스프링클러 도면', path: '스프링클러설비 일정지점 유량 및 압력 › 배관 도면', more: '도면 배관 헤드 수직배관 수평주행배관 가지배관 회향식 관부속 마찰손실', act: 'net' });
+  const IN = TARGETS.find((t) => t.id === 'indoor'), ins = IN.sections.findIndex((x) => x.toggle === 'net_use');
+  if (ins >= 0) out.push({ k: 'opt', t: 'indoor', si: ins, label: '옥내소화전 도면', path: '옥내소화전 › 배관 수리계산 (도면)', more: '도면 배관 노즐 호스 마찰손실 전양정', act: 'net' });
   const seen = new Set();
   SIDX = out.filter((e) => { const key = e.label + e.path; if (seen.has(key)) return false; seen.add(key); return true; });
   SIDX.forEach((e) => { e.n = norm(e.label); e.c = choOf(e.label); e.np = norm(e.more || ''); });
@@ -3135,6 +3288,7 @@ function goEntry(e) {
   if (!el && e.si != null) el = document.querySelector(`#form fieldset[data-si="${e.si}"]`);
   if (!el) el = document.querySelector('#view-calc .layout');
   requestAnimationFrame(() => { el.scrollIntoView({ behavior: 'smooth', block: e.k === 'menu' ? 'start' : 'center' }); flash(el); });
+  if (e.act === 'net') setTimeout(() => { const b = document.querySelector('#form [data-act="net"]'); if (b) b.click(); }, 60);
 }
 $('#q').addEventListener('focus', () => { buildIndex(); if ($('#q').value.trim()) showHits(); });
 $('#q').addEventListener('input', showHits);
@@ -3656,64 +3810,11 @@ function netBuildPT(n) {
   return M;
 }
 
-/* 45° 정도에서 본 입체 도면: 가지배관은 오른쪽(살짝 아래), 교차배관은 오른쪽 위(안쪽), 높이는 위 */
-function netSvgPT(M, R, n, open, o) {
-  const g = M.geo, sel = o.sel || {}, op = new Set(open);
-  const AX = [0.64, -0.46], AY = [1, 0.17];   // x(교차배관) 1 m, y(가지배관) 1 m의 화면 방향
-  const raw = (x, y, z) => [x * AX[0] + y * AY[0], x * AX[1] + y * AY[1] - z];
-  const pts = [...M.nodes.values()].map((q) => raw(q.x, q.y, q.z));
-  const minX = Math.min(...pts.map((p) => p[0])), maxX = Math.max(...pts.map((p) => p[0]));
-  const minY = Math.min(...pts.map((p) => p[1])), maxY = Math.max(...pts.map((p) => p[1]));
-  const s = Math.max(14, Math.min(64, 720 / Math.max(1, maxX - minX), 380 / Math.max(1, maxY - minY)));
-  const pad = { l: 64, r: 70, t: 46, b: 70 };
-  const VW = +((maxX - minX) * s + pad.l + pad.r).toFixed(1), VH = +((maxY - minY) * s + pad.t + pad.b).toFixed(1);
-  const P = (x, y, z) => { const [a, b] = raw(x, y, z); return [+(pad.l + (a - minX) * s).toFixed(1), +(pad.t + (b - minY) * s).toFixed(1)]; };
-  const at = (id) => { const q = M.nodes.get(id); return P(q.x, q.y, q.z); };
-  const cls = (sg) => `nt-p r-${sg.role}${R && R.Q.get(sg.id) > 0 ? '' : ' dry'}${sg.edited ? ' ed' : ''}${sel.t === 'seg' && sel.id === sg.id ? ' sel' : ''}`;
-  let pipes = '', drops = '', labels = '', hits = '';
-  const lab = (sg, a, b) => {
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (len < 40 || sg.role === 'drop') return;
-    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, vert = Math.abs(b[0] - a[0]) < 2;
-    const t = `${sg.size}A (${fx(sg.L)}m)`;
-    if (vert) labels += `<text class="nt-lb" x="${mx - 8}" y="${my + 4}" text-anchor="end">${t}</text>`;
-    else {
-      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, a2 = ang > 90 || ang < -90 ? ang + 180 : ang;
-      labels += `<text class="nt-lb" transform="translate(${mx},${my}) rotate(${a2.toFixed(1)})" y="-6" text-anchor="middle">${t}</text>`;
-    }
-  };
-  // 먼 가지배관부터 그려서 가까운 배관이 위에 오게
-  const segs = M.segs.slice().sort((a, b) => (M.nodes.get(b.b).x - M.nodes.get(a.b).x));
-  segs.forEach((sg) => {
-    const a = at(sg.a), b = at(sg.b);
-    if (sg.role === 'drop') {
-      const h = M.nodes.get(sg.b), t = at(sg.a), on = op.has(sg.b);
-      const dr = n.dropOn, up = dr ? Math.max(10, n0(sg.rise) * s) : 0, dn = dr ? Math.max(20, n0(sg.fall) * s + 8) : 16, ov = dr ? Math.max(10, n0(n.over) * s) * h.dir : 0;
-      const p1 = [t[0], t[1] - up], p2 = [t[0] + ov, t[1] - up], p3 = [t[0] + ov, t[1] - up + dn];
-      const path = dr ? `${t.join(',')} ${p1.join(',')} ${p2.join(',')} ${p3.join(',')}` : `${t.join(',')} ${p3.join(',')}`;
-      drops += `<polyline class="${cls(sg)} r-drop" points="${path}"/>`;
-      const gov = R && R.gov === sg.b, hs = sel.t === 'head' && sel.id === sg.b;
-      drops += `<path class="nt-hd${on ? ' on' : ''}${hs ? ' sel' : ''}" d="M${p3[0] - 6},${p3[1]} h12 l-6,9 z"/><line class="nt-hdl" x1="${p3[0] - 6}" y1="${p3[1] + 10}" x2="${p3[0] + 6}" y2="${p3[1] + 10}"/>`;
-      if (gov) drops += `<circle class="nt-gov" cx="${p3[0]}" cy="${p3[1] + 4}" r="11"/>`;
-      labels += `<text class="nt-hn${on ? ' on' : ''}" x="${p3[0] + 9}" y="${p3[1] - 2}">${h.label}</text>`;
-      if (o.edit) hits += `<circle class="nt-hhit" data-head="${sg.b}" cx="${p3[0]}" cy="${p3[1] + 4}" r="13"><title>헤드 ${h.label}${on && R ? ` · ${fx(R.P.get(sg.b))} MPa · ${fx(R.q.get(sg.b))} L/min` : ' · 닫힘'}</title></circle>`;
-      if (o.edit && dr) hits += `<polyline class="nt-hit" data-seg="${sg.id}" points="${path}"><title>${sg.label}</title></polyline>`;
-      return;
-    }
-    pipes += `<line class="${cls(sg)}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
-    if (o.edit) hits += `<line class="nt-hit" data-seg="${sg.id}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>${sg.label} · ${sg.size}A · ${fx(sg.L)} m</title></line>`;
-    lab(sg, a, b);
-  });
-  const p0 = at('P');
-  labels += `<circle class="nt-start" cx="${p0[0]}" cy="${p0[1]}" r="5"/><text class="nt-lb nt-sl" x="${p0[0]}" y="${p0[1] + 22}" text-anchor="middle">시작점${n.basis === 'start' ? ` ${fx(n.Pstart)} MPa` : ''}</text>`;
-  return `<svg class="net-svg nt-iso" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="스프링클러 배관 입체 도면">${pipes}${drops}${labels}${hits}</svg>`;
-}
-
 /* 일정지점 결과 카드 */
 function netCardPT(v) {
   const X = netRun(v, 'pt', {}), { n, M, open, R } = X;
-  const title = '헤드별 방수압·방수량', btn = `<p class="net-open"><button type="button" class="btn-act" data-act="net">도면 열어서 배관·헤드 고치기</button></p>`;
-  const fig = `<div class="drawing net-fig">${netSVG(M, R, n, open, { edit: true })}</div>`;
+  const title = '헤드별 방수압·방수량', btn = `<p class="net-open"><button type="button" class="btn-act" data-act="net">도면 열어서 배관·헤드·관부속 그리기</button></p>`;
+  const fig = `<div class="drawing net-fig">${peSVG(M, R, n, { open })}</div>`;
   if (X.err) return [{ title, error: X.err, extraTop: fig + btn }];
   const k = R.k, simple = n.mode === 'simple', start = n.basis === 'start', K = netK(n);
   const no = (id) => M.nodes.get(id).label, sq = n.formula === 'sq';
@@ -3751,10 +3852,9 @@ function netCardPT(v) {
     title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(K)}`,
     tiles,
     warns: [!R.ok ? '방수량 계산이 끝까지 맞춰지지 않았어요. 배관 구경이나 길이를 확인해 주세요.' : '', neg.length ? `방수압이 0 이하인 헤드가 있어요 (${neg.map(no).join(', ')}). 시작점 압력이 모자라요.` : ''].filter(Boolean),
-    extraTop: fig + `<div class="legend"><span><i class="lg-riser"></i>수직배관·교차배관</span><span><i class="lg-branch"></i>가지배관</span><span><i class="lg-open"></i>열린 헤드</span><span><i class="lg-head"></i>닫힌 헤드</span><span><i class="lg-gov"></i>방수압이 가장 낮은 헤드</span></div>` + btn,
+    extraTop: fig + `<div class="legend"><span><i class="lg-riser"></i>수직배관·수평주행배관</span><span><i class="lg-branch"></i>가지배관</span><span><i class="lg-open"></i>열린 헤드</span><span><i class="lg-head"></i>닫힌 헤드</span><span><i class="lg-gov"></i>방수압이 가장 낮은 헤드</span></div>` + btn,
     notes: [
       `마찰손실 식: ${sq ? `6 × 10⁴ × Q² ÷ (C² × d⁵) (C = ${fx(n.C2)})` : `하젠-윌리엄스 (C = ${fx(n.C)})`}, 안지름: ${n.dia === 'table' ? '안지름 표' : '호칭경 그대로'}, 1 MPa = ${fx(k)} m${off.length ? `, 계산에서 뺀 관부속: ${off.join('·')}` : ''}`,
-      '도면에서 배관이나 헤드를 누르면 길이·구경·관부속과 열린 헤드를 고칠 수 있어요.',
     ],
     steps,
     extra: `<div><h4 class="sub-h">헤드별 방수압·방수량 (①이 가장 먼 헤드)</h4>${table(['헤드', '방수압 (MPa)', '방수량 (L/min)'], opn.map((id) => [no(id) + (id === R.gov ? ' · 방수압 최저' : ''), fx(R.P.get(id)), fx(R.q.get(id))]))}</div>
@@ -3770,45 +3870,16 @@ function ptSync(v) {
     mode: v.pt_mode, basis: v.pt_basis, Pmin: v.pt_P, kMode: v.pt_kMode, qS: v.pt_q, K: v.pt_K, Pstart: v.pt_Ps,
     formula: v.pt_f, C: v.pt_C, C2: v.pt_C2, dia: v.pt_dia, conv: v.pt_conv, idT: Object.fromEntries(PT_ID.map(([z]) => [z, v['pt_id' + z]])),
   });
+  // 도면을 직접 고치기 전까지는 왼쪽 칸 값으로 뼈대를 다시 그려요
+  const key = ptSkelKey(v.net);
+  if (!v.net.g || (!v.net.gEdited && v.net.gSrc !== key)) { v.net.g = ptSkel(v.net); v.net.gSrc = key; }
 }
 
-/* 옥내소화전: 펌프 → 수직배관(층마다) → 방수구(앵글밸브) → 호스 → 노즐, 입면 */
-function netBuildIN(n, ctx) {
-  const M = netModel('in');
-  const f = n.follow && ctx;
-  const nf = Math.max(1, Math.min(60, Math.round(f && ctx.nf > 0 ? ctx.nf : n.nf) || 1));
-  const m = Math.max(1, Math.min(5, Math.round(f && ctx.per > 0 ? ctx.per : n.perFloor) || 1));
-  const reel = !!(ctx && ctx.reel), pp = STD.indoor.pipe;
-  const rs = reel ? pp.riserReel : pp.riser, bsz = reel ? pp.branchReel : pp.branch;
-  const FH = n.FH > 0 ? n.FH : 3, oh = n0(n.outH), pz = n0(n.pumpZ);
-  M.geo = { nf, m, FH, oh, pz };
-  nAdd(M, 'P', { x: 0, z: pz, label: '펌프' });
-  let prev = 'P';
-  for (let k = 1; k <= nf; k++) {
-    const z = (k - 1) * FH + oh, N = `N${k}`, top = k === nf;
-    nAdd(M, N, { x: 0, z, floor: k });
-    sAdd(M, n, `r${k}`, prev, N, k === 1
-      ? { L: r2(n0(n.pumpL) + Math.abs(z - pz)), size: rs, fit: { elbow: n0(n.pumpL) > 0 ? 1 : 0 }, role: 'riser', label: '수직배관 (펌프 → 1층 방수구)' }
-      : { L: r2(FH), size: rs, fit: { teeR: 1 }, role: 'riser', label: `수직배관 ${k - 1}층 → ${k}층` });
-    prev = N;
-    let hp = N;
-    for (let i = 1; i <= m; i++) {
-      if (i > 1) {
-        const F = `F${k}_${i}`;
-        nAdd(M, F, { x: i - 1, z, floor: k });
-        sAdd(M, n, `h${k}_${i}`, hp, F, { L: r2(n0(n.out2L)), size: rs, fit: i === 2 ? { teeB: 1 } : { teeR: 1 }, role: 'floor', col: i, label: `${k}층 수평배관 → ${i}번째 방수구` });
-        hp = F;
-      }
-      const O = `O${k}_${i}`, Z = `Z${k}_${i}`, nm = `${k}층${m > 1 ? ' ' + i + '번' : ''}`;
-      nAdd(M, O, { x: i - 1, z, floor: k });
-      sAdd(M, n, `o${k}_${i}`, hp, O, { L: r2(n0(n.outL)), size: bsz, fit: { ...(top && i === m ? { elbow: 1 } : { teeB: 1 }), angle: 1 }, role: 'outlet', col: i, label: `${nm} 방수구 연결 배관` });
-      nAdd(M, Z, { x: i - 1, z, floor: k, leaf: true, label: nm });
-      sAdd(M, n, `z${k}_${i}`, O, Z, { L: n0(n.hoseLen), size: bsz, fit: {}, role: 'hose', hose: true, col: i, label: `${nm} 호스` });
-    }
-  }
-  return M;
+const netBuild = (n, ctx) => (n.kind === 'pt' ? netBuildPT(n) : ieModel(n.ig, n, ctx));
+function inSync(n, ctx) {
+  const key = inSkelKey(n, ctx);
+  if (!n.ig || (!n.igEdited && n.igSrc !== key)) { n.ig = inSkel(n, ctx); n.igSrc = key; }
 }
-const netBuild = (n, ctx) => (n.kind === 'pt' ? netBuildPT(n) : netBuildIN(n, ctx));
 
 // 펌프에서 먼 순서 (옥내소화전은 높은 층 먼저)
 function netRemote(M) {
@@ -3845,7 +3916,8 @@ const netK = (n) => (n.kMode === 'k' ? n0(n.K) : n.kMode === 'd' ? 0.653 * n0(n.
 function netSolve(M, n, open) {
   const k = STD.headPerMPa[n.conv] || STD.headPerMPa.std, simple = n.mode === 'simple', fixed = n.basis === 'start';
   const K = netK(n), Pmin = n0(n.Pmin);
-  const q = new Map(open.map((id) => [id, simple ? n0(n.qS) : K * Math.sqrt(10 * Pmin)]));
+  const fq = (id) => !!M.nodes.get(id).fixQ;   // 노즐 없는 옥내소화전: 기준 방수량 그대로
+  const q = new Map(open.map((id) => [id, simple || fq(id) ? n0(n.qS) : K * Math.sqrt(10 * Pmin)]));
   const Q = new Map(), loss = new Map(), rel = new Map();
   let Proot = NaN, gov = open[0], ok = true, it = 0;
   const pass = () => {
@@ -3867,6 +3939,7 @@ function netSolve(M, n, open) {
     for (it = 1; it <= 500; it++) {
       let dmax = 0;
       open.forEach((id) => {
+        if (fq(id)) return;
         const P = Math.max(0, Proot + rel.get(id)), nq = 0.5 * q.get(id) + 0.5 * K * Math.sqrt(10 * P);
         dmax = Math.max(dmax, Math.abs(nq - q.get(id))); q.set(id, nq);
       });
@@ -3890,12 +3963,15 @@ function netRun(v, kind, ctx) {
   if (kind === 'pt') ptSync(v);
   else if (!v.net || v.net.kind !== kind) v.net = netDefaults(kind);
   v._netctx = ctx;
-  const n = v.net, M = netBuild(n, ctx);
+  if (kind === 'in') inSync(v.net, ctx);
+  const n = v.net, M = kind === 'pt' ? peModel(n.g, n) : netBuild(n, ctx);
   const nBase = ctx.nBase > 0 ? ctx.nBase : (kind === 'sp' ? 10 : 2);
-  const open = netOpen(M, n, nBase);
+  const open = kind === 'pt' ? M.leaves.filter((id) => M.nodes.get(id).head.open !== false).sort((a, b) => M.nodes.get(a).rank - M.nodes.get(b).rank) : netOpen(M, n, nBase);
   const u = kind === 'in' ? '노즐' : '헤드';
   let err = '';
-  if (!open.length) err = `열린 ${u}가 없어요. 도면에서 ${u}를 골라 열어 주세요.`;
+  if (kind === 'pt' && !M.leaves.length) err = '헤드가 없어요. 도면을 열어 헤드를 달아 주세요.';
+  else if (kind === 'in' && !M.leaves.length) err = '옥내소화전이 없어요. 도면을 열어 옥내소화전을 달아 주세요.';
+  else if (!open.length) err = `열린 ${u}가 없어요. 도면에서 ${u}를 골라 열어 주세요.`;
   else if (n.basis === 'start' && !(n.Pstart > 0)) err = '시작점 압력에 0보다 큰 값을 넣어 주세요.';
   else if (!(n.Pmin > 0) && !(n.basis === 'start' && n.mode === 'simple')) err = '헤드 기준 방수압에 0보다 큰 값을 넣어 주세요.';
   else if ((n.mode === 'simple' || n.kMode === 'qp') && !(n.qS > 0)) err = `기준 방수량에 0보다 큰 값을 넣어 주세요.`;
@@ -3927,10 +4003,10 @@ function netCard(v, kind, ctx) {
     else if (n.kMode === 'd') steps.push(step({ t: '방출계수 K', f: 'K = 0.653 × d²', sym: [['K', '방출계수'], ['0.653', '0.6597 × 유량계수 0.99'], ['d', '노즐 구경 (mm)']], sub: `K = 0.653 × ${fi(n.nozD)}²`, ans: fx(K) }));
     else steps.push(step({ t: '방출계수 K', sub: '직접 넣은 값', ans: fx(K) }));
     steps.push(step({
-      t: '헤드 방수량', f: 'Q = K × √(10P)',
+      t: `${u} 방수량`, f: 'Q = K × √(10P)',
       sym: [['Q', `${u} 방수량 (L/min)`], ['K', `방출계수 (${fx(K)})`], ['P', `${u} 방수압 (MPa)`]],
-      sub: show.map((id) => `${no.get(id)}번 (${name(id)}): Q = ${fx(K)} × √(10 × ${fx(R.P.get(id))}) = ${fx(R.q.get(id))}`).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
-      note: `압력이 가장 낮은 ${u}(${name(R.gov)})가 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 ${u}는 배관을 따라 걸리는 압력으로 방수량을 구했어요.`,
+      sub: show.map((id) => (M.nodes.get(id).fixQ ? `${no.get(id)}번 (${name(id)}): 노즐이 없어서 기준 방수량 ${fx(n.qS)}` : `${no.get(id)}번 (${name(id)}): Q = ${fx(K)} × √(10 × ${fx(R.P.get(id))}) = ${fx(R.q.get(id))}`)).join('<br>') + (open.length > 6 ? `<br>나머지 ${open.length - 6}개는 아래 표에 있어요` : ''),
+      note: `압력이 가장 낮은 ${u}(${name(R.gov)})${kind === 'in' ? '이' : '가'} 최소 방수압 ${fx(n.Pmin)} MPa가 되게 맞추고, 나머지 ${u}${kind === 'in' ? '은' : '는'} 배관을 따라 걸리는 압력으로 방수량을 구했어요.`,
     }));
   }
   steps.push(step({ t: '펌프 토출량', f: 'Q<sub>p</sub> = ΣQ<sub>i</sub>', sym: [['Q<sub>p</sub>', '펌프 토출량 (L/min)'], ['Q<sub>i</sub>', `열린 ${u}마다 방수량 (L/min)`]], sub: `Q<sub>p</sub> = ${open.length <= 8 ? open.map((id) => fx(R.q.get(id))).join(' + ') : `${open.length}개 방수량의 합`}`, ans: `${fx(R.flow)} L/min` }));
@@ -3976,7 +4052,7 @@ function netCard(v, kind, ctx) {
   if (fast.length) warns.push(`유속이 기준(${kind === 'sp' ? '가지배관 6 m/s 이하, 그 밖 10 m/s 이하' : '펌프 토출측 주배관 4 m/s 이하'})보다 빠른 구간: ${fast.slice(0, 3).map((s) => `${s.label} ${fx(R.loss.get(s.id).vel)} m/s`).join(', ')}${fast.length > 3 ? ` 외 ${fast.length - 3}개` : ''}. 구경을 키워 보세요.`);
   const legend = kind === 'sp'
     ? '<div class="legend"><span><i class="lg-riser"></i>수직배관</span><span><i class="lg-cross"></i>교차배관</span><span><i class="lg-branch"></i>가지배관</span><span><i class="lg-open"></i>열린 헤드 (번호: 펌프에서 먼 순서)</span><span><i class="lg-head"></i>닫힌 헤드</span><span><i class="lg-gov"></i>압력이 가장 낮은 헤드</span></div>'
-    : '<div class="legend"><span><i class="lg-riser"></i>수직배관</span><span><i class="lg-branch"></i>방수구 배관</span><span><i class="lg-open"></i>열린 노즐</span><span><i class="lg-head"></i>닫힌 노즐</span><span><i class="lg-gov"></i>압력이 가장 낮은 노즐</span></div>';
+    : '<div class="legend"><span><i class="lg-riser"></i>수직배관</span><span><i class="lg-branch"></i>방수구 배관</span><span><i class="lg-hose"></i>호스</span><span><i class="lg-open"></i>열린 노즐</span><span><i class="lg-head"></i>닫힌 노즐</span><span><i class="lg-gov"></i>압력이 가장 낮은 노즐</span></div>';
   return {
     title, badge: simple ? `간단: 모두 ${fx(n.qS)} L/min` : `정밀: Q = K√(10P), K = ${fx(netK(n))}`,
     tiles: [
@@ -3986,10 +4062,10 @@ function netCard(v, kind, ctx) {
       { l: kind === 'sp' ? '개방 헤드' : '개방 노즐', v: fx(open.length), u: '개' },
     ],
     warns: warns.filter(Boolean),
-    extraTop: `<div class="drawing net-fig">${netSVG(M, R, n, open, {})}</div>${legend}${btn}`,
+    extraTop: `<div class="drawing net-fig" title="누르면 도면을 열어요">${ieSVG(M, R, n, { open })}</div>${legend}${btn}`,
     notes: [
       `조도계수 C = ${fx(n.C)}, 안지름은 ${n.dia === 'spp' ? '배관용 탄소강관(SPP) 안지름' : '호칭경 그대로'}, 1 MPa = ${fx(k)} m${off.length ? `, 계산에서 뺀 관부속: ${off.join('·')}` : ''}${kind === 'in' ? (n.hoseOn ? `, 호스 ${fx(n.hoseLen)} m × 100 m당 ${fx(n.hoseRate)} m (130 L/min 기준, 유량의 1.85제곱에 비례)` : ', 호스 마찰손실은 넣지 않았어요 (도면 화면에서 체크하면 넣어요)') : ''}`,
-      '관부속 상당길이는 흔히 쓰는 표 값을 기본으로 넣었어요. 문제에 값이 주어지면 도면 화면의 마찰손실 설정에서 고쳐 쓰세요.',
+      '관부속 상당길이는 흔히 쓰는 표 값을 기본으로 넣었어요. 문제에 값이 주어지면 도면 화면 아래 상당길이 표에서 고쳐 쓰세요.',
     ],
     steps,
     extra: `<div><h4 class="sub-h">열린 ${u} (1번이 펌프에서 가장 먼 ${u}${kind === 'sp' ? ', 이름은 행-열' : ''})</h4>${table(['번호', u, '방수압 (MPa)', '방수량 (L/min)'], open.map((id) => [no.get(id), name(id) + (id === R.gov ? ' · 압력 최저' : ''), fx(R.P.get(id)), fx(R.q.get(id))]))}</div>
@@ -3998,302 +4074,946 @@ function netCard(v, kind, ctx) {
   };
 }
 
-/* 도면 SVG */
-const netSVG = (M, R, n, open, o) => (M.kind === 'pt' ? netSvgPT(M, R, n, open, o) : netSvgIN(M, R, n, open, o));
-function netSvgIN(M, R, n, open, o) {
-  const g = M.geo, sel = o.sel || {}, op = new Set(open), no = new Map(open.map((id, i) => [id, i + 1]));
-  const zw = n.tankOn ? g.pz + (n.tankPos === 'above' ? n0(n.tankH) : -n0(n.tankH)) : g.pz;
-  const zTop = (g.nf - 1) * g.FH + Math.max(g.oh, 0) + Math.max(1.4, g.FH * 0.6), zBot = Math.min(0, g.pz, zw) - 1;
-  const s = Math.min(34, 470 / (zTop - zBot));
-  const colW = 180, x0 = 160, VW = x0 + (g.m - 1) * colW + 190, VH = +((zTop - zBot) * s + 34).toFixed(1);
-  const Y = (z) => +(16 + (zTop - z) * s).toFixed(1);
-  const xj = (i) => x0 + (i - 1) * colW, xo = (i) => xj(i) + 56, xz = (i) => xo(i) + 92, pX = x0 - 76;
-  let out = '', hits = '', labels = '';
-  const every = g.FH * s >= 16 ? 1 : Math.ceil(16 / (g.FH * s));
-  for (let k = 1; k <= g.nf; k++) {
-    const y = Y((k - 1) * g.FH);
-    out += `<line class="nt-fl" x1="8" y1="${y}" x2="${VW - 8}" y2="${y}"/>`;
-    if (k === 1 || k === g.nf || k % every === 0) labels += `<text class="nt-fn" x="12" y="${y - 4}">${k}층</text>`;
+/* 도면 열기: 스프링클러(일정지점)는 PE, 옥내소화전은 IE */
+const netKind = () => (current === 'sppoint' ? 'pt' : 'in');
+function openNet() { if (netKind() === 'pt') openPE(); else openIE(); }
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-act="net"]')) { openNet(); return; }
+  if (e.target.closest('[data-act="peskel"]')) { const v = cur(); ptSync(v); v.net.g = ptSkel(v.net); v.net.gSrc = ptSkelKey(v.net); v.net.gEdited = false; renderInputs(); renderResults(); return; }
+  if (e.target.closest('[data-act="inskel"]')) { const v = cur(); if (v.net && v.net.kind === 'in') { const c = v._netctx || {}; v.net.ig = inSkel(v.net, c); v.net.igSrc = inSkelKey(v.net, c); v.net.igEdited = false; } renderInputs(); renderResults(); }
+});
+
+/* =========================================================
+   ⑪-2 스프링클러 배관 도면 (직접 그리기)
+   가지배관 수·헤드 수로 처음 뼈대를 만들고, 그 뒤에는 수직배관·수평주행배관·가지배관·헤드·회향식 헤드·관부속을
+   도면에서 직접 그리고 고쳐요. 배관 길이를 바꾸면 그 뒤에 이어진 배관이 같이 움직여요.
+   ========================================================= */
+const PDIR = { 'z+': [0, 0, 1], 'z-': [0, 0, -1], 'x+': [1, 0, 0], 'x-': [-1, 0, 0], 'y+': [0, 1, 0], 'y-': [0, -1, 0] };
+const PROLE = { riser: '수직배관', main: '수평주행배관', branch: '가지배관' };
+const PAXIS = { riser: 'z', main: 'x', branch: 'y' };
+const PSIZE0 = { riser: 65, main: 50, branch: 32 };
+// 관부속 규격 (티: 주관 × 주관 × 가지, 레듀셔: 큰 쪽 × 작은 쪽)
+const PE_TEE = [[25, 25], [32, 25], [32, 32], [40, 25], [40, 32], [40, 40], [50, 25], [50, 32], [50, 40], [50, 50], [65, 25], [65, 32], [65, 40], [65, 50], [65, 65], [80, 50], [80, 65], [80, 80], [100, 65], [100, 80], [100, 100]].map(([a, b]) => `${a}×${a}×${b}`);
+const PE_RED = [[25, 15], [25, 20], [32, 25], [40, 25], [40, 32], [50, 25], [50, 32], [50, 40], [65, 40], [65, 50], [80, 50], [80, 65], [100, 65], [100, 80], [125, 100], [150, 125]].map(([a, b]) => `${a}×${b}`);
+const PE_FPOS = { teeB: 0.1, teeR: 0.1, red: 0.25, elbow: 0.9, gate: 0.5, angle: 0.5, check: 0.5 };
+const peCount = (fits) => (fits || []).reduce((o, f) => { if (FR.types[f.t]) o[f.t] = (o[f.t] || 0) + Math.max(0, Math.round(n0(f.n) || 1)); return o; }, {});
+
+// 뼈대: 왼쪽 칸의 가지배관 수·헤드 수·거리로 처음 도면을 만들어요
+function ptSkel(n) {
+  const M = netBuildPT({ ...n, ov: {} });
+  const g = { seq: 1, root: 'P', segs: [], heads: [] };
+  const ren = new Map([['P', 'P']]);
+  const nm = (x) => { if (!ren.has(x)) ren.set(x, 'n' + g.seq++); return ren.get(x); };
+  const fitsOf = (fit) => Object.entries(fit || {}).filter(([, c]) => c > 0).map(([t, c]) => ({ t, n: c, spec: '', pos: PE_FPOS[t] }));
+  M.segs.forEach((s) => {
+    if (s.role === 'drop') return;
+    const A = M.nodes.get(s.a), B = M.nodes.get(s.b), d = [B.x - A.x, B.y - A.y, B.z - A.z];
+    const ax = [0, 1, 2].reduce((m, i) => (Math.abs(d[i]) > Math.abs(d[m]) ? i : m), 0);
+    g.segs.push({ id: 's' + g.seq++, a: nm(s.a), b: nm(s.b), dir: 'xyz'[ax] + (d[ax] < 0 ? '-' : '+'), L: n0(s.L), size: s.size, role: ax === 2 ? 'riser' : s.role === 'branch' ? 'branch' : 'main', fits: fitsOf(s.fit) });
+  });
+  M.leaves.forEach((hid) => {
+    const D = M.segById.get(M.nodes.get(hid).up);
+    g.heads.push({ id: 'h' + g.seq++, at: nm(D.a), open: true, rb: n.dropOn ? { rise: n0(D.rise), over: n0(n.over), fall: n0(D.fall), size: D.size, fits: fitsOf(D.fit) } : null });
+  });
+  return g;
+}
+const ptSkelKey = (n) => JSON.stringify([n.lines, n.heads, n.S, n.first, n.Sb, n.c0, n.feed, n.rH, n.rL, n.dropOn, n.rise, n.over, n.fall, n.dropSize]);
+
+// 도면 → 계산용 배관망 (시작점에서부터 길이·방향으로 위치를 정해요)
+function peModel(g, n) {
+  const M = netModel('pt');
+  M.geo = {};
+  nAdd(M, g.root, { x: 0, y: 0, z: 0, label: '시작점' });
+  const out = new Map(), inDir = new Map(), q = [g.root];
+  g.segs.forEach((s) => { if (!out.has(s.a)) out.set(s.a, []); out.get(s.a).push(s); });
+  while (q.length) {
+    const a = q.shift(), A = M.nodes.get(a);
+    (out.get(a) || []).forEach((s) => {
+      if (M.nodes.has(s.b)) return;
+      const d = PDIR[s.dir] || PDIR['y+'], L = Math.max(0, n0(s.L));
+      nAdd(M, s.b, { x: A.x + d[0] * L, y: A.y + d[1] * L, z: A.z + d[2] * L });
+      const sg = { id: s.id, a, b: s.b, L, size: Number(s.size) || 25, fit: peCount(s.fits), fits: s.fits || (s.fits = []), role: s.role, dir: s.dir, src: s, label: '' };
+      M.segs.push(sg); M.segById.set(sg.id, sg); A.kids.push(sg.id); M.nodes.get(s.b).up = sg.id;
+      inDir.set(s.b, s.dir); q.push(s.b);
+    });
   }
+  g.heads.forEach((h) => {
+    const T = M.nodes.get(h.at);
+    if (!T || T.hasHead) return;
+    T.hasHead = h.id;
+    const rb = h.rb, din = inDir.get(h.at) || 'y+', od = PDIR[din[0] === 'z' ? 'y+' : din];
+    const ri = rb ? n0(rb.rise) : 0, ov = rb ? n0(rb.over) : 0, fa = rb ? n0(rb.fall) : 0;
+    nAdd(M, h.id, { x: T.x + od[0] * ov, y: T.y + od[1] * ov, z: T.z + ri - fa, leaf: true, head: h, tee: h.at, od });
+    const upS = M.segById.get(T.up);
+    const sg = { id: 'd' + h.id, a: h.at, b: h.id, L: ri + ov + fa, size: rb ? Number(rb.size) || 25 : (upS ? upS.size : 25), fit: rb ? peCount(rb.fits) : {}, fits: rb ? rb.fits || (rb.fits = []) : [], role: 'drop', rise: ri, over: ov, fall: fa, head: h, label: '' };
+    M.segs.push(sg); M.segById.set(sg.id, sg); T.kids.push(sg.id); M.nodes.get(h.id).up = sg.id;
+  });
+  // 헤드 번호: 시작점에서 배관을 따라 가장 먼 헤드가 ①
+  const dist = new Map([[M.root, 0]]);
+  M.segs.forEach((s) => dist.set(s.b, dist.get(s.a) + s.L));
+  M.dist = dist;
+  const order = M.leaves.slice().sort((a, b) => dist.get(b) - dist.get(a) || M.nodes.get(b).y - M.nodes.get(a).y || M.nodes.get(b).x - M.nodes.get(a).x);
+  order.forEach((id, r) => { const h = M.nodes.get(id); h.rank = r + 1; h.label = circ(r + 1); });
+  // 이름: 헤드가 달린 곳은 헤드 번호, 나머지 갈림길은 A, B, C …
+  let li = 0;
+  M.nodes.forEach((nd, id) => { if (id === M.root || nd.leaf) return; nd.name = nd.hasHead ? M.nodes.get(nd.hasHead).label : String.fromCharCode(65 + (li++ % 26)) + (li > 26 ? Math.floor((li - 1) / 26) : ''); });
+  const nmOf = (id) => (id === M.root ? '시작점' : M.nodes.get(id).name || M.nodes.get(id).label);
+  M.segs.forEach((s) => { s.label = s.role === 'drop' ? `헤드 ${M.nodes.get(s.b).label} ${s.head.rb ? '회향식' : '연결'}` : `${PROLE[s.role] || '배관'} ${nmOf(s.a)} → ${nmOf(s.b)}`; });
+  M.nmOf = nmOf;
+  return M;
+}
+
+/* 그림 (45°쯤에서 본 입체) */
+const PE_AX = [0.64, -0.46], PE_AY = [1, 0.17];
+const peRaw = (x, y, z) => [x * PE_AX[0] + y * PE_AY[0], x * PE_AX[1] + y * PE_AY[1] - z];
+function peView(M, edit, inset) {
+  const pts = [...M.nodes.values()].map((q) => peRaw(q.x, q.y, q.z));
+  let minX = Math.min(...pts.map((p) => p[0])), maxX = Math.max(...pts.map((p) => p[0]));
+  let minY = Math.min(...pts.map((p) => p[1])), maxY = Math.max(...pts.map((p) => p[1]));
+  if (edit) { minX -= 1.2; maxX += 1.2; minY -= 1.2; maxY += 0.8; }
+  const s = Math.max(14, Math.min(64, 720 / Math.max(1, maxX - minX), 380 / Math.max(1, maxY - minY)));
+  const pad = { l: 64, r: 70 + (inset ? 210 : 0), t: 46, b: 64 };
+  return { minX, minY, s, pad, VW: +((maxX - minX) * s + pad.l + pad.r).toFixed(1), VH: +(Math.max((maxY - minY) * s + pad.t + pad.b, inset ? 200 : 0)).toFixed(1) };
+}
+const peP = (V, x, y, z) => { const [a, b] = peRaw(x, y, z); return [+(V.pad.l + (a - V.minX) * V.s).toFixed(1), +(V.pad.t + (b - V.minY) * V.s).toFixed(1)]; };
+const peAxisPx = (V, dir) => { const d = PDIR[dir], o = peP(V, 0, 0, 0), p = peP(V, d[0], d[1], d[2]); return [p[0] - o[0], p[1] - o[1]]; };
+
+// 관부속 그림 (배관 방향으로 돌려서 그 자리에 놓아요)
+function peFitGlyph(t) {
+  const body = {
+    elbow: '<path class="pf-l" d="M-7,-8 V4 Q-7,7 -4,7 H8"/>',
+    teeR: '<path class="pf-l" d="M-9,0 H9 M0,0 V-9"/><path class="pf-a" d="M3,-3 L8,0 L3,3 Z"/>',
+    teeB: '<path class="pf-l" d="M-9,0 H9 M0,0 V-9"/><path class="pf-a" d="M-3,-4 L0,-10 L3,-4 Z"/>',
+    red: '<path class="pf-f" d="M-8,-6 L8,-3 L8,3 L-8,6 Z"/>',
+    gate: '<path class="pf-f" d="M-8,-6 L8,6 L8,-6 L-8,6 Z"/><path class="pf-l" d="M0,0 V-10 M-4,-10 H4"/>',
+    check: '<path class="pf-a" d="M-8,-6 L0,0 L-8,6 Z"/><path class="pf-f" d="M8,-6 L0,0 L8,6 Z"/><path class="pf-l" d="M-8,-8 L8,8"/>',
+    angle: '<path class="pf-f" d="M-9,-5 L0,0 L-9,5 Z M-5,-9 L0,0 L5,-9 Z"/><circle class="pf-a" r="2"/>',
+  }[t] || '<circle class="pf-f" r="5"/>';
+  return body;
+}
+const peFitIcon = (t) => `<svg class="pf-ic" viewBox="-13 -13 26 26" aria-hidden="true"><circle class="pf-bg" r="12"/>${peFitGlyph(t)}</svg>`;
+const peFitName = (f) => `${FR.types[f.t] ? FR.types[f.t][0] : f.t}${f.spec ? ` ${f.spec}` : ''}`;
+
+function peSVG(M, R, n, o = {}) {
+  const sel = o.sel || {}, hasRb = M.leaves.some((id) => M.nodes.get(id).head.rb) && !o.edit;
+  const V = o.view || peView(M, o.edit, hasRb);
+  const at = (id) => { const q = M.nodes.get(id); return peP(V, q.x, q.y, q.z); };
+  const wet = (id) => R && R.Q.get(id) > 0;
+  let grid = '', pipes = '', fits = '', heads = '', labels = '', hits = '', nodes = '';
+  // 먼 배관부터 그려서 가까운 배관이 위에
+  const segs = M.segs.filter((s) => s.role !== 'drop').sort((a, b) => M.nodes.get(b.b).x - M.nodes.get(a.b).x);
+  segs.forEach((sg) => {
+    const a = at(sg.a), b = at(sg.b), on = sel.t === 'seg' && sel.id === sg.id;
+    pipes += `<line class="nt-p r-${sg.role}${wet(sg.id) ? '' : ' dry'}${on ? ' sel' : ''}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
+    if (o.edit) hits += `<line class="nt-hit" data-seg="${sg.id}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>${sg.label} · ${sg.size}A · ${fx(sg.L)} m</title></line>`;
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len >= 38) {
+      const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, t = `${sg.size}A ${fx(sg.L)}m`;
+      if (Math.abs(b[0] - a[0]) < 2) labels += `<text class="nt-lb" x="${mx - 9}" y="${my + 4}" text-anchor="end">${t}</text>`;
+      else { const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI, a2 = ang > 90 || ang < -90 ? ang + 180 : ang; labels += `<text class="nt-lb" transform="translate(${mx},${my}) rotate(${a2.toFixed(1)})" y="-7" text-anchor="middle">${t}</text>`; }
+    }
+    if (len > 4) {
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+      sg.fits.forEach((f, i) => {
+        if (!FR.types[f.t]) return;
+        const p = Math.max(0.04, Math.min(0.96, f.pos != null ? f.pos : PE_FPOS[f.t] || 0.5)), x = a[0] + (b[0] - a[0]) * p, y = a[1] + (b[1] - a[1]) * p;
+        const fs = sel.t === 'seg' && sel.id === sg.id && sel.fit === i;
+        fits += `<g class="pf${fs ? ' sel' : ''}${n.fitOn && !n.fitOn[f.t] ? ' off' : ''}"${o.edit ? ` data-fit="${sg.id}:${i}"` : ''} transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${ang.toFixed(1)})"><title>${peFitName(f)}${n0(f.n) > 1 ? ` × ${f.n}` : ''}</title><circle class="pf-bg" r="11"/>${peFitGlyph(f.t)}</g>`;
+        if (f.spec || n0(f.n) > 1) labels += `<text class="pf-t" x="${(x + 13).toFixed(1)}" y="${(y + 16).toFixed(1)}">${f.spec || ''}${n0(f.n) > 1 ? ` ×${f.n}` : ''}</text>`;
+      });
+    }
+  });
+  // 헤드 (회향식은 위로 → 옆으로 → 아래로)
+  const op = new Set(o.open || []);
+  M.leaves.forEach((hid) => {
+    const H = M.nodes.get(hid), h = H.head, rb = h.rb, sg = M.segById.get(H.up), t = at(H.tee), on = op.has(hid);
+    let p3, path;
+    if (rb) {
+      const ri = Math.max(10, n0(rb.rise) * V.s), dn = Math.max(18, n0(rb.fall) * V.s + 6), ov = Math.max(10, n0(rb.over) * V.s), w = peAxisPx(V, (H.od[0] ? 'x' : 'y') + ((H.od[0] || H.od[1]) < 0 ? '-' : '+')), wl = Math.hypot(w[0], w[1]) || 1;
+      const p1 = [t[0], t[1] - ri], p2 = [+(p1[0] + w[0] / wl * ov).toFixed(1), +(p1[1] + w[1] / wl * ov).toFixed(1)];
+      p3 = [p2[0], +(p2[1] + dn).toFixed(1)];
+      path = `${t.join(',')} ${p1.join(',')} ${p2.join(',')} ${p3.join(',')}`;
+    } else { p3 = [t[0], +(t[1] + 14).toFixed(1)]; path = `${t.join(',')} ${p3.join(',')}`; }
+    const hs = sel.t === 'head' && sel.id === hid, ds = sel.t === 'seg' && sel.id === sg.id;
+    heads += `<polyline class="nt-p r-drop${wet(sg.id) ? '' : ' dry'}${ds ? ' sel' : ''}" points="${path}"/>`;
+    heads += `<path class="nt-hd${on ? ' on' : ''}${hs ? ' sel' : ''}" d="M${p3[0] - 6},${p3[1]} h12 l-6,9 z"/><line class="nt-hdl" x1="${p3[0] - 6}" y1="${p3[1] + 10}" x2="${p3[0] + 6}" y2="${p3[1] + 10}"/>`;
+    if (R && R.gov === hid) heads += `<circle class="nt-gov" cx="${p3[0]}" cy="${p3[1] + 4}" r="11"/>`;
+    labels += `<text class="nt-hn${on ? ' on' : ''}" x="${p3[0] + 9}" y="${p3[1] - 2}">${H.label}</text>`;
+    if (o.edit) {
+      if (rb) hits += `<polyline class="nt-hit" data-seg="${sg.id}" points="${path}"><title>${sg.label}</title></polyline>`;
+      hits += `<circle class="nt-hhit" data-head="${hid}" cx="${p3[0]}" cy="${p3[1] + 4}" r="13"><title>헤드 ${H.label}${on && R ? ` · ${fx(R.P.get(hid))} MPa · ${fx(R.q.get(hid))} L/min` : ' · 닫힘'}</title></circle>`;
+    }
+  });
+  const p0 = at(M.root);
+  labels += `<circle class="nt-start" cx="${p0[0]}" cy="${p0[1]}" r="5"/><text class="nt-lb nt-sl" x="${p0[0]}" y="${p0[1] + 22}" text-anchor="middle">시작점${n.basis === 'start' ? ` ${fx(n.Pstart)} MPa` : ''}</text>`;
+  if (o.edit) M.nodes.forEach((nd, id) => { if (nd.leaf) return; const p = at(id); nodes += `<circle class="pe-node" data-node="${id}" cx="${p[0]}" cy="${p[1]}" r="6"><title>${M.nmOf(id)}</title></circle>`; });
+  if (o.ghost) {
+    const G = o.ghost, a = peP(V, ...G.a), b = peP(V, ...G.b);
+    labels += `<line class="pe-ghost" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/><text class="pe-gt" x="${b[0] + 8}" y="${b[1] - 8}">${PROLE[G.role]} ${fx(G.L)} m</text>`;
+  }
+  if (o.mark) labels += `<circle class="pe-mark" cx="${o.mark[0]}" cy="${o.mark[1]}" r="7"/>`;
+  return `<svg class="net-svg nt-iso pe-svg" viewBox="0 0 ${V.VW} ${V.VH}" role="img" aria-label="스프링클러 배관 입체 도면">${grid}${pipes}${heads}${fits}${labels}${nodes}${hits}${hasRb ? peInset(M, sel, V) : ''}</svg>`;
+}
+// 회향식 헤드 확대 그림 (오른쪽 위)
+function peInset(M, sel, V) {
+  const ids = M.leaves.filter((id) => M.nodes.get(id).head.rb);
+  const hid = sel.t === 'head' && ids.includes(sel.id) ? sel.id : ids.slice().sort((a, b) => M.nodes.get(a).rank - M.nodes.get(b).rank)[0];
+  const H = M.nodes.get(hid), rb = H.head.rb, c = peCount(rb.fits), x0 = V.VW - 206, y0 = 10;
+  const fl = Object.entries(c).map(([t, k]) => `${FR.types[t][0]} ${k}`).join(' · ') || '관부속 없음';
+  return `<g class="pe-inset" transform="translate(${x0},${y0})">
+    <rect class="pe-in-bg" width="196" height="186" rx="8"/>
+    <text class="pe-in-t" x="10" y="20">회향식 헤드 ${H.label} 확대</text>
+    <line class="pe-in-br" x1="14" y1="134" x2="70" y2="134"/>
+    <polyline class="pe-in-p" points="56,134 56,62 132,62 132,124"/>
+    <path class="nt-hd on" d="M126,124 h12 l-6,9 z"/><line class="nt-hdl" x1="126" y1="134" x2="138" y2="134"/>
+    <line class="pe-in-d" x1="44" y1="134" x2="44" y2="62"/><text class="pe-in-l" x="40" y="102" text-anchor="end">위로</text><text class="pe-in-v" x="40" y="116" text-anchor="end">${fx(n0(rb.rise))} m</text>
+    <line class="pe-in-d" x1="56" y1="50" x2="132" y2="50"/><text class="pe-in-v" x="94" y="44" text-anchor="middle">옆으로 ${fx(n0(rb.over))} m</text>
+    <line class="pe-in-d" x1="146" y1="62" x2="146" y2="124"/><text class="pe-in-l" x="150" y="90">아래로</text><text class="pe-in-v" x="150" y="104">${fx(n0(rb.fall))} m</text>
+    <text class="pe-in-v" x="10" y="156">구경 ${rb.size}A</text>
+    <text class="pe-in-s" x="10" y="174">${fl}</text>
+  </g>`;
+}
+
+/* 고치기 화면 */
+const PE = { tool: 'pick', fit: null, sel: null, hist: [], drag: null, view: null, allSizes: false, pdrag: null };
+const PE_TOOLS = [['pick', '고르기'], ['riser', '수직배관'], ['main', '수평주행배관'], ['branch', '가지배관'], ['head', '헤드'], ['rbhead', '회향식 헤드'], ['del', '지우기']];
+const PE_TIPS = {
+  pick: '배관·헤드·관부속을 누르면 방수압·방수량·마찰손실이 크게 나오고, 길이·구경을 고칠 수 있어요.',
+  riser: '시작점이나 배관(점)에서 위·아래로 끌면 수직배관이 생겨요. 길이는 오른쪽에서 정확히 고쳐요.',
+  main: '시작점이나 배관(점)에서 끌면 수평주행배관이 생겨요. 길이는 오른쪽에서 정확히 고쳐요.',
+  branch: '배관(점)에서 끌면 가지배관이 뻗어 나가요. 배관 중간에서 시작해도 돼요.',
+  head: '배관 위나 점을 누르면 그 자리에 헤드가 달려요.',
+  rbhead: '배관 위나 점을 누르면 그 자리에 회향식 헤드가 달려요. 위로·옆으로·아래로 길이는 헤드를 눌러 고쳐요.',
+  del: '지울 배관·헤드·관부속을 누르세요. 배관을 지우면 그 뒤에 이어진 배관·헤드도 같이 지워져요.',
+  fit: '넣을 배관을 누르면 그 자리에 들어가요. 관부속 메뉴에서 끌어다 놓아도 돼요.',
+};
+const PE_HTML = `<div class="plan-modal" id="pe" hidden role="dialog" aria-modal="true" aria-labelledby="pe-title">
+  <div class="plan-box pe-box">
+    <header class="plan-h"><h2 id="pe-title">스프링클러 배관 도면</h2><button type="button" class="plan-x" data-pe="close">닫기</button></header>
+    <div class="plan-tools pe-tools">
+      <div class="pl-seg pe-tl" role="group" aria-label="그리기 도구">${PE_TOOLS.map(([k, l]) => `<button type="button" data-pt="${k}">${l}</button>`).join('')}<button type="button" data-pe="fitmenu" class="pe-fitbtn" aria-haspopup="true">관부속 ▾</button></div>
+      <div class="pl-seg" role="group" aria-label="열린 헤드"><button type="button" data-pe="openall">헤드 모두 열기</button><button type="button" data-pe="openone">① 하나만 열기</button></div>
+      <span class="pl-sp"></span>
+      <button type="button" class="pl-btn" data-pe="undo">되돌리기</button>
+      <button type="button" class="pl-btn" data-pe="skel">처음 뼈대로</button>
+    </div>
+    <div id="pe-fitpop" class="pe-pop" hidden></div>
+    <div class="plan-main pe-main">
+      <div class="pe-left"><div id="pe-canvas" class="pl-canvas pe-canvas"></div><p id="pe-tip" class="pl-tip"></p><div id="pe-table"></div></div>
+      <aside class="plan-side"><div id="pe-sum"></div><div id="pe-sel"></div></aside>
+    </div>
+  </div>
+</div>`;
+// 관부속 메뉴: 위에서 종류를 고르고, 티·레듀셔는 아래에서 규격을 골라요
+function peFitPop() {
+  const tab = PE.fitTab || 'teeB', specs = { teeB: PE_TEE, teeR: PE_TEE, red: PE_RED };
+  const item = (t, spec) => `<button type="button" class="pe-fi" data-pfit="${t}|${spec || ''}" title="${FR.types[t][0]}${spec ? ' ' + spec : ''}">${peFitIcon(t)}<span>${spec || FR.types[t][0]}</span></button>`;
+  return `<div class="pe-ftabs">${['teeB', 'teeR', 'red'].map((t) => `<button type="button" class="pe-ft" data-pftab="${t}" aria-pressed="${tab === t}">${peFitIcon(t)}<span>${FR.types[t][0]} ▸</span></button>`).join('')}${['elbow', 'gate', 'check', 'angle'].map((t) => item(t, '')).join('')}</div>
+    <div class="pe-fg"><b>${FR.types[tab][0]} 규격</b><div class="pe-fl">${specs[tab].map((sp) => item(tab, sp)).join('')}</div></div>
+    <p class="pl-note">고른 뒤 배관을 누르거나, 배관 위로 끌어다 놓으세요. 상당길이는 관부속이 붙은 배관 구경으로 찾아요.</p>`;
+}
+const peG = () => cur().net.g;
+function pePush() { const n = cur().net; PE.hist.push(JSON.stringify({ g: n.g, fitOn: n.fitOn })); if (PE.hist.length > 80) PE.hist.shift(); }
+function peDirty() { cur().net.gEdited = true; }
+function openPE() {
+  const v = cur();
+  ptSync(v);
+  if (!$('#pe')) document.body.insertAdjacentHTML('beforeend', PE_HTML);
+  $('#pe-fitpop').innerHTML = peFitPop();
+  Object.assign(PE, { tool: 'pick', fit: null, sel: null, hist: [], drag: null, view: null, pdrag: null });
+  $('#pe').hidden = false; document.body.style.overflow = 'hidden';
+  peDraw(true);
+  $('#pe .plan-x').focus();
+}
+function closePE() { $('#pe').hidden = true; $('#pe-fitpop').hidden = true; document.body.style.overflow = ''; renderInputs(); renderResults(); }
+function peDraw(full) {
+  const v = cur(), X = netRun(v, 'pt', {});
+  PE.last = X;
+  const sl = PE.sel;
+  if (sl && !(sl.t === 'seg' ? X.M.segById.has(sl.id) : X.M.nodes.has(sl.id))) PE.sel = null;
+  if (!PE.drag) PE.view = peView(X.M, true, false);
+  const rbOn = X.M.leaves.some((id) => X.M.nodes.get(id).head.rb);
+  // 회향식 확대 그림은 도면을 작게 만들지 않게 위에 겹쳐 띄워요
+  $('#pe-canvas').innerHTML = peSVG(X.M, X.R, X.n, { edit: true, sel: PE.sel || {}, open: X.open, view: PE.view, ghost: PE.drag && PE.drag.ghost, mark: PE.drag && PE.drag.mark })
+    + (rbOn ? `<div class="pe-inbox"><svg class="net-svg" viewBox="0 0 196 200">${peInset(X.M, PE.sel || {}, { VW: 206 })}</svg></div>` : '');
+  const svg = $('#pe-canvas svg');
+  svg.classList.toggle('mode-pipe', ['riser', 'main', 'branch', 'head', 'rbhead'].includes(PE.tool));
+  svg.classList.toggle('mode-fit', PE.tool === 'fit');
+  svg.classList.toggle('mode-del', PE.tool === 'del');
+  document.querySelectorAll('#pe [data-pt]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pt === PE.tool)));
+  $('#pe .pe-fitbtn').setAttribute('aria-pressed', String(PE.tool === 'fit'));
+  $('#pe .pe-fitbtn').innerHTML = PE.tool === 'fit' ? `${peFitIcon(PE.fit.t)} ${peFitName(PE.fit)} ▾` : '관부속 ▾';
+  $('#pe-tip').textContent = PE_TIPS[PE.tool];
+  $('#pe-sum').innerHTML = X.err ? `<p class="err">${X.err}</p>` : `<div class="pl-sum"><div class="pl-tot pe-tot"><span>전체 방수량</span><b>${fx(X.R.flow)}<small>L/min</small></b></div></div>`;
+  if (full) { $('#pe-sel').innerHTML = peSel(X); $('#pe-table').innerHTML = peLeTable(X); }
+  else { const st = $('#pe-stat'); if (st) st.innerHTML = peStat(X); }
+}
+// 고른 것의 방수압·방수량·마찰손실 (크게)
+function peStat(X) {
+  const sl = PE.sel, R = X.R;
+  if (!sl || !R) return '';
+  const big = (l, val, u) => `<div class="pl-tot"><span>${l}</span><b>${val}<small>${u}</small></b></div>`;
+  if (sl.t === 'head') {
+    const on = X.open.includes(sl.id);
+    let fr = 0;
+    for (let id = sl.id; id !== X.M.root;) { const s = X.M.segById.get(X.M.nodes.get(id).up); fr += R.loss.get(s.id).hf; id = s.a; }
+    return `<div class="pe-big">${big('방수압', fx(R.P.get(sl.id)), 'MPa')}${big('방수량', on ? fx(R.q.get(sl.id)) : '0', 'L/min')}${big('마찰손실 (시작점 → 이 헤드)', fx(fr), 'MPa')}</div>${on ? '' : '<p class="pl-note">닫힌 헤드라 물이 나오지 않아요.</p>'}`;
+  }
+  const s = X.M.segById.get(sl.id), L = R.loss.get(sl.id);
+  return `<div class="pe-big">${big('방수량 (이 배관에 흐르는 양)', fx(R.Q.get(sl.id)), 'L/min')}${big('방수압 (배관 끝)', fx(R.P.get(s.b)), 'MPa')}${big('마찰손실 (이 배관)', fx(L.hf), 'MPa')}</div>
+    <p class="pl-note">유속 ${fx(L.vel)} m/s · 상당길이 ${fx(L.Le)} m · 배관 끝 뒤에 있는 열린 헤드 방수량을 다 더한 게 이 배관의 방수량이에요.</p>`;
+}
+function peSel(X) {
+  const sl = PE.sel, n = X.n;
+  if (!sl) return '<p class="pl-empty">배관이나 헤드를 누르면 방수압·방수량·마찰손실이 여기 크게 나와요.</p>';
+  const num = (k, l, val, o = {}) => `<label class="pl-f">${l}<input type="number" step="${o.step || 'any'}" min="0" inputmode="decimal" data-ps="${k}" value="${val ?? ''}"></label>`;
+  const fitList = (fits, owner) => (fits.length ? `<div class="pe-flist">${fits.map((f, i) => `<div class="pe-frow${sl.fit === i ? ' on' : ''}">${peFitIcon(f.t)}<span>${peFitName(f)}${n.fitOn[f.t] ? '' : ' <small class="muted">(계산에서 뺌)</small>'}</span><label>개수<input type="number" min="1" step="1" data-pf="${owner}:${i}" value="${f.n || 1}"></label><button type="button" class="pl-mini" data-pe="fitdel:${owner}:${i}" aria-label="빼기">✕</button></div>`).join('')}</div>` : '<p class="pl-note">관부속이 없어요. 위 관부속 메뉴에서 골라 배관을 누르세요.</p>');
+  if (sl.t === 'head') {
+    const H = X.M.nodes.get(sl.id), h = H.head, rb = h.rb, on = h.open !== false;
+    return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">헤드 ${H.label}</b><span><button type="button" class="pl-btn" data-pe="headtoggle">${on ? '헤드 닫기' : '헤드 열기'}</button> <button type="button" class="pl-mini" data-pe="del">지우기</button></span></div>
+      <div id="pe-stat">${peStat(X)}</div>
+      <label class="nt-c"><input type="checkbox" data-pe-rb${rb ? ' checked' : ''}> <span>회향식 헤드 (가지배관에서 위로 올라갔다가 헤드로 내려와요)</span></label>
+      ${rb ? `<div class="pl-grid4">${num('rise', '위로 (m)', rb.rise, { step: 0.1 })}${num('over', '옆으로 (m)', rb.over, { step: 0.1 })}</div><div class="pl-grid4">${num('fall', '아래로 (m)', rb.fall, { step: 0.1 })}<label class="pl-f">구경<select data-ps="rbsize">${[15, 20, 25, 32].map((z) => `<option value="${z}"${Number(rb.size) === z ? ' selected' : ''}>${z}A</option>`).join('')}</select></label></div>
+        <p class="pl-sub">회향식 관부속</p>${fitList(rb.fits, 'd' + h.id)}` : ''}</div>`;
+  }
+  const s = X.M.segById.get(sl.id);
+  if (!s) return '';
+  if (s.role === 'drop') { PE.sel = { t: 'head', id: s.b }; return peSel(X); }
+  return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">${s.label}</b><button type="button" class="pl-mini" data-pe="del">지우기</button></div>
+    <div id="pe-stat">${peStat(X)}</div>
+    <div class="pl-grid4">${num('L', '길이 (m)', s.L, { step: 0.1 })}<label class="pl-f">구경<select data-ps="size">${FR.pipeSizes.map((z) => `<option value="${z}"${s.size === z ? ' selected' : ''}>${z}A</option>`).join('')}</select></label></div>
+    <label class="pl-f">종류<select data-ps="role">${Object.entries(PROLE).map(([k, l]) => `<option value="${k}"${s.role === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+    <p class="pl-sub">관부속</p>${fitList(s.fits, s.id)}</div>`;
+}
+// 관부속 상당길이 표 (도면 아래, 크게)
+function peLeTable(X) {
+  const n = X.n, used = new Set(X.M.segs.map((s) => s.size));
+  const cols = FR.sizes.map((z, i) => [z, i]).filter(([z]) => PE.allSizes || used.has(z));
+  return `<div class="pe-le"><div class="pe-le-h"><b>관부속 상당길이 (m)</b><span class="muted">체크한 관부속만 계산에 들어가요. 관부속이 붙은 배관 구경의 값을 써요.</span>
+    <label class="nt-c"><input type="checkbox" data-pe-all${PE.allSizes ? ' checked' : ''}> <span>모든 구경 보기</span></label><button type="button" class="pl-mini" data-pe="fitreset">표 값 처음대로</button></div>
+    <table class="t pe-le-t"><thead><tr><th>관부속</th>${cols.map(([z]) => `<th>${z}A</th>`).join('')}</tr></thead><tbody>${Object.entries(FR.types).map(([t, [nm]]) => `<tr class="${n.fitOn[t] ? '' : 'off'}"><th><label class="nt-c"><input type="checkbox" data-pe-on="${t}"${n.fitOn[t] ? ' checked' : ''}> ${peFitIcon(t)} <span>${nm}</span></label></th>${cols.map(([, i]) => `<td><input type="number" min="0" step="any" inputmode="decimal" data-pe-le="${t}:${i}" value="${n.fitLe[t][i]}"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+const peSvgPt = (e) => { const svg = $('#pe-canvas svg'), p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return [q.x, q.y]; };
+// 배관 위 어디를 눌렀는지 (0 = 시작, 1 = 끝)
+function peSegT(sid, pt) {
+  const X = PE.last, s = X.M.segById.get(sid), A = X.M.nodes.get(s.a), B = X.M.nodes.get(s.b), a = peP(PE.view, A.x, A.y, A.z), b = peP(PE.view, B.x, B.y, B.z);
+  const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+  return l2 ? Math.max(0, Math.min(1, ((pt[0] - a[0]) * dx + (pt[1] - a[1]) * dy) / l2)) : 0;
+}
+// 배관을 그 자리에서 둘로 나눠서 점을 만들어요 (0.1 m 단위)
+function peSplit(sid, t) {
+  const g = peG(), s = g.segs.find((x) => x.id === sid), L = n0(s.L);
+  const L1 = Math.round(L * t * 10) / 10;
+  if (L1 <= 0.05) return s.a;
+  if (L1 >= L - 0.05) return s.b;
+  const m = 'n' + g.seq++, s2 = { ...s, id: 's' + g.seq++, a: m, L: Math.round((L - L1) * 1000) / 1000, fits: [] }, tt = L1 / L;
+  const keep = [];
+  (s.fits || []).forEach((f) => { const p = f.pos != null ? f.pos : PE_FPOS[f.t] || 0.5; if (p < tt) keep.push({ ...f, pos: p / tt }); else s2.fits.push({ ...f, pos: (p - tt) / (1 - tt) }); });
+  Object.assign(s, { b: m, L: L1, fits: keep });
+  g.segs.splice(g.segs.indexOf(s) + 1, 0, s2);
+  return m;
+}
+function peDelSeg(sid) {
+  const g = peG(), gone = new Set(), q = [sid];
+  while (q.length) { const id = q.pop(), s = g.segs.find((x) => x.id === id); if (!s) continue; gone.add(id); g.segs.filter((x) => x.a === s.b).forEach((x) => q.push(x.id)); g.heads = g.heads.filter((h) => h.at !== s.b); }
+  g.segs = g.segs.filter((x) => !gone.has(x.id));
+}
+function peAddHead(at, rb) {
+  const g = peG(), n = cur().net;
+  if (at === g.root) return null;
+  if (g.heads.some((h) => h.at === at)) return g.heads.find((h) => h.at === at).id;
+  const id = 'h' + g.seq++;
+  g.heads.push({ id, at, open: true, rb: rb ? { rise: n.rise > 0 ? n.rise : 0.1, over: n.over > 0 ? n.over : 0.1, fall: n.fall > 0 ? n.fall : 0.3, size: n.dropSize || 25, fits: [{ t: 'teeB', n: 1, spec: '', pos: 0.1 }, { t: 'elbow', n: 2, spec: '', pos: 0.5 }, { t: 'red', n: 1, spec: '25×15', pos: 0.9 }] } : null });
+  return id;
+}
+function peFitOwner(owner) {
+  const g = peG();
+  if (owner[0] === 'd') { const h = g.heads.find((x) => 'd' + x.id === owner); return h && h.rb ? h.rb.fits : null; }
+  const s = g.segs.find((x) => x.id === owner);
+  return s ? (s.fits = s.fits || []) : null;
+}
+function pePlaceFit(sid, t, f) {
+  const fits = peFitOwner(sid);
+  if (!fits) return false;
+  pePush();
+  fits.push({ t: f.t, n: 1, spec: f.spec || '', pos: t });
+  cur().net.fitOn[f.t] = true;
+  peDirty();
+  PE.sel = sid[0] === 'd' ? { t: 'head', id: sid.slice(1) } : { t: 'seg', id: sid, fit: fits.length - 1 };
+  return true;
+}
+document.addEventListener('pointerdown', (e) => {
+  const pf = e.target.closest && e.target.closest('#pe [data-pfit]');
+  if (pf) { const [t, spec] = pf.dataset.pfit.split('|'); PE.pdrag = { t, spec, x: e.clientX, y: e.clientY, moved: false }; return; }
+  const svg = e.target.closest && e.target.closest('#pe-canvas svg');
+  if (!svg || !PE.last) return;
+  const X = PE.last, pt = peSvgPt(e), g = peG();
+  const nd = e.target.closest('[data-node]'), sg = e.target.closest('[data-seg]'), hd = e.target.closest('[data-head]'), ft = e.target.closest('[data-fit]');
+  const T = PE.tool;
+  if (T === 'riser' || T === 'main' || T === 'branch') {
+    let from = null, split = null, base;
+    if (nd) { from = nd.dataset.node; const q = X.M.nodes.get(from); base = [q.x, q.y, q.z]; }
+    else if (sg && sg.dataset.seg[0] !== 'd') {
+      const s = X.M.segById.get(sg.dataset.seg), tt = peSegT(s.id, pt), A = X.M.nodes.get(s.a), B = X.M.nodes.get(s.b);
+      const L1 = Math.round(s.L * tt * 10) / 10, f = s.L ? L1 / s.L : 0;
+      split = { sid: s.id, t: tt }; base = [A.x + (B.x - A.x) * f, A.y + (B.y - A.y) * f, A.z + (B.z - A.z) * f];
+    } else { $('#pe-tip').textContent = '시작점이나 배관 위에서 시작해서 끌어 주세요.'; return; }
+    PE.drag = { kind: 'pipe', role: T, from, split, base, start: peP(PE.view, ...base), L: 0, dir: null };
+    svg.setPointerCapture(e.pointerId);
+    return;
+  }
+  if (T === 'head' || T === 'rbhead') {
+    let at = null;
+    if (nd) at = nd.dataset.node;
+    else if (sg && sg.dataset.seg[0] !== 'd') { pePush(); at = peSplit(sg.dataset.seg, peSegT(sg.dataset.seg, pt)); }
+    else { $('#pe-tip').textContent = '배관 위나 점을 눌러 주세요.'; return; }
+    if (at === g.root) { $('#pe-tip').textContent = '시작점에는 헤드를 달 수 없어요.'; return; }
+    if (!sg) pePush();
+    const id = peAddHead(at, T === 'rbhead');
+    if (id) { peDirty(); PE.sel = { t: 'head', id }; }
+    peDraw(true); return;
+  }
+  if (T === 'fit') {
+    if (sg) { pePlaceFit(sg.dataset.seg, sg.dataset.seg[0] === 'd' ? 0.5 : peSegT(sg.dataset.seg, pt), PE.fit); peDraw(true); }
+    else $('#pe-tip').textContent = '관부속을 넣을 배관을 눌러 주세요.';
+    return;
+  }
+  if (T === 'del') {
+    if (ft) { const [sid, i] = ft.dataset.fit.split(':'); pePush(); peFitOwner(sid).splice(+i, 1); }
+    else if (hd) { pePush(); g.heads = g.heads.filter((h) => h.id !== hd.dataset.head); }
+    else if (sg) { pePush(); if (sg.dataset.seg[0] === 'd') { const hid = sg.dataset.seg.slice(1); g.heads = g.heads.filter((h) => h.id !== hid); } else peDelSeg(sg.dataset.seg); }
+    else return;
+    peDirty(); PE.sel = null; peDraw(true); return;
+  }
+  // 고르기
+  if (ft) { const [sid, i] = ft.dataset.fit.split(':'); PE.sel = sid[0] === 'd' ? { t: 'head', id: sid.slice(1) } : { t: 'seg', id: sid, fit: +i }; }
+  else if (hd) PE.sel = { t: 'head', id: hd.dataset.head };
+  else if (sg) PE.sel = sg.dataset.seg[0] === 'd' ? { t: 'head', id: sg.dataset.seg.slice(1) } : { t: 'seg', id: sg.dataset.seg };
+  else PE.sel = null;
+  peDraw(true);
+});
+document.addEventListener('pointermove', (e) => {
+  if (PE.pdrag) {
+    const D = PE.pdrag;
+    if (!D.moved && Math.hypot(e.clientX - D.x, e.clientY - D.y) > 6) { D.moved = true; $('#pe-fitpop').hidden = true; document.body.insertAdjacentHTML('beforeend', `<div id="pe-dragic" class="pe-dragic">${peFitIcon(D.t)}</div>`); }
+    if (D.moved) { const ic = $('#pe-dragic'); ic.style.left = e.clientX + 'px'; ic.style.top = e.clientY + 'px'; }
+    return;
+  }
+  const D = PE.drag;
+  if (!D || D.kind !== 'pipe') return;
+  const pt = peSvgPt(e), ax = PAXIS[D.role];
+  const w = peAxisPx(PE.view, ax + '+'), wl2 = w[0] * w[0] + w[1] * w[1];
+  const Ls = ((pt[0] - D.start[0]) * w[0] + (pt[1] - D.start[1]) * w[1]) / wl2, L = Math.round(Math.abs(Ls) * 10) / 10;
+  D.dir = ax + (Ls < 0 ? '-' : '+'); D.L = L;
+  const d = PDIR[D.dir];
+  D.ghost = L > 0 ? { a: D.base, b: [D.base[0] + d[0] * L, D.base[1] + d[1] * L, D.base[2] + d[2] * L], L, role: D.role } : null;
+  D.mark = D.start;
+  peDraw(false);
+});
+document.addEventListener('pointerup', (e) => {
+  if (PE.pdrag) {
+    const D = PE.pdrag; PE.pdrag = null;
+    const ic = $('#pe-dragic'); if (ic) ic.remove();
+    if (!D.moved) { PE.tool = 'fit'; PE.fit = { t: D.t, spec: D.spec }; $('#pe-fitpop').hidden = true; peDraw(false); return; }
+    const el = document.elementFromPoint(e.clientX, e.clientY), sg = el && el.closest('#pe-canvas [data-seg]');
+    if (sg) { pePlaceFit(sg.dataset.seg, sg.dataset.seg[0] === 'd' ? 0.5 : peSegT(sg.dataset.seg, peSvgPt(e)), D); peDraw(true); }
+    else $('#pe-tip').textContent = '관부속은 배관 위에 놓아 주세요.';
+    return;
+  }
+  const D = PE.drag;
+  if (!D) return;
+  PE.drag = null;
+  if (D.kind === 'pipe') {
+    if (!(D.L >= 0.1)) { $('#pe-tip').textContent = '끌어서 길이를 정해 주세요. (짧게 누르기만 하면 안 생겨요)'; peDraw(false); return; }
+    const g = peG(), X = PE.last;
+    pePush();
+    let from = D.from;
+    if (D.split) from = peSplit(D.split.sid, D.split.t);
+    const upId = from === g.root ? null : (g.segs.find((x) => x.b === from) || {}).id, upS = upId && X.M.segById.get(upId);
+    const size = upS && upS.role === D.role ? upS.size : PSIZE0[D.role];
+    const b = 'n' + g.seq++, id = 's' + g.seq++;
+    g.segs.push({ id, a: from, b, dir: D.dir, L: D.L, size, role: D.role, fits: [] });
+    peDirty(); PE.sel = { t: 'seg', id };
+    peDraw(true);
+  }
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#pe')) return;
+  const tb = e.target.closest('[data-pt]');
+  if (tb) { PE.tool = tb.dataset.pt; $('#pe-fitpop').hidden = true; peDraw(false); return; }
+  const ftab = e.target.closest('[data-pftab]');
+  if (ftab) { PE.fitTab = ftab.dataset.pftab; $('#pe-fitpop').innerHTML = peFitPop(); return; }
+  const a = e.target.closest('[data-pe]');
+  if (!a) { if (!e.target.closest('#pe-fitpop')) $('#pe-fitpop').hidden = true; return; }
+  const n = cur().net, g = n.g, [act, x1, x2] = a.dataset.pe.split(':');
+  if (act === 'close') { closePE(); return; }
+  if (act === 'fitmenu') { const p = $('#pe-fitpop'), r = a.getBoundingClientRect(); p.hidden = !p.hidden; p.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 440)) + 'px'; p.style.top = r.bottom + 6 + 'px'; return; }
+  if (act === 'undo') { if (!PE.hist.length) return; const h = JSON.parse(PE.hist.pop()); n.g = h.g; n.fitOn = h.fitOn; PE.sel = null; }
+  if (act === 'skel') { pePush(); n.g = ptSkel(n); n.gSrc = ptSkelKey(n); n.gEdited = false; PE.sel = null; }
+  if (act === 'openall') { pePush(); g.heads.forEach((h) => { h.open = true; }); peDirty(); }
+  if (act === 'openone') { pePush(); const X = PE.last, first = X.M.leaves.find((id) => X.M.nodes.get(id).rank === 1); g.heads.forEach((h) => { h.open = h.id === first; }); peDirty(); }
+  if (act === 'headtoggle' && PE.sel) { pePush(); const h = g.heads.find((x) => x.id === PE.sel.id); h.open = h.open === false; peDirty(); }
+  if (act === 'del' && PE.sel) {
+    pePush();
+    if (PE.sel.t === 'head') g.heads = g.heads.filter((h) => h.id !== PE.sel.id); else peDelSeg(PE.sel.id);
+    PE.sel = null; peDirty();
+  }
+  if (act === 'fitdel') { pePush(); const f = peFitOwner(x1); if (f) f.splice(+x2, 1); if (PE.sel) delete PE.sel.fit; peDirty(); }
+  if (act === 'fitreset') { pePush(); n.fitLe = Object.fromEntries(Object.entries(FR.types).map(([k, [, arr]]) => [k, arr.slice()])); }
+  peDraw(true);
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (!t.closest || !t.closest('#pe') || t.type !== 'number') return;
+  const n = cur().net, g = n.g, num = t.value === '' ? null : Number(t.value);
+  if (t.dataset.peLe) { const [ty, i] = t.dataset.peLe.split(':'); n.fitLe[ty][+i] = num == null ? 0 : Math.max(0, num); peDraw(false); return; }
+  if (t.dataset.pf) { const [o, i] = t.dataset.pf.split(':'), f = peFitOwner(o); if (f && f[+i] && num > 0) { f[+i].n = Math.round(num); peDirty(); } peDraw(false); return; }
+  const k = t.dataset.ps;
+  if (!k || !PE.sel || num == null || !(num >= 0)) return;
+  if (PE.sel.t === 'head') { const h = g.heads.find((x) => x.id === PE.sel.id); if (h && h.rb) h.rb[k] = num; }
+  else if (k === 'L') { const s = g.segs.find((x) => x.id === PE.sel.id); if (s) s.L = num; }
+  peDirty(); peDraw(false);
+});
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (!t.closest || !t.closest('#pe')) return;
+  const n = cur().net, g = n.g;
+  if (t.matches('[data-pe-all]')) { PE.allSizes = t.checked; peDraw(true); return; }
+  if (t.dataset.peOn) { pePush(); n.fitOn[t.dataset.peOn] = t.checked; peDraw(true); return; }
+  if (t.matches('[data-pe-rb]') && PE.sel) {
+    pePush();
+    const h = g.heads.find((x) => x.id === PE.sel.id);
+    h.rb = t.checked ? { rise: n.rise > 0 ? n.rise : 0.1, over: n.over > 0 ? n.over : 0.1, fall: n.fall > 0 ? n.fall : 0.3, size: n.dropSize || 25, fits: [{ t: 'teeB', n: 1, spec: '', pos: 0.1 }, { t: 'elbow', n: 2, spec: '', pos: 0.5 }, { t: 'red', n: 1, spec: '25×15', pos: 0.9 }] } : null;
+    peDirty(); peDraw(true); return;
+  }
+  if (t.tagName === 'SELECT' && PE.sel) {
+    pePush();
+    if (t.dataset.ps === 'rbsize') { const h = g.heads.find((x) => x.id === PE.sel.id); if (h && h.rb) h.rb.size = Number(t.value); }
+    else {
+      const s = g.segs.find((x) => x.id === PE.sel.id);
+      if (s && t.dataset.ps === 'size') s.size = Number(t.value);
+      if (s && t.dataset.ps === 'role') s.role = t.value;
+    }
+    peDirty(); peDraw(true); return;
+  }
+  if (t.type === 'number') peDraw(true);
+});
+document.addEventListener('keydown', (e) => {
+  if (!$('#pe') || $('#pe').hidden) return;
+  if (e.target.closest('input, select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); $('#pe [data-pe="undo"]').click(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (!$('#pe-fitpop').hidden) $('#pe-fitpop').hidden = true; else if (PE.tool !== 'pick') { PE.tool = 'pick'; peDraw(false); } else if (PE.sel) { PE.sel = null; peDraw(true); } else closePE(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && PE.sel) { e.preventDefault(); const b = $('#pe [data-pe="del"]'); if (b) b.click(); }
+});
+
+/* =========================================================
+   ⑪-3 옥내소화전 배관 도면: 층을 더하고 층고를 고치고, 층마다 옥내소화전(방수구 → 호스 → 노즐)을 달아요.
+   펌프는 1층 바닥보다 아래(지하)에도 둘 수 있어요. 노즐이 없는 소화전은 기준 방수량으로 봐요.
+   ========================================================= */
+function inSkel(n, ctx) {
+  const nf = Math.max(1, Math.min(60, Math.round((ctx && ctx.nf > 0 ? ctx.nf : n.nf) || 1))), FH = n.FH > 0 ? n.FH : 3.5;
+  const g = { seq: 1, floors: [], hyd: [], pumpZ: n0(n.pumpZ), pumpL: n0(n.pumpL), outH: n.outH != null ? n.outH : 1.5, ov: {} };
+  for (let k = 0; k < nf; k++) { const f = { id: 'f' + g.seq++, h: FH }; g.floors.push(f); g.hyd.push({ id: 'y' + g.seq++, floor: f.id, toL: n.outL > 0 ? n.outL : 1, gap: n.out2L > 0 ? n.out2L : 20, nozzle: true }); }
+  return g;
+}
+const inSkelKey = (n, ctx) => JSON.stringify([ctx && ctx.nf > 0 ? ctx.nf : n.nf, n.FH, !!(ctx && ctx.reel)]);
+function ieModel(g, n, ctx) {
+  const M = netModel('in'), reel = !!(ctx && ctx.reel), pp = STD.indoor.pipe;
+  const rs0 = reel ? pp.riserReel : pp.riser, bs0 = reel ? pp.branchReel : pp.branch, ov = g.ov || (g.ov = {});
+  const segAdd = (id, a, b, o) => {
+    const O = ov[id] || {}, fits = O.fits || o.fits;
+    const s = { id, a, b, ...o, L: O.L != null ? O.L : o.L, size: O.size || o.size, fits, fit: peCount(fits), edited: !!(O.fits || O.size) };
+    M.segs.push(s); M.segById.set(id, s); M.nodes.get(a).kids.push(id); M.nodes.get(b).up = id;
+    return s;
+  };
+  const oh = n0(g.outH), pz = n0(g.pumpZ), F = (t, pos) => ({ t, n: 1, spec: '', pos });
+  M.geo = { pz, oh, floors: [], maxCol: 1, pumpL: n0(g.pumpL) };
+  nAdd(M, 'P', { x: 0, z: pz, label: '펌프' });
+  const lastK = g.floors.reduce((m, f, k) => (g.hyd.some((h) => h.floor === f.id) ? k : m), -1);
+  let base = 0, prev = 'P', prevZ = pz;
+  g.floors.forEach((f, k) => {
+    M.geo.floors.push({ id: f.id, k: k + 1, base, h: n0(f.h) });
+    if (k <= lastK) {
+      const z = base + oh, N = 'N' + f.id;
+      nAdd(M, N, { x: 0, z, floor: k + 1 });
+      if (prev === 'P') segAdd('r' + f.id, 'P', N, { L: r2(n0(g.pumpL) + Math.abs(z - pz)), size: rs0, fits: n0(g.pumpL) > 0 ? [F('elbow', 0.9)] : [], role: 'riser', label: `수직배관 (펌프 → ${k + 1}층)`, lock: 'pump' });
+      else segAdd('r' + f.id, prev, N, { L: r2(z - prevZ), size: rs0, fits: [F('teeR', 0.22)], role: 'riser', label: `수직배관 ${k}층 → ${k + 1}층`, lock: 'floor', floorBelow: g.floors[k - 1].id });
+      const hs = g.hyd.filter((h) => h.floor === f.id);
+      M.geo.maxCol = Math.max(M.geo.maxCol, hs.length);
+      let jp = N;
+      hs.forEach((h, i) => {
+        const nm = `${k + 1}층${hs.length > 1 ? ' ' + (i + 1) + '번' : ''}`, last = i === hs.length - 1, end = k === lastK && last;
+        let J = N;
+        if (i > 0) { J = 'J' + h.id; nAdd(M, J, { x: i, z, floor: k + 1, col: i + 1 }); segAdd('f' + h.id, jp, J, { L: n0(h.gap), size: rs0, fits: [F(i === 1 ? 'teeB' : 'teeR', 0.12)], role: 'floor', col: i + 1, label: `${nm} 앞 수평배관`, hyd: h, lenKey: 'gap' }); }
+        const O = 'O' + h.id, Z = 'Z' + h.id;
+        nAdd(M, O, { x: i, z, floor: k + 1, col: i + 1 });
+        segAdd('o' + h.id, J, O, { L: n0(h.toL), size: bs0, fits: [F(end && hs.length === 1 ? 'elbow' : 'teeB', 0.28), F('angle', 0.78)], role: 'outlet', col: i + 1, label: `${nm} 방수구 연결 배관`, hyd: h, lenKey: 'toL' });
+        nAdd(M, Z, { x: i, z, floor: k + 1, col: i + 1, leaf: true, label: nm, hyd: h, fixQ: h.nozzle === false });
+        segAdd('z' + h.id, O, Z, { L: n0(n.hoseLen), size: bs0, fits: [], role: 'hose', hose: true, col: i + 1, label: `${nm} 호스`, hyd: h });
+        jp = J;
+      });
+      prev = N; prevZ = z;
+    }
+    base += n0(f.h);
+  });
+  M.geo.top = base;
+  return M;
+}
+
+/* 입면도 */
+function ieSVG(M, R, n, o = {}) {
+  const g = M.geo, sel = o.sel || {}, op = new Set(o.open || []), no = new Map((o.open || []).map((id, i) => [id, i + 1]));
+  const zw = n.tankOn ? g.pz + (n.tankPos === 'above' ? n0(n.tankH) : -n0(n.tankH)) : g.pz;
+  const zTop = g.top + 0.5, zLow = Math.min(0, g.pz, zw);
+  const s = Math.max(12, Math.min(34, 470 / Math.max(1, zTop - zLow + 1.5)));
+  const Y = (z) => +(14 + (zTop - z) * s).toFixed(1);
+  const colW = 280, x0 = 240, VW = x0 + (g.maxCol - 1) * colW + 250, VH = +(Y(zLow) + (n.tankOn && zw <= g.pz ? 62 : 46)).toFixed(1);
+  const xj = (c) => x0 + (c - 1) * colW, xo = (c) => xj(c) + 62, xz = (c) => xo(c) + 104, pX = x0 - 84;
+  let bands = '', out = '', fits = '', hits = '', labels = '';
+  // 층: 바닥선, 층 이름, 층고
+  g.floors.forEach((f) => {
+    const y0 = Y(f.base), y1 = Y(f.base + f.h), fs = sel.t === 'floor' && sel.id === f.id;
+    if (o.edit) bands += `<rect class="ie-band${fs ? ' on' : ''}" data-floor="${f.id}" x="0" y="${y1}" width="${VW}" height="${(y0 - y1).toFixed(1)}"><title>${f.k}층 · 층고 ${fx(f.h)} m (눌러서 고치기)</title></rect>`;
+    out += `<line class="nt-fl${f.k === 1 ? ' ie-gl' : ''}" x1="8" y1="${y0}" x2="${VW - 8}" y2="${y0}"/>`;
+    const dx = x0 - 130, ym = ((y0 + y1) / 2).toFixed(1);
+    out += `<line class="ie-dim" x1="${dx}" y1="${y0}" x2="${dx}" y2="${y1}"/><line class="ie-dim" x1="${dx - 4}" y1="${y0}" x2="${dx + 4}" y2="${y0}"/><line class="ie-dim" x1="${dx - 4}" y1="${y1}" x2="${dx + 4}" y2="${y1}"/>`;
+    labels += `<text class="nt-fn ie-fn" x="12" y="${y0 - 5}">${f.k}층</text><text class="ie-fh${fs ? ' on' : ''}"${o.edit ? ` data-floor="${f.id}" data-fh="1"` : ''} x="${dx - 5}" y="${(+ym + 4).toFixed(1)}" text-anchor="end">${fx(f.h)} m</text>`;
+  });
+  const yTop = Y(g.top);
+  out += `<line class="nt-fl" x1="8" y1="${yTop}" x2="${VW - 8}" y2="${yTop}"/>`;
+  if (g.pz < 0) labels += `<text class="nt-fn" x="12" y="${(Y(0) + 16).toFixed(1)}">지하 (1층 바닥 아래)</text>`;
   const P = (pts) => pts.map((p) => p.join(',')).join(' ');
   M.segs.forEach((sg) => {
     const a = M.nodes.get(sg.a), b = M.nodes.get(sg.b);
     let pts;
-    if (sg.role === 'riser') pts = sg.a === 'P' ? [[pX + 13, Y(a.z)], [x0, Y(a.z)], [x0, Y(b.z)]] : [[x0, Y(a.z)], [x0, Y(b.z)]];
-    else if (sg.role === 'floor') pts = [[xj(sg.col - 1), Y(a.z)], [xj(sg.col - 1), Y(a.z) - 12], [xj(sg.col), Y(a.z) - 12], [xj(sg.col), Y(b.z)]];
+    if (sg.role === 'riser') pts = sg.a === 'P' ? [[pX + 14, Y(a.z)], [x0, Y(a.z)], [x0, Y(b.z)]] : [[x0, Y(a.z)], [x0, Y(b.z)]];
+    else if (sg.role === 'floor') pts = [[xj(sg.col - 1), Y(a.z)], [xj(sg.col - 1), Y(a.z) - 24], [xj(sg.col), Y(a.z) - 24], [xj(sg.col), Y(b.z)]];
     else if (sg.role === 'outlet') pts = [[xj(sg.col), Y(b.z)], [xo(sg.col), Y(b.z)]];
-    else pts = [[xo(sg.col) + 14, Y(b.z)], [xz(sg.col) - 7, Y(b.z)]];
-    const cls = sg.hose ? `nt-hose${R && R.Q.get(sg.id) > 0 ? '' : ' dry'}${sel.t === 'seg' && sel.id === sg.id ? ' sel' : ''}` : `nt-p r-${sg.role}${R && R.Q.get(sg.id) > 0 ? '' : ' dry'}${sg.edited ? ' ed' : ''}${sel.t === 'seg' && sel.id === sg.id ? ' sel' : ''}`;
-    out += `<polyline class="${cls}" points="${P(pts)}"/>`;
+    else pts = [[xo(sg.col) + 14, Y(b.z)], [xz(sg.col) - 9, Y(b.z)]];
+    const on = sel.t === 'seg' && sel.id === sg.id, wet = R && R.Q.get(sg.id) > 0;
+    out += `<polyline class="${sg.hose ? 'nt-hose' : `nt-p r-${sg.role}`}${wet ? '' : ' dry'}${on ? ' sel' : ''}" points="${P(pts)}"/>`;
     if (o.edit) hits += `<polyline class="nt-hit" data-seg="${sg.id}" points="${P(pts)}"><title>${sg.label}${sg.hose ? '' : ` · φ${sg.size}`} · ${fx(sg.L)} m</title></polyline>`;
-    const ln = Math.abs(pts[pts.length - 1][1] - pts[0][1]) + Math.abs(pts[pts.length - 1][0] - pts[0][0]);
-    if (sg.role === 'riser' && ln >= 24) labels += `<text class="nt-lb" x="${x0 - 6}" y="${(Y(a.z) + Y(b.z)) / 2 + 3}" text-anchor="end">φ${sg.size}</text>`;
-    if (sg.role === 'outlet') labels += `<text class="nt-lb" x="${(xj(sg.col) + xo(sg.col)) / 2}" y="${Y(b.z) + 14}" text-anchor="middle">φ${sg.size}</text>`;
-    if (sg.role === 'outlet') out += `<rect class="nt-cab" x="${xo(sg.col)}" y="${Y(b.z) - 13}" width="14" height="24" rx="2"/>`;
+    if (sg.role === 'riser' && sg.a === 'P') labels += `<text class="nt-lb" x="${((pX + 14 + x0) / 2).toFixed(1)}" y="${Y(a.z) - 7}" text-anchor="middle">φ${sg.size} · ${fx(sg.L)} m</text>`;
+    else if (sg.role === 'riser' && Y(a.z) - Y(b.z) >= 24) labels += `<text class="nt-lb" x="${x0 - 12}" y="${((Y(a.z) + Y(b.z)) / 2 + 4).toFixed(1)}" text-anchor="end">φ${sg.size} · ${fx(sg.L)} m</text>`;
+    if (sg.role === 'floor') labels += `<text class="nt-lb" x="${((xj(sg.col - 1) + xj(sg.col)) / 2).toFixed(1)}" y="${Y(a.z) - 30}" text-anchor="middle">φ${sg.size} · ${fx(sg.L)} m</text>`;
+    if (sg.role === 'outlet') { labels += `<text class="nt-lb" x="${(xj(sg.col) + xo(sg.col)) / 2}" y="${Y(b.z) + 15}" text-anchor="middle">φ${sg.size}</text>`; out += `<rect class="nt-cab" x="${xo(sg.col)}" y="${Y(b.z) - 14}" width="14" height="26" rx="2"/>`; }
+    if (!sg.hose) {
+      let A = pts[0], B = pts[1];
+      for (let j = 1; j < pts.length - 1; j++) if (Math.hypot(pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]) > Math.hypot(B[0] - A[0], B[1] - A[1])) { A = pts[j]; B = pts[j + 1]; }
+      (sg.fits || []).forEach((f, i) => {
+        if (!FR.types[f.t]) return;
+        const pp = Math.max(0.05, Math.min(0.95, f.pos != null ? f.pos : 0.5));
+        let x = A[0] + (B[0] - A[0]) * pp, y = A[1] + (B[1] - A[1]) * pp, ang = Math.atan2(B[1] - A[1], B[0] - A[0]) * 180 / Math.PI;
+        if (sg.role === 'riser' && sg.a === 'P' && f.t === 'elbow' && n0(M.geo.pumpL) > 0) { x = x0; y = Y(a.z); ang = -90; }
+        const fsel = on && sel.fit === i;
+        fits += `<g class="pf${fsel ? ' sel' : ''}${n.fitOn && !n.fitOn[f.t] ? ' off' : ''}"${o.edit ? ` data-fit="${sg.id}:${i}"` : ''} transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${ang.toFixed(1)})"><title>${peFitName(f)}${n0(f.n) > 1 ? ` × ${f.n}` : ''}</title><circle class="pf-bg" r="10"/>${peFitGlyph(f.t)}</g>`;
+      });
+    }
   });
   M.leaves.forEach((id) => {
-    const h = M.nodes.get(id), i = h.x + 1, cx = xz(i), cy = Y(h.z), on = op.has(id), gov = R && R.gov === id;
-    out += `<circle class="nt-h${on ? ' on' : ''}${sel.t === 'head' && sel.id === id ? ' sel' : ''}" cx="${cx}" cy="${cy}" r="6"/>`;
-    if (gov) out += `<circle class="nt-gov" cx="${cx}" cy="${cy}" r="10"/>`;
-    if (on) labels += `<text class="nt-no" x="${cx + 9}" y="${cy - 7}">${no.get(id)}</text>`;
-    if (o.edit) hits += `<circle class="nt-hhit" data-head="${id}" cx="${cx}" cy="${cy}" r="13"><title>${h.label} 노즐${on && R ? ` · ${fx(R.P.get(id))} MPa · ${fx(R.q.get(id))} L/min` : ' · 닫힘'}</title></circle>`;
+    const h = M.nodes.get(id), c = h.col || 1, cx = xz(c), cy = Y(h.z), on = op.has(id), hs = sel.t === 'head' && sel.id === id;
+    if (h.hyd.nozzle === false) out += `<rect class="ie-end${on ? ' on' : ''}${hs ? ' sel' : ''}" x="${cx - 8}" y="${cy - 7}" width="7" height="14" rx="1.5"/>`;
+    else out += `<path class="ie-noz${on ? ' on' : ''}${hs ? ' sel' : ''}" d="M${cx - 9},${cy - 6} L${cx + 7},${cy - 2.5} L${cx + 7},${cy + 2.5} L${cx - 9},${cy + 6} Z"/>`;
+    if (R && R.gov === id) out += `<circle class="nt-gov" cx="${cx}" cy="${cy}" r="13"/>`;
+    labels += `<text class="ie-nl${on ? ' on' : ''}" x="${cx + 13}" y="${cy + 4}">${on ? `${no.get(id)}번 ` : ''}${h.hyd.nozzle === false ? '노즐 없음' : '노즐'}</text>`;
+    if (o.edit) hits += `<circle class="nt-hhit" data-head="${id}" cx="${cx}" cy="${cy}" r="15"><title>${h.label} 옥내소화전${on && R ? ` · ${fx(R.P.get(id))} MPa · ${fx(R.q.get(id))} L/min` : ' · 닫힘'}</title></circle>`;
   });
-  const py = Y(g.pz);
-  out += `<circle class="nt-pump" cx="${pX}" cy="${py}" r="13"/><text class="nt-pt" x="${pX}" y="${py + 4}" text-anchor="middle">P</text>`;
-  labels += `<text class="nt-lb" x="${pX}" y="${py + 28}" text-anchor="middle">펌프</text>`;
+  const py = Y(g.pz), ps = sel.t === 'pump';
+  out += `<circle class="nt-pump${ps ? ' sel' : ''}" cx="${pX}" cy="${py}" r="14"/><text class="nt-pt" x="${pX}" y="${py + 4}" text-anchor="middle">P</text>`;
+  labels += `<text class="nt-lb" x="${pX}" y="${py + 30}" text-anchor="middle">펌프 ${g.pz < 0 ? `(1층 바닥 아래 ${fx(-g.pz)} m)` : g.pz > 0 ? `(1층 바닥 위 ${fx(g.pz)} m)` : '(1층 바닥)'}</text>`;
+  if (o.edit) hits += `<circle class="nt-hhit" data-pump="1" cx="${pX}" cy="${py}" r="18"><title>펌프 위치 고치기</title></circle>`;
   if (n.tankOn) {
-    const ty = Y(zw), tx = pX - 70;
-    out += `<rect class="nt-tank" x="${tx}" y="${ty - 4}" width="44" height="26" rx="3"/><line class="nt-wl" x1="${tx}" y1="${ty}" x2="${tx + 44}" y2="${ty}"/><polyline class="nt-p r-suc" points="${tx + 44},${ty + 10} ${pX - 20},${ty + 10} ${pX - 20},${py} ${pX - 13},${py}"/>`;
-    labels += `<text class="nt-lb" x="${tx + 22}" y="${ty + 36}" text-anchor="middle">수조 수면</text>`;
+    const ty = Y(zw), tx = pX - 74;
+    out += `<rect class="nt-tank" x="${tx}" y="${ty - 4}" width="46" height="26" rx="3"/><line class="nt-wl" x1="${tx}" y1="${ty}" x2="${tx + 46}" y2="${ty}"/><polyline class="nt-p r-suc" points="${tx + 46},${ty + 10} ${pX - 22},${ty + 10} ${pX - 22},${py} ${pX - 14},${py}"/>`;
+    labels += `<text class="nt-lb" x="${tx + 23}" y="${ty + 38}" text-anchor="middle">수조 수면</text>`;
   }
-  return `<svg class="net-svg" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="옥내소화전 배관 입면도">${out}${labels}${hits}</svg>`;
+  return `<svg class="net-svg ie-svg" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="옥내소화전 배관 입면도">${bands}${out}${fits}${labels}${hits}</svg>`;
 }
 
-/* 도면 고치기 화면 */
-const NET = { sel: null, tool: 'pick', last: null, open: new Set(['뼈대', '높이']) };
-const netKind = () => (current === 'sppoint' ? 'pt' : 'in');
-const NET_HTML = `<div class="plan-modal" id="net" hidden role="dialog" aria-modal="true" aria-labelledby="nt-title">
-  <div class="plan-box">
-    <header class="plan-h"><h2 id="nt-title">배관 도면으로 마찰손실·전양정 구하기</h2><button type="button" class="plan-x" data-na="close">닫기</button></header>
-    <div class="plan-tools" id="nt-tools"></div>
-    <div class="plan-main nt-main">
-      <div class="plan-left"><div id="nt-canvas" class="pl-canvas nt-canvas"></div><p id="nt-tip" class="pl-tip"></p></div>
-      <aside class="plan-side"><div id="nt-sum"></div><div id="nt-selbox"></div><div id="nt-forms" class="nt-forms"></div></aside>
+/* 고치기 화면 */
+const IE = { tool: 'pick', fit: null, sel: null, hist: [], pdrag: null };
+const IE_TOOLS = [['pick', '고르기'], ['add', '옥내소화전 추가'], ['del', '지우기']];
+const IE_TIPS = {
+  pick: '층·배관·노즐·펌프를 누르면 방수압·방수량·마찰손실이 크게 나오고 고칠 수 있어요. 층고는 층(빈 곳)이나 층고 숫자를 눌러 바꿔요.',
+  add: '옥내소화전을 더할 층을 누르세요.',
+  del: '지울 옥내소화전(노즐)이나 관부속을 누르세요. 층은 층을 누른 뒤 오른쪽에서 지워요.',
+  fit: '넣을 배관을 누르면 그 자리에 들어가요. 관부속 메뉴에서 끌어다 놓아도 돼요.',
+};
+const IE_HTML = `<div class="plan-modal" id="ie" hidden role="dialog" aria-modal="true" aria-labelledby="ie-title">
+  <div class="plan-box pe-box">
+    <header class="plan-h"><h2 id="ie-title">옥내소화전 배관 도면</h2><button type="button" class="plan-x" data-ie="close">닫기</button></header>
+    <div class="plan-tools pe-tools">
+      <div class="pl-seg pe-tl" role="group" aria-label="도구">${IE_TOOLS.map(([k, l]) => `<button type="button" data-it="${k}">${l}</button>`).join('')}<button type="button" data-ie="fitmenu" class="pe-fitbtn">관부속 ▾</button></div>
+      <button type="button" class="pl-btn" data-ie="addfloor">층 추가</button>
+      <div class="pl-seg" role="group" aria-label="열린 노즐" id="ie-open"></div>
+      <span class="pl-sp"></span>
+      <button type="button" class="pl-btn" data-ie="undo">되돌리기</button>
+      <button type="button" class="pl-btn" data-ie="skel">처음 뼈대로</button>
+    </div>
+    <div id="ie-fitpop" class="pe-pop" hidden></div>
+    <div class="plan-main pe-main">
+      <div class="pe-left"><div id="ie-canvas" class="pl-canvas pe-canvas ie-canvas"></div><p id="ie-tip" class="pl-tip"></p><div id="ie-table"></div><div id="ie-hose"></div><div id="ie-cond"></div></div>
+      <aside class="plan-side"><div id="ie-sum"></div><div id="ie-sel"></div></aside>
     </div>
   </div>
 </div>`;
-function openNet() {
+const ieN = () => cur().net;
+function iePush() { const n = ieN(); IE.hist.push(JSON.stringify({ ig: n.ig, fitOn: n.fitOn })); if (IE.hist.length > 80) IE.hist.shift(); }
+function ieDirty() { ieN().igEdited = true; }
+function openIE() {
   const v = cur();
-  if (netKind() === 'pt') { ptSync(v); NET.open.add('마찰손실'); }
-  else if (!v.net || v.net.kind !== netKind()) v.net = netDefaults(netKind());
-  if (!$('#net')) document.body.insertAdjacentHTML('beforeend', NET_HTML);
-  $('#nt-title').textContent = netKind() === 'pt' ? '배관 도면 고치기 (헤드별 방수압·방수량)' : '배관 도면으로 마찰손실·전양정 구하기';
-  NET.sel = null;
-  if (!$('#net')) document.body.insertAdjacentHTML('beforeend', NET_HTML);
-  $('#net').hidden = false;
-  document.body.style.overflow = 'hidden';
-  ntDraw(true);
-  $('#net .plan-x').focus();
+  if (!v.net || v.net.kind !== 'in') v.net = netDefaults('in');
+  if (!$('#ie')) document.body.insertAdjacentHTML('beforeend', IE_HTML);
+  Object.assign(IE, { tool: 'pick', fit: null, sel: null, hist: [], pdrag: null });
+  $('#ie').hidden = false; document.body.style.overflow = 'hidden';
+  ieDraw(true);
+  $('#ie .plan-x').focus();
 }
-function closeNet() {
-  $('#net').hidden = true;
-  document.body.style.overflow = '';
-  renderInputs(); renderResults();
+function closeIE() { $('#ie').hidden = true; $('#ie-fitpop').hidden = true; document.body.style.overflow = ''; renderInputs(); renderResults(); }
+function ieDraw(full) {
+  const v = cur(), X = netRun(v, 'in', v._netctx || {});
+  IE.last = X;
+  const sl = IE.sel;
+  if (sl && ((sl.t === 'seg' && !X.M.segById.has(sl.id)) || (sl.t === 'head' && !X.M.nodes.has(sl.id)) || (sl.t === 'floor' && !X.n.ig.floors.some((f) => f.id === sl.id)))) IE.sel = null;
+  $('#ie-canvas').innerHTML = ieSVG(X.M, X.R, X.n, { edit: true, sel: IE.sel || {}, open: X.open });
+  const svg = $('#ie-canvas svg');
+  svg.classList.toggle('mode-add', IE.tool === 'add');
+  svg.classList.toggle('mode-fit', IE.tool === 'fit');
+  svg.classList.toggle('mode-del', IE.tool === 'del');
+  document.querySelectorAll('#ie [data-it]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.it === IE.tool)));
+  $('#ie .pe-fitbtn').setAttribute('aria-pressed', String(IE.tool === 'fit'));
+  $('#ie .pe-fitbtn').innerHTML = IE.tool === 'fit' ? `${peFitIcon(IE.fit.t)} ${peFitName(IE.fit)} ▾` : '관부속 ▾';
+  const n = X.n, ob = (m, t) => `<button type="button" data-ie="open:${m}" aria-pressed="${n.openMode === m}">${t}</button>`;
+  $('#ie-open').innerHTML = `${ob('base', `기준개수 ${Math.round(X.nBase)}개`)}${ob('last', '최말단 1개')}${ob('all', '모두')}${n.openMode === 'custom' ? '<button type="button" aria-pressed="true" disabled>직접 고름</button>' : ''}`;
+  $('#ie-tip').textContent = IE_TIPS[IE.tool];
+  $('#ie-sum').innerHTML = X.err ? `<p class="err">${X.err}</p>` : `<div class="pl-sum"><div class="pl-tot pe-tot"><span>전체 방수량 (펌프 토출량)</span><b>${fx(X.R.flow)}<small>L/min</small></b></div><div class="pl-tot pe-tot"><span>전양정</span><b>${fx(X.R.H)}<small>m</small></b></div></div>`;
+  if (full) { $('#ie-sel').innerHTML = ieSel(X); $('#ie-table').innerHTML = peLeTable(X); $('#ie-hose').innerHTML = ieHose(n); $('#ie-cond').innerHTML = ieCond(X); }
+  else { const st = $('#ie-stat'); if (st) st.innerHTML = ieStat(X); }
 }
-function ntEditSeg(X) {
-  const sl = NET.sel;
-  if (!sl) return null;
-  if (sl.t === 'seg') return X.M.segById.get(sl.id) || null;
-  const h = X.M.nodes.get(sl.id);
-  if (!h) return null;
-  const up = X.M.segById.get(h.up);
-  if (X.M.kind !== 'in') return X.n.dropOn ? up : X.M.segById.get(X.M.nodes.get(up.a).up);   // 회향식이 없으면 헤드로 가는 가지배관
-  return X.M.segById.get(X.M.nodes.get(up.a).up);   // 옥내: 노즐 → 호스 → 방수구 연결 배관
-}
-function ntDraw(full) {
-  const v = cur(), X = netRun(v, v.net.kind, v._netctx || {});
-  NET.last = X;
-  const sl = NET.sel;
-  if (sl && !(sl.t === 'seg' ? X.M.segById.has(sl.id) : X.M.nodes.has(sl.id))) { NET.sel = null; $('#nt-selbox').innerHTML = ntSelBox(X); }
-  $('#nt-canvas').innerHTML = netSVG(X.M, X.R, X.n, X.open, { edit: true, sel: NET.sel || {} });
-  $('#nt-sum').innerHTML = ntSum(X);
-  if (full) {
-    NET.bigKey = ntBig(X.M);
-    $('#nt-tools').innerHTML = ntTools(X);
-    $('#nt-selbox').innerHTML = ntSelBox(X);
-    $('#nt-forms').innerHTML = ntForms(X);
-    $('#nt-tip').textContent = NET.tool === 'toggle'
-      ? `${X.M.kind === 'in' ? '노즐' : '헤드'}를 누르면 열림·닫힘이 바뀌어요. 배관을 누르면 길이·구경·관부속을 고칠 수 있어요.`
-      : `배관이나 ${X.M.kind === 'in' ? '노즐' : '헤드'}를 누르면 오른쪽에서 고칠 수 있어요. 고친 배관은 점선으로 보여요.`;
-  }
-  const st = $('#nt-stat');
-  if (st) st.innerHTML = ntStat(X);
-  const ft = $('#nt-fittbl'), bk = ntBig(X.M);
-  if (ft && NET.bigKey !== bk) ft.innerHTML = ntFitTable(X.n, X.M);
-  NET.bigKey = bk;
-  const kn = $('#nt-knote');
-  if (kn) { const K = netK(X.n), u = X.M.kind === 'in' ? '노즐' : '헤드'; kn.textContent = `지금 K = ${fx(K)} → 최소 방수압 ${fx(X.n.Pmin)} MPa에서 ${fx(K * Math.sqrt(10 * n0(X.n.Pmin)))} L/min. 간단 계산은 열린 ${u} 모두 기준 방수량으로 봐요.`; }
-}
-function ntSum(X) {
-  if (X.err) return `<p class="err">${X.err}</p>`;
-  if (X.M.kind === 'pt') {
-    const R = X.R, start = X.n.basis === 'start', fr = R.path.reduce((a, s) => a + R.loss.get(s.id).hf, 0);
-    return `<div class="pl-sum">
-    <div class="pl-tot"><span>${start ? '최말단 방수압' : '시작점 압력'}</span><b>${fx(start ? R.P.get(R.gov) : R.Proot)}<small>MPa</small></b></div>
-    <div class="pl-tot"><span>전체 방수량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
-    <p class="pl-note">총 마찰손실압력 ${fx(fr)} MPa · 낙차 ${fx(X.M.nodes.get(R.gov).z - X.M.nodes.get(X.M.root).z)} m · 열린 헤드 ${X.open.length}개 · 방수압이 가장 낮은 헤드: ${X.M.nodes.get(R.gov).label}</p>
-  </div>`;
-  }
-  const R = X.R, u = X.M.kind === 'sp' ? '헤드' : '노즐';
-  return `<div class="pl-sum">
-    <div class="pl-tot"><span>펌프 토출량</span><b>${fx(R.flow)}<small>L/min</small></b></div>
-    <div class="pl-tot"><span>전양정</span><b>${fx(R.H)}<small>m</small></b></div>
-    <p class="pl-note">h₁ ${fx(R.h1)} + h₂ ${fx(R.h2)} + h₃ ${fx(R.h3)} m · 펌프 토출압력 ${fx(R.Proot)} MPa · 열린 ${u} ${X.open.length}개 · 압력이 가장 낮은 ${u}: ${X.M.nodes.get(R.gov).label}</p>
-  </div>`;
-}
-function ntTools(X) {
-  const n = X.n, u = X.M.kind === 'in' ? '노즐' : '헤드';
-  const pb = (m, t) => `<button type="button" data-na="open:${m}" aria-pressed="${n.openMode === m}">${t}</button>`;
-  const tb = (m, t) => `<button type="button" data-na="tool:${m}" aria-pressed="${NET.tool === m}">${t}</button>`;
-  if (X.M.kind === 'pt') return `<div class="pl-seg" role="group" aria-label="열린 헤드">${pb('all', '모두')}${pb('last', '① 1개만')}${pb('line', '끝 가지배관 1줄')}${n.openMode === 'custom' ? '<button type="button" aria-pressed="true" disabled>직접 고름</button>' : ''}</div>
-    <div class="pl-seg" role="group" aria-label="누르면">${tb('pick', '고르기')}${tb('toggle', '헤드 열기·닫기')}</div>
-    <span class="pl-sp"></span>
-    <button type="button" class="pl-btn" data-na="reset">처음 뼈대로</button>`;
-  return `<div class="pl-seg" role="group" aria-label="열린 ${u}">${pb('base', `기준개수 ${Math.round(X.nBase)}개`)}${pb('last', '최말단 1개')}${pb('all', '모두')}${n.openMode === 'custom' ? '<button type="button" aria-pressed="true" disabled>직접 고름</button>' : ''}</div>
-    <div class="pl-seg" role="group" aria-label="누르면">${tb('pick', '고르기')}${tb('toggle', `${u} 열기·닫기`)}</div>
-    <label class="pl-tl">방수량 <select data-n="mode"><option value="precise"${n.mode === 'precise' ? ' selected' : ''}>정밀: Q = K√(10P)</option><option value="simple"${n.mode === 'simple' ? ' selected' : ''}>간단: 모두 ${fx(n.qS)} L/min</option></select></label>
-    <span class="pl-sp"></span>
-    <button type="button" class="pl-btn" data-na="reset">처음 뼈대로</button>`;
-}
-const ntNum = (key, label, val, o = {}) => `<label class="pl-f${o.wide ? ' nt-wide' : ''}">${label}<input type="number" step="any" inputmode="decimal" data-${o.attr || 'n'}="${key}" value="${val ?? ''}"${o.min != null ? ` min="${o.min}"` : ''}${o.dis ? ' disabled' : ''}></label>`;
-const ntChk = (key, label, on, attr = 'n') => `<label class="nt-c"><input type="checkbox" data-${attr}="${key}"${on ? ' checked' : ''}> <span>${label}</span></label>`;
-const ntSel = (key, label, val, opts, o = {}) => `<label class="pl-f${o.wide ? ' nt-wide' : ''}">${label}<select data-${o.attr || 'n'}="${key}">${opts.map(([k, l]) => `<option value="${k}"${String(k) === String(val) ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
-function ntSelBox(X) {
-  const u = X.M.kind === 'in' ? '노즐' : '헤드', sl = NET.sel;
-  if (!sl) return `<p class="pl-empty">배관이나 ${u}를 누르면 여기서 고칠 수 있어요.</p>`;
-  const s = ntEditSeg(X), n = X.n;
-  let top = '';
+function ieStat(X) {
+  const sl = IE.sel, R = X.R;
+  if (!sl || !R) return '';
+  const big = (l, val, u, sub) => `<div class="pl-tot"><span>${l}</span><b>${val}<small>${u}</small></b>${sub ? `<small class="muted">${sub}</small>` : ''}</div>`;
   if (sl.t === 'head') {
     const on = X.open.includes(sl.id);
-    top = `<div class="nt-eh"><b>${u} ${X.M.nodes.get(sl.id).label}</b><button type="button" class="pl-btn" data-na="headtoggle">${on ? `${u} 닫기` : `${u} 열기`}</button></div>`;
-    if (X.M.kind !== 'in' && n.dropOn) top += `<div class="pl-grid4">${ntNum('rise', '위로 올라가는 높이 (m)', s.rise, { attr: 'hz', min: 0 })}${ntNum('fall', '아래로 내려오는 높이 (m)', s.fall, { attr: 'hz', min: 0 })}</div>`;
+    let hm = 0;
+    for (let id = sl.id; id !== X.M.root;) { const s = X.M.segById.get(X.M.nodes.get(id).up); hm += R.loss.get(s.id).hm; id = s.a; }
+    return `<div class="pe-big">${big('방수압', fx(R.P.get(sl.id)), 'MPa')}${big('방수량', on ? fx(R.q.get(sl.id)) : '0', 'L/min')}${big('마찰손실 (펌프 → 여기)', fx(hm), 'm', `${fx(hm / R.k)} MPa`)}</div>${on ? '' : '<p class="pl-note">닫혀 있어서 물이 나오지 않아요.</p>'}`;
   }
-  const segForm = s.hose ? '<p class="pl-note">호스 길이와 마찰손실은 아래 \'호스\'에서 바꿔요.</p>'
-    : `<div class="pl-grid4">${ntNum('L', '직관 길이 (m)', s.L, { attr: 'sg', min: 0 })}${ntSel('size', '구경', s.size, FR.pipeSizes.map((z) => [z, `${z}A`]), { attr: 'sg' })}</div>
-      <div class="nt-fit">${Object.entries(FR.types).map(([t, [nm]]) => `<label class="pl-f${n.fitOn[t] ? '' : ' off'}">${nm}<input type="number" min="0" step="1" inputmode="numeric" data-sg="fit:${t}" value="${s.fit[t] || 0}"></label>`).join('')}</div>`;
-  return `<div class="pl-edit">${top}
-    <div class="nt-eh"><span>${sl.t === 'head' ? `<small class="muted">${s.label}</small>` : `<b>${s.label}</b>`}</span>${s.edited ? '<button type="button" class="pl-mini" data-na="segreset">원래대로</button>' : ''}</div>
-    ${segForm}
-    <div id="nt-stat" class="nt-stat"></div></div>`;
+  if (sl.t !== 'seg') return '';
+  const s = X.M.segById.get(sl.id), L = R.loss.get(sl.id);
+  return `<div class="pe-big">${big('방수량 (이 배관에 흐르는 양)', fx(R.Q.get(sl.id)), 'L/min')}${big('방수압 (배관 끝)', fx(R.P.get(s.b)), 'MPa')}${big('마찰손실 (이 배관)', fx(L.hm), 'm', `${fx(L.hf)} MPa`)}</div>
+    ${s.hose ? '' : `<p class="pl-note">유속 ${fx(L.vel)} m/s · 상당길이 ${fx(L.Le)} m</p>`}`;
 }
-function ntStat(X) {
-  if (!X.R || !NET.sel) return '';
-  const s = ntEditSeg(X);
+function ieSel(X) {
+  const sl = IE.sel, n = X.n, g = n.ig;
+  const num = (k, l, val, o = {}) => `<label class="pl-f">${l}<input type="number" step="${o.step || 'any'}"${o.min != null ? ` min="${o.min}"` : ''} inputmode="decimal" data-is="${k}" value="${val ?? ''}"></label>`;
+  if (!sl) return '<p class="pl-empty">층·배관·노즐·펌프를 누르면 여기서 고쳐요. 노즐이나 배관을 누르면 방수압·방수량·마찰손실이 크게 나와요.</p>';
+  if (sl.t === 'floor') {
+    const k = g.floors.findIndex((f) => f.id === sl.id), f = g.floors[k], cnt = g.hyd.filter((h) => h.floor === f.id).length;
+    return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">${k + 1}층</b>${g.floors.length > 1 ? '<button type="button" class="pl-mini" data-ie="delfloor">층 지우기</button>' : ''}</div>
+      ${num('h', '층고 (m)', f.h, { step: 0.1, min: 0 })}
+      <p class="pl-note">이 층 옥내소화전 ${cnt}개 · 층고를 바꾸면 위층이 같이 올라가요.</p>
+      <button type="button" class="pl-btn" data-ie="addhyd">이 층에 옥내소화전 더하기</button></div>`;
+  }
+  if (sl.t === 'pump') {
+    const fh = g.floors[0] ? n0(g.floors[0].h) : 3.5, chip = (z, l) => `<button type="button" class="pe-ft" data-ie="pz:${z}" aria-pressed="${n0(g.pumpZ) === z}">${l}</button>`;
+    return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">펌프</b></div>
+      <div class="pe-fl">${chip(0, '1층 바닥')}${chip(-r2(fh), '지하 1층')}${chip(-r2(2 * fh), '지하 2층')}</div>
+      ${num('pumpZ', '펌프 높이 (1층 바닥 기준, 지하는 −, m)', g.pumpZ, { step: 0.1 })}${num('pumpL', '펌프 → 수직배관 수평 길이 (m)', g.pumpL, { step: 0.1, min: 0 })}${num('outH', '방수구 높이 (층 바닥 기준, m)', g.outH, { step: 0.1, min: 0 })}
+      <label class="nt-c"><input type="checkbox" data-ie-n="tankOn"${n.tankOn ? ' checked' : ''}> <span>수조 위치 넣기 (펌프보다 아래·위)</span></label>
+      ${n.tankOn ? `<label class="pl-f">수조<select data-ie-n="tankPos"><option value="below"${n.tankPos === 'below' ? ' selected' : ''}>펌프보다 아래 (흡입)</option><option value="above"${n.tankPos === 'above' ? ' selected' : ''}>펌프보다 위 (압입)</option></select></label>
+        <div class="pl-grid4"><label class="pl-f">펌프와 수면 높이 차 (m)<input type="number" step="any" min="0" data-ie-n="tankH" value="${n.tankH ?? ''}"></label><label class="pl-f">흡입측 마찰손실 (m)<input type="number" step="any" min="0" data-ie-n="sucLoss" value="${n.sucLoss ?? ''}"></label></div>` : ''}</div>`;
+  }
+  const fitList = (s) => (s.fits.length ? `<div class="pe-flist">${s.fits.map((f, i) => `<div class="pe-frow${sl.fit === i ? ' on' : ''}">${peFitIcon(f.t)}<span>${peFitName(f)}${n.fitOn[f.t] ? '' : ' <small class="muted">(계산에서 뺌)</small>'}</span><label>개수<input type="number" min="1" step="1" data-if="${i}" value="${f.n || 1}"></label><button type="button" class="pl-mini" data-ie="fitdel:${i}" aria-label="빼기">✕</button></div>`).join('')}</div>` : '<p class="pl-note">관부속이 없어요. 위 관부속 메뉴에서 골라 배관을 누르세요.</p>');
+  if (sl.t === 'head') {
+    const H = X.M.nodes.get(sl.id), h = H.hyd, on = X.open.includes(sl.id);
+    return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">${H.label} 옥내소화전</b><span><button type="button" class="pl-btn" data-ie="headtoggle">${on ? '닫기' : '열기'}</button> <button type="button" class="pl-mini" data-ie="delhyd">지우기</button></span></div>
+      <div id="ie-stat">${ieStat(X)}</div>
+      <label class="nt-c"><input type="checkbox" data-ie-noz${h.nozzle !== false ? ' checked' : ''}> <span>노즐 있음 (없으면 기준 방수량 ${fx(n.qS)} L/min로 봐요)</span></label>
+      <div class="pl-grid4">${num('toL', '방수구 연결 배관 (m)', h.toL, { step: 0.1, min: 0 })}${H.col > 1 ? num('gap', '앞 소화전과 수평 거리 (m)', h.gap, { step: 0.1, min: 0 }) : ''}</div></div>`;
+  }
+  const s = X.M.segById.get(sl.id);
   if (!s) return '';
-  const L = X.R.loss.get(s.id), Q = X.R.Q.get(s.id);
-  let t = `유량 ${fx(Q)} L/min${s.hose ? '' : ` · 유속 ${fx(L.vel)} m/s · 상당길이 ${fx(L.Le)} m`} · 마찰손실 ${fx(L.hm)} m`;
-  if (NET.sel.t === 'head') {
-    const id = NET.sel.id;
-    t = (X.open.includes(id) ? `<b>방수압 ${fx(X.R.P.get(id))} MPa · 방수량 ${fx(X.R.q.get(id))} L/min</b>` : '닫혀 있어요') + '<br>' + t;
+  const lenF = s.hose ? '<p class="pl-note">호스 길이와 마찰손실은 도면 아래 \'호스\'에서 바꿔요.</p>'
+    : s.lock === 'floor' ? num('L', '길이 (m) = 아래층 층고', s.L, { step: 0.1, min: 0 })
+    : s.lock === 'pump' ? `<p class="pl-note">길이 ${fx(s.L)} m: 펌프 높이·수평 길이와 방수구 높이로 정해져요. 펌프를 눌러 고쳐요.</p>`
+    : num('L', '길이 (m)', s.L, { step: 0.1, min: 0 });
+  return `<div class="pl-edit"><div class="nt-eh"><b class="pe-h">${s.label}</b>${s.edited && !s.hose ? '<button type="button" class="pl-mini" data-ie="segreset">관부속·구경 처음대로</button>' : ''}</div>
+    <div id="ie-stat">${ieStat(X)}</div>
+    ${s.hose ? lenF : `<div class="pl-grid4">${s.lock === 'pump' ? '' : lenF}<label class="pl-f">구경<select data-is="size">${FR.pipeSizes.map((z) => `<option value="${z}"${s.size === z ? ' selected' : ''}>${z}A</option>`).join('')}</select></label></div>${s.lock === 'pump' ? lenF : ''}
+    <p class="pl-sub">관부속</p>${fitList(s)}`}</div>`;
+}
+function ieHose(n) {
+  const ref = `기준값 (130 L/min, 100 m당 마찰손실수두): ${Object.values(FR.hose).map(([l, r]) => `${l} ${r} m`).join(' · ')}`;
+  return `<div class="pe-le"><div class="pe-le-h"><b>호스</b><span class="muted">문제에 호스 마찰손실이 주어지면 체크하고 값을 넣으세요.</span></div>
+    <label class="nt-c"><input type="checkbox" data-ie-n="hoseOn"${n.hoseOn ? ' checked' : ''}> <span>호스 마찰손실 넣기</span></label>
+    ${n.hoseOn ? `<div class="ie-g"><label class="pl-f">기준값 불러오기<select data-ie-n="hoseType">${Object.entries(FR.hose).map(([k, [l, r]]) => `<option value="${k}"${n.hoseType === k ? ' selected' : ''}>${l} (${r} m)</option>`).join('')}</select></label>
+      <label class="pl-f">호스 길이 (m)<input type="number" step="any" min="0" data-ie-n="hoseLen" value="${n.hoseLen ?? ''}"></label><label class="pl-f">100 m당 마찰손실 (m)<input type="number" step="any" min="0" data-ie-n="hoseRate" value="${n.hoseRate ?? ''}"></label></div>
+      <p class="pl-note">100 m당 마찰손실은 130 L/min 기준이에요. 유량이 다르면 1.85제곱에 비례해서 바꿔 계산해요.</p>` : `<p class="pl-note">${ref}</p>`}</div>`;
+}
+function ieCond(X) {
+  const n = X.n, sel = (k, l, val, opts) => `<label class="pl-f">${l}<select data-ie-n="${k}">${opts.map(([a, b]) => `<option value="${a}"${String(a) === String(val) ? ' selected' : ''}>${b}</option>`).join('')}</select></label>`;
+  const num = (k, l, val) => `<label class="pl-f">${l}<input type="number" step="any" min="0" data-ie-n="${k}" value="${val ?? ''}"></label>`, K = netK(n);
+  return `<div class="pe-le"><div class="pe-le-h"><b>계산 조건</b></div><div class="ie-g">
+    ${sel('mode', '방수량', n.mode, [['precise', '정밀: Q = K√(10P)'], ['simple', `간단: 모두 ${fx(n.qS)} L/min`]])}
+    ${sel('kMode', '방출계수 K 정하는 방법', n.kMode, [['qp', '기준 방수량·방수압으로 (K = Q ÷ √(10P))'], ['k', 'K 직접 넣기'], ['d', '노즐 구경으로 (K = 0.653 × d²)']])}
+    ${num('qS', '기준 방수량 (L/min)', n.qS)}${num('Pmin', '최말단 최소 방수압 (MPa)', n.Pmin)}
+    ${n.kMode === 'k' ? num('K', '방출계수 K', n.K) : n.kMode === 'd' ? num('nozD', '노즐 구경 d (mm)', n.nozD) : ''}
+    ${sel('conv', '압력 ↔ 수두', n.conv, [['std', '1 MPa = 101.97 m (표준대기압)'], ['simple', '1 MPa = 100 m (간략)']])}
+    ${num('C', '조도계수 C', n.C)}${sel('dia', '안지름', n.dia, [['nom', '호칭경 그대로 (25A → 25 mm)'], ['spp', '배관용 탄소강관(SPP) 안지름']])}
+    </div><p class="pl-note">지금 K = ${fx(K)} → 최소 방수압 ${fx(n.Pmin)} MPa에서 ${fx(K * Math.sqrt(10 * n0(n.Pmin)))} L/min.</p></div>`;
+}
+function ieFits(sid) {
+  const n = ieN(), X = IE.last, s = X.M.segById.get(sid);
+  if (!s || s.hose) return null;
+  const O = n.ig.ov[sid] = n.ig.ov[sid] || {};
+  if (!O.fits) O.fits = s.fits.map((f) => ({ ...f }));
+  return O.fits;
+}
+const ieSegT = (sid, e) => {
+  const el = document.querySelector(`#ie-canvas polyline[data-seg="${sid}"]`), svg = $('#ie-canvas svg'), p = svg.createSVGPoint();
+  p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse());
+  const pts = el.getAttribute('points').split(' ').map((t) => t.split(',').map(Number));
+  let A = pts[0], B = pts[1];
+  for (let j = 1; j < pts.length - 1; j++) if (Math.hypot(pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]) > Math.hypot(B[0] - A[0], B[1] - A[1])) { A = pts[j]; B = pts[j + 1]; }
+  const dx = B[0] - A[0], dy = B[1] - A[1], l2 = dx * dx + dy * dy;
+  return l2 ? Math.max(0, Math.min(1, ((q.x - A[0]) * dx + (q.y - A[1]) * dy) / l2)) : 0.5;
+};
+function iePlaceFit(sid, t, f) {
+  const fits = ieFits(sid);
+  if (!fits) return false;
+  iePush();
+  fits.push({ t: f.t, n: 1, spec: f.spec || '', pos: t });
+  ieN().fitOn[f.t] = true; ieDirty();
+  IE.sel = { t: 'seg', id: sid, fit: fits.length - 1 };
+  return true;
+}
+function ieAddHyd(fid) {
+  const g = ieN().ig;
+  iePush();
+  const id = 'y' + g.seq++;
+  const at = g.hyd.map((h) => h.floor).lastIndexOf(fid);
+  const h = { id, floor: fid, toL: 1, gap: 20, nozzle: true };
+  if (at >= 0) g.hyd.splice(at + 1, 0, h); else g.hyd.push(h);
+  ieDirty();
+  return id;
+}
+document.addEventListener('pointerdown', (e) => {
+  const pf = e.target.closest && e.target.closest('#ie [data-pfit]');
+  if (pf) { const [t, spec] = pf.dataset.pfit.split('|'); IE.pdrag = { t, spec, x: e.clientX, y: e.clientY, moved: false }; return; }
+  const svg = e.target.closest && e.target.closest('#ie-canvas svg');
+  if (!svg || !IE.last) return;
+  const n = ieN(), g = n.ig;
+  const sg = e.target.closest('[data-seg]'), hd = e.target.closest('[data-head]'), fl = e.target.closest('[data-floor]'), ft = e.target.closest('[data-fit]'), pm = e.target.closest('[data-pump]');
+  if (IE.tool === 'add') {
+    const fid = fl ? fl.dataset.floor : hd ? (IE.last.M.nodes.get(hd.dataset.head).hyd || {}).floor : null;
+    if (!fid) { $('#ie-tip').textContent = '옥내소화전을 더할 층을 누르세요.'; return; }
+    const id = ieAddHyd(fid); IE.sel = { t: 'head', id: 'Z' + id }; ieDraw(true); return;
   }
-  return t;
-}
-const ntBig = (M) => [...new Set(M.segs.filter((s) => !s.hose && s.size > 50).map((s) => s.size))].sort((a, b) => a - b).join(',');
-function ntFitTable(n, M) {
-  const big = new Set(ntBig(M).split(',').filter(Boolean).map(Number));
-  const cols = FR.sizes.map((z, i) => [z, i]).filter(([z]) => z <= 50 || big.has(z));
-  return `<div class="tbl-wrap nt-le"><table class="t"><thead><tr><th>관부속</th>${cols.map(([z]) => `<th>${z}A</th>`).join('')}</tr></thead><tbody>${Object.entries(FR.types).map(([t, [nm]]) => `<tr class="${n.fitOn[t] ? '' : 'off'}"><th>${ntChk(t, nm, n.fitOn[t], 'fon')}</th>${cols.map(([z, i]) => `<td><input type="number" step="any" min="0" inputmode="decimal" data-le="${t}:${i}" value="${n.fitLe[t][i]}" aria-label="${nm} ${z}A 상당길이"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-}
-function ntForms(X) {
-  const n = X.n, g = X.M.geo, sp = false, fol = n.follow && Object.keys(v_ctx()).length > 0;
-  const D = (t, body) => { const key = t.split(' ')[0]; return `<details class="nt-d" data-key="${key}"${NET.open.has(key) ? ' open' : ''}><summary>${t}</summary><div class="nt-g">${body}</div></details>`; };
-  if (X.M.kind === 'pt') return `<p class="pl-note">가지배관 수·헤드 수·거리, 높이, 계산 기준, 마찰손실 식은 왼쪽 조건 칸에서 바꿔요.</p>` + D('마찰손실 설정 (관부속)', `<div class="nt-wide"><p class="pl-note">관부속 상당길이 (m). 체크한 관부속만 계산에 들어가요. 문제에서 관부속을 무시하라고 하면 체크를 모두 빼세요.</p><div id="nt-fittbl">${ntFitTable(n, X.M)}</div><button type="button" class="pl-mini" data-na="fitreset">표 값 처음대로</button></div>`);
-  const tank = ntChk('tankOn', '수조 위치 넣기 (펌프보다 아래·위)', n.tankOn) + (n.tankOn
-    ? ntSel('tankPos', '수조', n.tankPos, [['below', '펌프보다 아래 (흡입)'], ['above', '펌프보다 위 (압입)']]) + ntNum('tankH', '펌프와 수면 높이 차 (m)', n.tankH, { min: 0 }) + ntNum('sucLoss', '흡입측 마찰손실 (m)', n.sucLoss, { min: 0 })
-    : '');
-  const sk = sp
-    ? ntChk('follow', '스프링클러 계산의 헤드 배치 따라가기', n.follow)
-      + ntNum('nx', '한 줄 헤드 수', fol ? g.nx : n.nx, { min: 1, dis: fol }) + ntNum('ny', '가지배관 줄 수', fol ? g.ny : n.ny, { min: 1, dis: fol })
-      + ntNum('Sx', '헤드 간격 (m)', fol ? r2(g.Sx) : n.Sx, { min: 0, dis: fol }) + ntNum('Sy', '가지배관 간격 (m)', fol ? r2(g.Sy) : n.Sy, { min: 0, dis: fol })
-      + ntSel('feed', '교차배관 연결', n.feed, [['center', '가지배관 가운데 (양쪽으로 뻗음)'], ['end', '가지배관 한쪽 끝']], { wide: true })
-    : ntChk('follow', '옥내소화전 계산의 층수·설치개수 따라가기', n.follow)
-      + ntNum('nf', '층수', fol ? g.nf : n.nf, { min: 1, dis: fol }) + ntNum('perFloor', '층당 방수구 수 (5개까지)', fol ? g.m : n.perFloor, { min: 1, dis: fol })
-      + ntNum('FH', '층고 (m)', n.FH, { min: 0 }) + ntNum('outH', '방수구 높이 (층 바닥 기준, m)', n.outH, { min: 0 })
-      + ntNum('outL', '수직배관 → 방수구 배관 (m)', n.outL, { min: 0 }) + (g.m > 1 ? ntNum('out2L', '방수구 사이 수평배관 (m)', n.out2L, { min: 0 }) : '');
-  const hi = sp
-    ? ntNum('hB', n.floorsOn ? '층 바닥 → 가지배관 높이 (m)' : '펌프 → 가지배관 높이 (m)', n.hB, { min: 0 }) + ntNum('pumpL', '펌프 → 수직배관 수평 길이 (m)', n.pumpL, { min: 0 })
-      + ntChk('floorsOn', '여러 층 건물 (펌프는 1층 바닥, 맨 위층을 계산)', n.floorsOn)
-      + (n.floorsOn ? ntNum('nf', '층수', n.nf, { min: 1 }) + ntNum('FH', '층고 (m)', n.FH, { min: 0 }) : '')
-      + ntChk('dropOn', '회향식 넣기 (가지배관에서 위로 올라갔다가 헤드로 내려오는 배관)', n.dropOn)
-      + (n.dropOn ? ntNum('rise', '위로 (m)', n.rise, { min: 0 }) + ntNum('fall', '아래로 (m)', n.fall, { min: 0 }) + ntSel('dropSize', '연결 배관 구경', n.dropSize, [[20, '20A'], [25, '25A'], [32, '32A']]) + `<p class="pl-note">모든 헤드에 같이 적용돼요. 헤드 하나만 바꾸려면 그 헤드를 눌러서 고치세요.</p>` : '')
-      + tank
-    : ntNum('pumpZ', '펌프 높이 (1층 바닥 기준, 지하는 −, m)', n.pumpZ) + ntNum('pumpL', '펌프 → 수직배관 수평 길이 (m)', n.pumpL, { min: 0 }) + tank;
-  const u = sp ? '헤드' : '노즐';
-  const hd = ntSel('kMode', '방출계수 K 정하는 방법', n.kMode, [['qp', '기준 방수량·방수압으로 (K = Q ÷ √(10P))'], ['k', 'K 직접 넣기'], ...(sp ? [] : [['d', '노즐 구경으로 (K = 0.653 × d²)']])], { wide: true })
-    + ntNum('qS', `기준 방수량 (L/min)`, n.qS, { min: 0 }) + ntNum('Pmin', '최말단 최소 방수압 (MPa)', n.Pmin, { min: 0 })
-    + (n.kMode === 'k' ? ntNum('K', '방출계수 K', n.K, { min: 0 }) : n.kMode === 'd' ? ntNum('nozD', '노즐 구경 d (mm)', n.nozD, { min: 0 }) : '')
-    + `<p class="pl-note" id="nt-knote"></p>`
-    + ntSel('conv', '압력 ↔ 수두', n.conv, [['std', '1 MPa = 101.97 m (표준대기압)'], ['simple', '1 MPa = 100 m (간략)']], { wide: true });
-  const hoseRef = `기준값 (130 L/min, 100 m당 마찰손실수두): ${Object.values(FR.hose).map(([l, r]) => `${l} ${r} m`).join(' · ')}`;
-  const hose = sp ? '' : D('호스', ntChk('hoseOn', '호스 마찰손실 넣기 (문제에 주어지면 체크하고 값을 넣으세요)', n.hoseOn) + (n.hoseOn
-    ? ntSel('hoseType', '기준값 불러오기', n.hoseType, Object.entries(FR.hose).map(([k, [l, r]]) => [k, `${l} (${r} m)`]), { wide: true }) + ntNum('hoseLen', '호스 길이 (m)', n.hoseLen, { min: 0 }) + ntNum('hoseRate', '100 m당 마찰손실 (m)', n.hoseRate, { min: 0 })
-      + '<p class="pl-note">100 m당 마찰손실은 130 L/min 기준이에요. 유량이 다르면 1.85제곱에 비례해서 바꿔 계산해요.</p>' : `<p class="pl-note">${hoseRef}</p>`));
-  const fr = ntNum('C', '조도계수 C', n.C, { min: 0 }) + ntSel('dia', '안지름', n.dia, [['nom', '호칭경 그대로 (25A → 25 mm)'], ['spp', '배관용 탄소강관(SPP) 안지름']], { wide: true })
-    + `<div class="nt-wide"><p class="pl-note">관부속 상당길이 (m). 체크한 관부속만 계산에 들어가요. 게이트밸브·앵글밸브·체크밸브는 문제에 있을 때 체크하세요. 65A 이상 칸은 도면에 그 구경 배관이 있을 때만 보여요. 표 값은 흔히 쓰는 값이라 문제에 값이 주어지면 고쳐 쓰세요.</p><div id="nt-fittbl">${ntFitTable(n, X.M)}</div><button type="button" class="pl-mini" data-na="fitreset">표 값 처음대로</button></div>`;
-  return D(sp ? '뼈대 (헤드 배치)' : '뼈대 (층·방수구)', sk) + D('높이', hi) + D(`${u} 방수 조건`, hd) + hose + D('마찰손실 설정', fr);
-}
-const v_ctx = () => cur()._netctx || {};
-function ntApply(t) {
-  const n = cur().net, X = NET.last;
-  const num = t.value === '' ? null : Number(t.value);
-  if (t.dataset.n) {
-    const k = t.dataset.n;
-    let val = t.type === 'checkbox' ? t.checked : t.type === 'number' ? num : t.value;
-    if (k === 'dropSize') val = Number(val);
-    if (k === 'follow' && !val && X) {
-      const g = X.M.geo;
-      if (n.kind === 'sp') Object.assign(n, { nx: g.nx, ny: g.ny, Sx: r2(g.Sx), Sy: r2(g.Sy) });
-      else Object.assign(n, { nf: g.nf, perFloor: g.m });
-    }
-    if (k === 'hoseType') n.hoseRate = FR.hose[val][1];
-    n[k] = val;
+  if (IE.tool === 'fit') {
+    if (sg && sg.dataset.seg[0] !== 'z') { iePlaceFit(sg.dataset.seg, ieSegT(sg.dataset.seg, e), IE.fit); ieDraw(true); }
+    else $('#ie-tip').textContent = '관부속을 넣을 배관을 눌러 주세요. (호스에는 못 넣어요)';
     return;
   }
-  if (t.dataset.fon) { n.fitOn[t.dataset.fon] = t.checked; return; }
-  if (t.dataset.le) { const [ty, i] = t.dataset.le.split(':'); n.fitLe[ty][+i] = num == null ? 0 : Math.max(0, num); return; }
-  const s = X && ntEditSeg(X);
-  if (!s) return;
-  const o = n.ov[s.id] = n.ov[s.id] || {};
-  if (t.dataset.hz) { if (num == null) delete o[t.dataset.hz]; else o[t.dataset.hz] = Math.max(0, num); return; }
-  const k = t.dataset.sg;
-  if (k === 'L') { if (num == null) delete o.L; else o.L = Math.max(0, num); }
-  else if (k === 'size') o.size = Number(t.value);
-  else if (k && k.startsWith('fit:')) { o.fit = o.fit || {}; o.fit[k.slice(4)] = Math.max(0, Math.round(num || 0)); }
-}
-function ntToggle(id) {
-  const n = cur().net, X = NET.last;
-  if (n.openMode !== 'custom') { n.openSet = Object.fromEntries(X.open.map((x) => [x, true])); n.openMode = 'custom'; }
-  n.openSet[id] = !n.openSet[id];
-}
+  if (IE.tool === 'del') {
+    if (ft) { const [sid, i] = ft.dataset.fit.split(':'); const fits = ieFits(sid); if (fits) { iePush(); fits.splice(+i, 1); ieDirty(); } }
+    else if (hd) { iePush(); const hid = hd.dataset.head.slice(1); g.hyd = g.hyd.filter((h) => h.id !== hid); ieDirty(); }
+    else return;
+    IE.sel = null; ieDraw(true); return;
+  }
+  if (ft) { const [sid, i] = ft.dataset.fit.split(':'); IE.sel = { t: 'seg', id: sid, fit: +i }; }
+  else if (hd) { if (n.openMode === 'custom' && IE.sel && IE.sel.t === 'head' && IE.sel.id === hd.dataset.head) { /* 같은 것 다시 누름 */ } IE.sel = { t: 'head', id: hd.dataset.head }; }
+  else if (pm) IE.sel = { t: 'pump' };
+  else if (sg) IE.sel = sg.dataset.seg[0] === 'z' ? { t: 'seg', id: sg.dataset.seg } : { t: 'seg', id: sg.dataset.seg };
+  else if (fl) IE.sel = { t: 'floor', id: fl.dataset.floor };
+  else IE.sel = null;
+  ieDraw(true);
+  if (fl && fl.dataset.fh) setTimeout(() => { const inp = $('#ie-sel [data-is="h"]'); if (inp) { inp.focus(); inp.select(); } }, 30);
+});
+document.addEventListener('pointermove', (e) => {
+  const D = IE.pdrag;
+  if (!D) return;
+  if (!D.moved && Math.hypot(e.clientX - D.x, e.clientY - D.y) > 6) { D.moved = true; $('#ie-fitpop').hidden = true; document.body.insertAdjacentHTML('beforeend', `<div id="pe-dragic" class="pe-dragic">${peFitIcon(D.t)}</div>`); }
+  if (D.moved) { const ic = $('#pe-dragic'); ic.style.left = e.clientX + 'px'; ic.style.top = e.clientY + 'px'; }
+});
+document.addEventListener('pointerup', (e) => {
+  const D = IE.pdrag;
+  if (!D) return;
+  IE.pdrag = null;
+  const ic = $('#pe-dragic'); if (ic) ic.remove();
+  if (!D.moved) { IE.tool = 'fit'; IE.fit = { t: D.t, spec: D.spec }; $('#ie-fitpop').hidden = true; ieDraw(false); return; }
+  const el = document.elementFromPoint(e.clientX, e.clientY), sg = el && el.closest('#ie-canvas [data-seg]');
+  if (sg && sg.dataset.seg[0] !== 'z') { iePlaceFit(sg.dataset.seg, ieSegT(sg.dataset.seg, e), D); ieDraw(true); }
+  else $('#ie-tip').textContent = '관부속은 배관 위에 놓아 주세요.';
+});
 document.addEventListener('click', (e) => {
-  if (e.target.closest('[data-act="net"]')) { openNet(); return; }
-  if (!e.target.closest('#net')) return;
-  const a = e.target.closest('[data-na]');
-  if (a) {
-    const n = cur().net, [act, arg] = a.dataset.na.split(':');
-    if (act === 'close') { closeNet(); return; }
-    if (act === 'open') { n.openMode = arg; n.openSet = {}; }
-    if (act === 'tool') NET.tool = arg;
-    if (act === 'reset') { n.ov = {}; n.openMode = n.kind === 'pt' ? 'all' : 'base'; n.openSet = {}; NET.sel = null; }
-    if (act === 'segreset') { const s = ntEditSeg(NET.last); if (s) delete n.ov[s.id]; }
-    if (act === 'headtoggle' && NET.sel) ntToggle(NET.sel.id);
-    if (act === 'fitreset') n.fitLe = Object.fromEntries(Object.entries(FR.types).map(([k, [, arr]]) => [k, arr.slice()]));
-    ntDraw(true);
-    return;
-  }
-  const sg = e.target.closest('[data-seg]');
-  if (sg) { NET.sel = { t: 'seg', id: sg.dataset.seg }; ntDraw(true); return; }
-  const hd = e.target.closest('[data-head]');
-  if (hd) { if (NET.tool === 'toggle') ntToggle(hd.dataset.head); NET.sel = { t: 'head', id: hd.dataset.head }; ntDraw(true); }
+  if (!e.target.closest('#ie')) return;
+  const tb = e.target.closest('[data-it]');
+  if (tb) { IE.tool = tb.dataset.it; $('#ie-fitpop').hidden = true; ieDraw(false); return; }
+  const ftab = e.target.closest('#ie [data-pftab]');
+  if (ftab) { PE.fitTab = ftab.dataset.pftab; $('#ie-fitpop').innerHTML = peFitPop(); return; }
+  const a = e.target.closest('[data-ie], [data-pe="fitreset"]');
+  if (!a) { if (!e.target.closest('#ie-fitpop')) $('#ie-fitpop').hidden = true; return; }
+  const n = ieN(), g = n.ig, [act, x1] = (a.dataset.ie || a.dataset.pe).split(':');
+  if (act === 'close') { closeIE(); return; }
+  if (act === 'fitmenu') { const p = $('#ie-fitpop'), r = a.getBoundingClientRect(); p.innerHTML = peFitPop(); p.hidden = !p.hidden; p.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 440)) + 'px'; p.style.top = r.bottom + 6 + 'px'; return; }
+  if (act === 'undo') { if (!IE.hist.length) return; const h = JSON.parse(IE.hist.pop()); n.ig = h.ig; n.fitOn = h.fitOn; IE.sel = null; }
+  if (act === 'skel') { iePush(); n.ig = inSkel(n, cur()._netctx || {}); n.igSrc = inSkelKey(n, cur()._netctx || {}); n.igEdited = false; IE.sel = null; }
+  if (act === 'addfloor') { iePush(); const top = g.floors[g.floors.length - 1], f = { id: 'f' + g.seq++, h: top ? top.h : 3.5 }; g.floors.push(f); g.hyd.push({ id: 'y' + g.seq++, floor: f.id, toL: 1, gap: 20, nozzle: true }); IE.sel = { t: 'floor', id: f.id }; ieDirty(); }
+  if (act === 'delfloor' && IE.sel && IE.sel.t === 'floor' && g.floors.length > 1) { iePush(); const fid = IE.sel.id; g.floors = g.floors.filter((f) => f.id !== fid); g.hyd = g.hyd.filter((h) => h.floor !== fid); IE.sel = null; ieDirty(); }
+  if (act === 'addhyd' && IE.sel && IE.sel.t === 'floor') { const id = ieAddHyd(IE.sel.id); IE.sel = { t: 'head', id: 'Z' + id }; }
+  if (act === 'delhyd' && IE.sel && IE.sel.t === 'head') { iePush(); const hid = IE.sel.id.slice(1); g.hyd = g.hyd.filter((h) => h.id !== hid); IE.sel = null; ieDirty(); }
+  if (act === 'headtoggle' && IE.sel && IE.sel.t === 'head') { const X = IE.last; if (n.openMode !== 'custom') { n.openSet = Object.fromEntries(X.open.map((x) => [x, true])); n.openMode = 'custom'; } n.openSet[IE.sel.id] = !n.openSet[IE.sel.id]; }
+  if (act === 'open') { n.openMode = x1; n.openSet = {}; }
+  if (act === 'pz') { iePush(); g.pumpZ = Number(x1); ieDirty(); }
+  if (act === 'fitdel' && IE.sel && IE.sel.t === 'seg') { const fits = ieFits(IE.sel.id); if (fits) { iePush(); fits.splice(+x1, 1); delete IE.sel.fit; ieDirty(); } }
+  if (act === 'segreset' && IE.sel) { iePush(); delete g.ov[IE.sel.id]; }
+  if (act === 'fitreset') { iePush(); n.fitLe = Object.fromEntries(Object.entries(FR.types).map(([k, [, arr]]) => [k, arr.slice()])); }
+  ieDraw(true);
 });
 document.addEventListener('input', (e) => {
   const t = e.target;
-  if (!t.closest || !t.closest('#net') || t.type !== 'number') return;
-  ntApply(t); ntDraw(false);
+  if (!t.closest || !t.closest('#ie') || t.type !== 'number') return;
+  const n = ieN(), g = n.ig, num = t.value === '' ? null : Number(t.value), X = IE.last;
+  if (IE.typing !== t) { IE.typing = t; iePush(); }
+  if (t.dataset.peLe) { const [ty, i] = t.dataset.peLe.split(':'); n.fitLe[ty][+i] = num == null ? 0 : Math.max(0, num); ieDraw(false); return; }
+  if (t.dataset.ieN) { n[t.dataset.ieN] = num; ieDraw(false); return; }
+  if (t.dataset.if != null && IE.sel) { const fits = ieFits(IE.sel.id); if (fits && fits[+t.dataset.if] && num > 0) { fits[+t.dataset.if].n = Math.round(num); ieDirty(); } ieDraw(false); return; }
+  const k = t.dataset.is;
+  if (!k || !IE.sel || num == null) return;
+  if (IE.sel.t === 'floor') { const f = g.floors.find((x) => x.id === IE.sel.id); if (f && num > 0) f.h = num; }
+  else if (IE.sel.t === 'pump') { if (k === 'pumpZ') g.pumpZ = num; else if (num >= 0) g[k] = num; }
+  else if (IE.sel.t === 'head') { const h = X.M.nodes.get(IE.sel.id).hyd; if (num >= 0) h[k] = num; }
+  else if (IE.sel.t === 'seg' && k === 'L' && num >= 0) {
+    const s = X.M.segById.get(IE.sel.id);
+    if (s.lock === 'floor') { const f = g.floors.find((x) => x.id === s.floorBelow); if (f && num > 0) f.h = num; }
+    else if (s.lenKey && s.hyd) s.hyd[s.lenKey] = num;
+  }
+  ieDirty(); ieDraw(false);
 });
 document.addEventListener('change', (e) => {
   const t = e.target;
-  if (!t.closest || !t.closest('#net') || t.type === 'number') return;
-  ntApply(t); ntDraw(true);
+  if (!t.closest || !t.closest('#ie')) return;
+  const n = ieN(), g = n.ig;
+  if (t.matches('[data-pe-all]')) { PE.allSizes = t.checked; ieDraw(true); return; }
+  if (t.dataset.peOn) { iePush(); n.fitOn[t.dataset.peOn] = t.checked; ieDraw(true); return; }
+  if (t.matches('[data-ie-noz]') && IE.sel) { iePush(); IE.last.M.nodes.get(IE.sel.id).hyd.nozzle = t.checked; ieDirty(); ieDraw(true); return; }
+  if (t.dataset.ieN) {
+    const k = t.dataset.ieN;
+    n[k] = t.type === 'checkbox' ? t.checked : t.type === 'number' ? (t.value === '' ? null : Number(t.value)) : t.value;
+    if (k === 'hoseType') n.hoseRate = FR.hose[t.value][1];
+    ieDraw(true); return;
+  }
+  if (t.tagName === 'SELECT' && t.dataset.is === 'size' && IE.sel) { iePush(); const O = g.ov[IE.sel.id] = g.ov[IE.sel.id] || {}; O.size = Number(t.value); ieDirty(); ieDraw(true); return; }
+  if (t.type === 'number') ieDraw(true);
 });
-document.addEventListener('toggle', (e) => {
-  const d = e.target;
-  if (!d.matches || !d.matches('#net details.nt-d')) return;
-  if (d.open) NET.open.add(d.dataset.key); else NET.open.delete(d.dataset.key);
-}, true);
 document.addEventListener('keydown', (e) => {
-  if (!$('#net') || $('#net').hidden) return;
-  if (e.key === 'Escape') { e.preventDefault(); if (e.target.closest('input, select')) e.target.blur(); else if (NET.sel) { NET.sel = null; ntDraw(true); } else closeNet(); }
+  if (!$('#ie') || $('#ie').hidden) return;
+  if (e.target.closest('input, select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); $('#ie [data-ie="undo"]').click(); return; }
+  if (e.key === 'Escape') { e.preventDefault(); if (!$('#ie-fitpop').hidden) $('#ie-fitpop').hidden = true; else if (IE.tool !== 'pick') { IE.tool = 'pick'; ieDraw(false); } else if (IE.sel) { IE.sel = null; ieDraw(true); } else closeIE(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && IE.sel && IE.sel.t === 'head') { e.preventDefault(); const b = $('#ie [data-ie="delhyd"]'); if (b) b.click(); }
 });
 
 /* =========================================================
@@ -4854,7 +5574,10 @@ function fixHalon(k) {
     if (!K[g.halonKind][1][g.halonType]) g.halonKind = Object.keys(K).find((x) => K[x][1][g.halonType]);
   }
   // 포: 특수가연물 장소를 고르면 유효반경 1.7 m, 다른 장소는 2.1 m (바꿀 수 있어요)
-  if (k === 'place' && current === 'foam') cur().fR = cur().place === 'special' ? '1.7' : '2.1';
+  if (k === 'place' && current === 'foam') {
+    cur().fR = cur().place === 'special' ? '1.7' : '2.1';
+    if (cur().place === 'special' && cur().sys === 'reel') cur().sys = 'head';   // 특수가연물 공장·창고 수원 기준엔 호스릴포가 없어요
+  }
 }
 // 선택란·칩에서 고른 값 넣기: 입력칸을 다시 그리고, 고른 칸에 포커스를 돌려줘요
 function setField(k, val) {
@@ -4975,11 +5698,8 @@ $('#results').addEventListener('click', (e) => {
   if (again) again.focus({ preventScroll: true });
 });
 $('#results').addEventListener('click', (e) => {
-  const h = e.target.closest('.net-fig [data-head], .net-fig [data-seg]');
-  if (!h) return;
+  if (!e.target.closest('.net-fig')) return;
   openNet();
-  NET.sel = h.dataset.head ? { t: 'head', id: h.dataset.head } : { t: 'seg', id: h.dataset.seg };
-  ntDraw(true);
 });
 $('#results').addEventListener('toggle', (e) => {
   const d = e.target;
